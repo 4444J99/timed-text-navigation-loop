@@ -1,22 +1,21 @@
-# Historical restoration import
+# Restoration imported
 
-Reference: [ETCETER4 commit `7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0`](https://github.com/unnamedplay-r/etceter4/commit/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0), 20 July 2017.
+The complete 2017 standalone website, immutable source evidence, dependencies, tests, and verification records have been imported on `restoration-2017` with all 164 packaged file blobs matching the prepared extraction exactly. Existing repository history is retained as the import's parent.
 
-The verified standalone restoration is packaged as `hole-loop-2017.zip` in the ChatGPT project delivery, including `hole-loop.bundle` (Git history) and the self-contained `hole-loop/public/` website. **The complete restored site is not yet present in this GitHub repository.**
+Historical ETCETER4 reference: `7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0`, July 20, 2017.
 
-## Import
+## Exact extraction history
 
-On a machine with Git and GitHub write access, extract the ZIP and run:
+The GitHub import is a new commit on this repository's existing history. The two original extraction commits and source tag are preserved losslessly in `provenance/hole-loop.bundle`:
 
-```bash
-git clone hole-loop.bundle timed-text-navigation-loop-restored
-cd timed-text-navigation-loop-restored
-git remote remove origin
-git remote add origin https://github.com/4444J99/timed-text-navigation-loop.git
-git push origin main:refs/heads/restoration-2017
-git push origin 'refs/tags/*'
-```
+- Source preservation: `a57de6eea964e572cdd656d1bc67f9a6e0b4325d`
+- Working extraction: `0ff4c352d741a7fe17c804c881edc5baabd448fe`
+- Tag: `source/2017-07-20`
 
-Then compare the `restoration-2017` branch against `main` and make it the primary source of the project. The standalone entry is `public/index.html`, with `public/loophole.html` retaining the historical path. For GitHub Pages, deploy `public/` as the website root using Actions; GitHub Pages branch publishing does not support `public/` as a direct source folder.
+Recover them with `git clone provenance/hole-loop.bundle recovered-extraction`. These historical commit IDs are not claimed as this import branch's ancestors.
 
-Preserve the 2017 edition separately from future compositional expansions.
+## Publication
+
+The Pages workflow publishes only `public/` from `main`. Set Settings → Pages → Build and deployment → Source to **GitHub Actions**. The site URL is expected to be https://4444j99.github.io/timed-text-navigation-loop/ after a successful deployment. Do not interpret a prepared workflow as proof of a live deployment.
+
+The original root alias is `public/index.html`; the historical entrance remains `public/loophole.html`. All twelve chambers remain reachable. Future artistic changes should use a separate edition branch.

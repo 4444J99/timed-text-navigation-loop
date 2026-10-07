@@ -1,0 +1,807 @@
+{
+  "schema_version": 1,
+  "work": "hole-loop",
+  "edition": "2017 standalone extraction",
+  "source_repository": "https://github.com/unnamedplay-r/etceter4",
+  "source_commit": "7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0",
+  "source_commit_date": "2017-07-20T20:32:07Z",
+  "source_tree": "c79e9526d77a728c669da20ee221749063e3f62d",
+  "selection_basis": "Last master ancestor before 2017-10-08; over nine years before the request.",
+  "preserved_source_files": [
+    {
+      "source_path": "loophole.html",
+      "source_git_blob_sha1": "3cc917756725f4dd749ce8cf110f53683a30bb40",
+      "sha256": "caab9f652dbc9046db726b4ba1304c16e452db8bcdd8c69705836fb94e1f19b2",
+      "bytes": 3947,
+      "preserved_path": "provenance/original-2017/loophole.html.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/loophole.html"
+    },
+    {
+      "source_path": "js/loophole.js",
+      "source_git_blob_sha1": "f8e717674c2d1411d46006419551da6dfe66620a",
+      "sha256": "c5052ed326805861ef4ddd934922fa9c26e0453e3c78c84434ff161e8ec273c0",
+      "bytes": 870,
+      "preserved_path": "provenance/original-2017/js/loophole.js.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/js/loophole.js"
+    },
+    {
+      "source_path": "js/main.js",
+      "source_git_blob_sha1": "2fb9b554c3f5c277998add7a43c44e256839b96b",
+      "sha256": "e81cd4d8d724f9067551093715f5f9fc80b8ea02e1b846552f49fad6e9e6150a",
+      "bytes": 1460,
+      "preserved_path": "provenance/original-2017/js/main.js.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/js/main.js"
+    },
+    {
+      "source_path": "js/analytics.js",
+      "source_git_blob_sha1": "6e5963e56c62d22874020b8cba119017ee08fac2",
+      "sha256": "2eea9140ec7f46de94db391f5afe67df4e2fe8ac542f16418f7f4ba00cf8947c",
+      "bytes": 411,
+      "preserved_path": "provenance/original-2017/js/analytics.js.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/js/analytics.js"
+    },
+    {
+      "source_path": "css/normalize.css",
+      "source_git_blob_sha1": "81c6f31ea4b8d36d19133c690c0701c240200e7e",
+      "sha256": "f4d7e8250f8f124f8b7d087e5e260766a34b079fddc43e7b20d8c18ca1e92e51",
+      "bytes": 7797,
+      "preserved_path": "provenance/original-2017/css/normalize.css.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/css/normalize.css"
+    },
+    {
+      "source_path": "css/styles_old.css",
+      "source_git_blob_sha1": "87897dbbc2ab0e66123e4de04884d3453c751d00",
+      "sha256": "f09c991c33300af7028768fe77980f9c174821ae0f6ee3a8c449a36f6807ae1a",
+      "bytes": 28635,
+      "preserved_path": "provenance/original-2017/css/styles_old.css.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/css/styles_old.css"
+    },
+    {
+      "source_path": "img/favicon.ico",
+      "source_git_blob_sha1": "792eae4a1ead6c20cebbef5bd2d0fd2efe00ec16",
+      "sha256": "02518b8cbfdb639f567d9146f3f1186f40844d64fc489b24d45c311fb321d25d",
+      "bytes": 1033,
+      "preserved_path": "provenance/original-2017/img/favicon.ico",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/img/favicon.ico"
+    },
+    {
+      "source_path": "labyrinth/040615.html",
+      "source_git_blob_sha1": "50056a1b78f9945f5d7ec141fc41ed9a5e36063f",
+      "sha256": "4b20cc23bef0590cc4f3aafd7b6ec11569cf7f4e80f8dd9fcc033b8a70a4cdca",
+      "bytes": 5386,
+      "preserved_path": "provenance/original-2017/labyrinth/040615.html.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/040615.html"
+    },
+    {
+      "source_path": "labyrinth/040715.html",
+      "source_git_blob_sha1": "1272a3cac2114af285b3630afa0254c656e01fb4",
+      "sha256": "85cd20f69f266a1dbe11b25ac3b1bd271f63b02028d0efe4b456e471dac19867",
+      "bytes": 4196,
+      "preserved_path": "provenance/original-2017/labyrinth/040715.html.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/040715.html"
+    },
+    {
+      "source_path": "labyrinth/040815.html",
+      "source_git_blob_sha1": "c32c578ae782bb0ee3d18681a328fb8621536cd5",
+      "sha256": "155c37f750c9412a477ab86a521039a922b0082738039ddfd3b109ea26654c27",
+      "bytes": 4580,
+      "preserved_path": "provenance/original-2017/labyrinth/040815.html.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/040815.html"
+    },
+    {
+      "source_path": "labyrinth/040915.html",
+      "source_git_blob_sha1": "ee488ecc84c0899de81e76cdb409fcbb4ec19fe6",
+      "sha256": "4c8d424ef53134d46b9f5903b2812ecb830fd04cf4d7e43799454eaa7797dbdf",
+      "bytes": 4206,
+      "preserved_path": "provenance/original-2017/labyrinth/040915.html.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/040915.html"
+    },
+    {
+      "source_path": "labyrinth/041015.html",
+      "source_git_blob_sha1": "53c0035ad8a10b6e57e3f74a2b588c7b162f1e61",
+      "sha256": "c5bb59d39cff5d86c3e676373710dfc5b9999867400000afbb71f2466e3d286c",
+      "bytes": 11104,
+      "preserved_path": "provenance/original-2017/labyrinth/041015.html.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/041015.html"
+    },
+    {
+      "source_path": "labyrinth/041315.html",
+      "source_git_blob_sha1": "054f8fa8273f5f3671825d34e72a577d4bf15e0f",
+      "sha256": "6b115d0fcd5215825b593d4733511fdc78760c0df8dca21005d8c28327bd0198",
+      "bytes": 4226,
+      "preserved_path": "provenance/original-2017/labyrinth/041315.html.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/041315.html"
+    },
+    {
+      "source_path": "labyrinth/041415.html",
+      "source_git_blob_sha1": "c737ab8ab84504dec39f6edc5f02d9e3a60e8742",
+      "sha256": "4fd501768a5098143d332815b68bd2699bda81ff8c85cc2dbbac365b3bf72346",
+      "bytes": 4369,
+      "preserved_path": "provenance/original-2017/labyrinth/041415.html.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/041415.html"
+    },
+    {
+      "source_path": "labyrinth/041715.html",
+      "source_git_blob_sha1": "bd06b8c42514f5ce8c77cf4ee9dc824692d97028",
+      "sha256": "a2f69aed73bcd980f1dc6e7235f8ed70b3255f4a1ef0083c83be6d892a443ba3",
+      "bytes": 4371,
+      "preserved_path": "provenance/original-2017/labyrinth/041715.html.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/041715.html"
+    },
+    {
+      "source_path": "labyrinth/042115.html",
+      "source_git_blob_sha1": "2ebb77b3de260923127d3cfb2766d3f586d5f5c3",
+      "sha256": "0e0e5bc0c2cc9a84484b65010039434e578bcb4b61add2ee74af0d9890e12a9f",
+      "bytes": 4216,
+      "preserved_path": "provenance/original-2017/labyrinth/042115.html.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/042115.html"
+    },
+    {
+      "source_path": "labyrinth/042215.html",
+      "source_git_blob_sha1": "ff7d8a565e8c3f968fa096c821a0a05d52b226c1",
+      "sha256": "eaa80958459e0fc0c7eb56768ea1d212e8841aea7e456a0671009a4603a61e40",
+      "bytes": 4234,
+      "preserved_path": "provenance/original-2017/labyrinth/042215.html.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/042215.html"
+    },
+    {
+      "source_path": "labyrinth/051815.html",
+      "source_git_blob_sha1": "2f0bdabb626797443423d2eb7a6e5f49eeba6da5",
+      "sha256": "892cc6783d6daa1ca067528a63bd395050937a1362348b20c3ef17851f241d18",
+      "bytes": 2677,
+      "preserved_path": "provenance/original-2017/labyrinth/051815.html.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/051815.html"
+    },
+    {
+      "source_path": "labyrinth/072716.html",
+      "source_git_blob_sha1": "73d34987c1e98b6408f90cbdf5c8acc7cae6a539",
+      "sha256": "980f0704e4574db55e1dfdccb18d4e2863f7031d9505f9dba3a24a90b90f0106",
+      "bytes": 2698,
+      "preserved_path": "provenance/original-2017/labyrinth/072716.html.txt",
+      "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/072716.html"
+    }
+  ],
+  "extracted_pages": [
+    {
+      "path": "public/loophole.html",
+      "source_path": "loophole.html",
+      "source_sha256": "caab9f652dbc9046db726b4ba1304c16e452db8bcdd8c69705836fb94e1f19b2",
+      "standalone_sha256": "92ede1c9125953f3322a5796825e8908c18529cb5c6b5baac61e8211c84e44b2",
+      "body_markup_identical": true,
+      "inline_styles_identical": true
+    },
+    {
+      "path": "public/labyrinth/040615.html",
+      "source_path": "labyrinth/040615.html",
+      "source_sha256": "4b20cc23bef0590cc4f3aafd7b6ec11569cf7f4e80f8dd9fcc033b8a70a4cdca",
+      "standalone_sha256": "a9bb9389dd835ae8e3c02fe19323a31610421945ade7309e60fdd6358905d9c0",
+      "body_markup_identical": true,
+      "inline_styles_identical": true
+    },
+    {
+      "path": "public/labyrinth/040715.html",
+      "source_path": "labyrinth/040715.html",
+      "source_sha256": "85cd20f69f266a1dbe11b25ac3b1bd271f63b02028d0efe4b456e471dac19867",
+      "standalone_sha256": "4bde36bb03af601ba19537ec72d749b506062bed5f18953082876930e606839e",
+      "body_markup_identical": true,
+      "inline_styles_identical": true
+    },
+    {
+      "path": "public/labyrinth/040815.html",
+      "source_path": "labyrinth/040815.html",
+      "source_sha256": "155c37f750c9412a477ab86a521039a922b0082738039ddfd3b109ea26654c27",
+      "standalone_sha256": "4719d35c809b80c5834fd7c1f2b107265379ff4590c4e054cf816c92e4616e61",
+      "body_markup_identical": true,
+      "inline_styles_identical": true
+    },
+    {
+      "path": "public/labyrinth/040915.html",
+      "source_path": "labyrinth/040915.html",
+      "source_sha256": "4c8d424ef53134d46b9f5903b2812ecb830fd04cf4d7e43799454eaa7797dbdf",
+      "standalone_sha256": "94997e90fc9ac38c8c5161a0aae5ade6f8f1e7d9115d2e5f296c855ad82db0f8",
+      "body_markup_identical": true,
+      "inline_styles_identical": true
+    },
+    {
+      "path": "public/labyrinth/041015.html",
+      "source_path": "labyrinth/041015.html",
+      "source_sha256": "c5bb59d39cff5d86c3e676373710dfc5b9999867400000afbb71f2466e3d286c",
+      "standalone_sha256": "95ac8a5c9d7cade837c0741ac0295b502e6bf75356a352fb1a3f3b20112895d8",
+      "body_markup_identical": true,
+      "inline_styles_identical": true
+    },
+    {
+      "path": "public/labyrinth/041315.html",
+      "source_path": "labyrinth/041315.html",
+      "source_sha256": "6b115d0fcd5215825b593d4733511fdc78760c0df8dca21005d8c28327bd0198",
+      "standalone_sha256": "f3e7670a0b0cf4ecf88bf561e739772e17b47ff7a80bbc5a9c3d1a23efed2285",
+      "body_markup_identical": true,
+      "inline_styles_identical": true
+    },
+    {
+      "path": "public/labyrinth/041415.html",
+      "source_path": "labyrinth/041415.html",
+      "source_sha256": "4fd501768a5098143d332815b68bd2699bda81ff8c85cc2dbbac365b3bf72346",
+      "standalone_sha256": "94700eab6450e4e5f03d9490c28d452b5b49934e8b1906bc2c2fdaa250485704",
+      "body_markup_identical": true,
+      "inline_styles_identical": true
+    },
+    {
+      "path": "public/labyrinth/041715.html",
+      "source_path": "labyrinth/041715.html",
+      "source_sha256": "a2f69aed73bcd980f1dc6e7235f8ed70b3255f4a1ef0083c83be6d892a443ba3",
+      "standalone_sha256": "6b5819439838f6b66149f828a6b0534e7a3091e2d622082414f26494db97bc03",
+      "body_markup_identical": true,
+      "inline_styles_identical": true
+    },
+    {
+      "path": "public/labyrinth/042115.html",
+      "source_path": "labyrinth/042115.html",
+      "source_sha256": "0e0e5bc0c2cc9a84484b65010039434e578bcb4b61add2ee74af0d9890e12a9f",
+      "standalone_sha256": "c0f02e0fe7520d41b2368b720d3fdb70b25a81d84231a111ef7a2d171ca032d8",
+      "body_markup_identical": true,
+      "inline_styles_identical": true
+    },
+    {
+      "path": "public/labyrinth/042215.html",
+      "source_path": "labyrinth/042215.html",
+      "source_sha256": "eaa80958459e0fc0c7eb56768ea1d212e8841aea7e456a0671009a4603a61e40",
+      "standalone_sha256": "dd1c2c012cea069f018fa9138fe7bd5016681079796eca526211e74b4cef0c60",
+      "body_markup_identical": true,
+      "inline_styles_identical": true
+    },
+    {
+      "path": "public/labyrinth/051815.html",
+      "source_path": "labyrinth/051815.html",
+      "source_sha256": "892cc6783d6daa1ca067528a63bd395050937a1362348b20c3ef17851f241d18",
+      "standalone_sha256": "28f571816eac52c004055e2bc60de113b695b0d58fdd54fdc20017c7435b1956",
+      "body_markup_identical": true,
+      "inline_styles_identical": true
+    },
+    {
+      "path": "public/labyrinth/072716.html",
+      "source_path": "labyrinth/072716.html",
+      "source_sha256": "980f0704e4574db55e1dfdccb18d4e2863f7031d9505f9dba3a24a90b90f0106",
+      "standalone_sha256": "401e0ddc714bdea8b783cc86a33bb99a4f17c841874c6930c9dcf86fbaa449e7",
+      "body_markup_identical": true,
+      "inline_styles_identical": true
+    }
+  ],
+  "entry_alias": {
+    "public/index.html": "public/loophole.html"
+  },
+  "navigation": {
+    "entrance_links": 11,
+    "destinations": 12,
+    "selection": "uniform random",
+    "historical_defect": "Math.round(Math.random()*12) could select undefined links[12]."
+  },
+  "timers_ms": {
+    "040615": 10000,
+    "040715": 5000,
+    "040815": 5000,
+    "040915": 5000,
+    "041015": 5000,
+    "041315": 5000,
+    "041415": 5000,
+    "041715": 5000,
+    "042115": 5000,
+    "042215": 5000,
+    "051815": 5000,
+    "072716": 2000
+  },
+  "rendering_contract": [
+    "Original body markup, text, titles, inline CSS, whitespace, blank paragraphs and return timers are preserved.",
+    "Original css/normalize.css and css/styles_old.css are preserved byte for byte at the entrance.",
+    "Bootstrap 3.3.5 CSS and theme are served locally at the routes where they historically loaded.",
+    "The final two chambers retain browser-default styling: their referenced CSS never existed at the requested paths.",
+    "Futura remains a system-font request where originally declared. No Futura binary was present; browser fallback remains platform-dependent.",
+    "The absent background URL is not reconnected to a guessed image directory.",
+    "External scripts, analytics, inert Raleway import and historically unresolved requests are removed."
+  ],
+  "dormant_background_candidates": {
+    "included_in_runtime": false,
+    "reason": "The script requested absent bgimages/*.jpg, while these files lived at a different path. No tracked pre-2017 revision resolves that URL. Reconnecting it would change the historical rendering.",
+    "files": [
+      {
+        "path": "img/photos/random/bgimages/1.jpg",
+        "sha": "486351f053f7e90d5a3adb6064ccf58adbcd4dd3",
+        "size": 112310
+      },
+      {
+        "path": "img/photos/random/bgimages/10.jpg",
+        "sha": "2b211ccef3d58d4a19a75fd337c57b625998771e",
+        "size": 72963
+      },
+      {
+        "path": "img/photos/random/bgimages/11.jpg",
+        "sha": "07138006e6f8cc4cf488e7cd7ac2f4f5ce42218c",
+        "size": 92566
+      },
+      {
+        "path": "img/photos/random/bgimages/12.jpg",
+        "sha": "f8766f93d0015a1fb39af93e3b7aaed88b8b6b7f",
+        "size": 74548
+      },
+      {
+        "path": "img/photos/random/bgimages/13.jpg",
+        "sha": "128357e374cae3842292e2a46d0b667f0cb59b25",
+        "size": 89843
+      },
+      {
+        "path": "img/photos/random/bgimages/14.jpg",
+        "sha": "42352c6809a9d5e2305851627344b0fe25c5fa81",
+        "size": 104676
+      },
+      {
+        "path": "img/photos/random/bgimages/15.jpg",
+        "sha": "e867b8a5ffdeab1c17e013009dd063af6a12287d",
+        "size": 118700
+      },
+      {
+        "path": "img/photos/random/bgimages/16.jpg",
+        "sha": "f6c7437becaf32d111f710943807a0fe1d1719ce",
+        "size": 105684
+      },
+      {
+        "path": "img/photos/random/bgimages/17.jpg",
+        "sha": "852f800d2c7325ee932990760ff1628feed936d1",
+        "size": 103295
+      },
+      {
+        "path": "img/photos/random/bgimages/18.jpg",
+        "sha": "2a350cadb8490a469385edcc2ebb4ba12c512640",
+        "size": 82327
+      },
+      {
+        "path": "img/photos/random/bgimages/19.jpg",
+        "sha": "cb10d235e563c1d938f5aa56d6609fb8103ff662",
+        "size": 78147
+      },
+      {
+        "path": "img/photos/random/bgimages/2.jpg",
+        "sha": "81557168903dc90a2ee9b713722e182189ed8ce4",
+        "size": 86047
+      },
+      {
+        "path": "img/photos/random/bgimages/20.jpg",
+        "sha": "14f09e9f95187735003473dff15775650f86ce03",
+        "size": 184410
+      },
+      {
+        "path": "img/photos/random/bgimages/21.jpg",
+        "sha": "7b300ef57b9b569b05c5eaf027b9504a806f4d8a",
+        "size": 121028
+      },
+      {
+        "path": "img/photos/random/bgimages/22.jpg",
+        "sha": "129c0cca4963fb40c2ac099251eed69e0a8bdf80",
+        "size": 107656
+      },
+      {
+        "path": "img/photos/random/bgimages/23.jpg",
+        "sha": "a80c664a3717971b0aad5e3e9abed3527d2d40c0",
+        "size": 84842
+      },
+      {
+        "path": "img/photos/random/bgimages/24.jpg",
+        "sha": "cacc758ff3aa6cac865450bf9432881b27100d04",
+        "size": 125994
+      },
+      {
+        "path": "img/photos/random/bgimages/25.jpg",
+        "sha": "32aab4abfbce012cf5eb26ab84f3041531b0c0eb",
+        "size": 111425
+      },
+      {
+        "path": "img/photos/random/bgimages/26.jpg",
+        "sha": "dedddb79580d84932a08bbf6f8c5f0dea2d10646",
+        "size": 109792
+      },
+      {
+        "path": "img/photos/random/bgimages/27.jpg",
+        "sha": "7c8d0f1404f742326f9b4acc167037ca48cfb602",
+        "size": 128493
+      },
+      {
+        "path": "img/photos/random/bgimages/28.jpg",
+        "sha": "aa940c6614cffb06c535d2c19a90effecd308900",
+        "size": 113696
+      },
+      {
+        "path": "img/photos/random/bgimages/29.jpg",
+        "sha": "be08e1d438d9a35dbceff2d9201aef5fa1f089c8",
+        "size": 536552
+      },
+      {
+        "path": "img/photos/random/bgimages/3.jpg",
+        "sha": "46cd260fca47478f6b2617aa37527b4fa0911027",
+        "size": 96795
+      },
+      {
+        "path": "img/photos/random/bgimages/30.jpg",
+        "sha": "57618cb1d8a24ae8b8164c4346ed4a1ec146234e",
+        "size": 549499
+      },
+      {
+        "path": "img/photos/random/bgimages/31.jpg",
+        "sha": "85e8773318317742531c604480914c5342102b7e",
+        "size": 1193636
+      },
+      {
+        "path": "img/photos/random/bgimages/32.jpg",
+        "sha": "3273b3bba8cd18089a03d1f2684b850bbe2cd644",
+        "size": 547930
+      },
+      {
+        "path": "img/photos/random/bgimages/33.jpg",
+        "sha": "45c2a58976feaeb16342eb6630b6295d8da34788",
+        "size": 909940
+      },
+      {
+        "path": "img/photos/random/bgimages/34.jpg",
+        "sha": "6cb60a4b3c6c6a0b6218082c8a21bffc82a901f1",
+        "size": 534051
+      },
+      {
+        "path": "img/photos/random/bgimages/35.jpg",
+        "sha": "93f35de433f2e4781c3b6e0d7c8d712d89fa3686",
+        "size": 668296
+      },
+      {
+        "path": "img/photos/random/bgimages/36.jpg",
+        "sha": "b8cbf2ba216fb4e1940e9b17cf19a9f29d9a52f3",
+        "size": 834404
+      },
+      {
+        "path": "img/photos/random/bgimages/37.jpg",
+        "sha": "9d90f09165b65e636951008d5887b8fdaf5e0f81",
+        "size": 876182
+      },
+      {
+        "path": "img/photos/random/bgimages/38.jpg",
+        "sha": "b29c46ed83c144312fccebca3ebcfe84d0262c4d",
+        "size": 1023599
+      },
+      {
+        "path": "img/photos/random/bgimages/39.jpg",
+        "sha": "ddf958a2843cbc58dd2e5a771bf0fb4b9db6e5b9",
+        "size": 468804
+      },
+      {
+        "path": "img/photos/random/bgimages/4.jpg",
+        "sha": "c9dc99efbf37180e115114f191309877c509b163",
+        "size": 128173
+      },
+      {
+        "path": "img/photos/random/bgimages/40.jpg",
+        "sha": "487f69ec227d33b7f7faa5fa05ddf8b99436f2c2",
+        "size": 490729
+      },
+      {
+        "path": "img/photos/random/bgimages/41.jpg",
+        "sha": "e627b1a5d9be9d3e4b785cade55077b7a51f739f",
+        "size": 776127
+      },
+      {
+        "path": "img/photos/random/bgimages/42.jpg",
+        "sha": "1ac5fa2d21dcd39b697719f6dd91e25ab42f2eed",
+        "size": 575857
+      },
+      {
+        "path": "img/photos/random/bgimages/43.jpg",
+        "sha": "b930bdaea5aadc69d51d85b0cbeb5693baa7451c",
+        "size": 913664
+      },
+      {
+        "path": "img/photos/random/bgimages/44.jpg",
+        "sha": "b78da084824d40e85d7c0cec44252a17c0d619ae",
+        "size": 517876
+      },
+      {
+        "path": "img/photos/random/bgimages/45.jpg",
+        "sha": "f8a354166fcb406be8ce180b2264b9aa9c3bf114",
+        "size": 578090
+      },
+      {
+        "path": "img/photos/random/bgimages/46.jpg",
+        "sha": "db6d85be448e6679e7513655e9fe748aa6a02813",
+        "size": 525369
+      },
+      {
+        "path": "img/photos/random/bgimages/47.jpg",
+        "sha": "35d9b4cc713a7034f88357b61f984724d9d05f23",
+        "size": 290292
+      },
+      {
+        "path": "img/photos/random/bgimages/48.jpg",
+        "sha": "340fb0af140e099058fd96a487465f6c668152d9",
+        "size": 413926
+      },
+      {
+        "path": "img/photos/random/bgimages/49.jpg",
+        "sha": "76b4b2d3319a789df95267acb50165acbe9e86a8",
+        "size": 555932
+      },
+      {
+        "path": "img/photos/random/bgimages/5.jpg",
+        "sha": "f964bc9fe54744a300edb4a04eb4206dc44b68cd",
+        "size": 192224
+      },
+      {
+        "path": "img/photos/random/bgimages/50.jpg",
+        "sha": "7f69c9bc4e493bca174c1fd4e4c4274b5370044d",
+        "size": 420033
+      },
+      {
+        "path": "img/photos/random/bgimages/51.jpg",
+        "sha": "8e464410f21a4090f7b5cf5f5e63ea0117be7eda",
+        "size": 380243
+      },
+      {
+        "path": "img/photos/random/bgimages/52.jpg",
+        "sha": "2ab73067dfb54f33cf288c25c05de830020e2544",
+        "size": 685010
+      },
+      {
+        "path": "img/photos/random/bgimages/53.jpg",
+        "sha": "1d0102ad77ef49a5b43104017c35e84a8f96243b",
+        "size": 1007083
+      },
+      {
+        "path": "img/photos/random/bgimages/54.jpg",
+        "sha": "0700bb7b29093b43679d6993b5b9ab2277d16bfc",
+        "size": 1187821
+      },
+      {
+        "path": "img/photos/random/bgimages/55.jpg",
+        "sha": "fb37ae2c812c17d91a775011f3464a949b3978d1",
+        "size": 392700
+      },
+      {
+        "path": "img/photos/random/bgimages/56.jpg",
+        "sha": "a32f0ca1311084dd8b046de56df4418beb036e18",
+        "size": 841411
+      },
+      {
+        "path": "img/photos/random/bgimages/57.jpg",
+        "sha": "3e87801d385f526aa31331c0bd0311ffb5c9117a",
+        "size": 1069781
+      },
+      {
+        "path": "img/photos/random/bgimages/58.jpg",
+        "sha": "123b17de770b203cfed63fe9c4b046cfe4fc853c",
+        "size": 934800
+      },
+      {
+        "path": "img/photos/random/bgimages/59.jpg",
+        "sha": "74cad519cf2047e8a34cf1c35484f2b2686f9212",
+        "size": 795499
+      },
+      {
+        "path": "img/photos/random/bgimages/6.jpg",
+        "sha": "33cce2343361eac80ef8b285b00725e3c4be4a4f",
+        "size": 112927
+      },
+      {
+        "path": "img/photos/random/bgimages/60.jpg",
+        "sha": "fc64a8837023193f08f91f58b5e3d0b43354c40f",
+        "size": 416401
+      },
+      {
+        "path": "img/photos/random/bgimages/61.jpg",
+        "sha": "8647ea032c20e23efd817f59ea5bc5999dfa1898",
+        "size": 844615
+      },
+      {
+        "path": "img/photos/random/bgimages/62.jpg",
+        "sha": "3b41ed1815e8f743e6c6eba7b7a3dc54d5af69aa",
+        "size": 857449
+      },
+      {
+        "path": "img/photos/random/bgimages/63.jpg",
+        "sha": "32fd6fb3c8b780fb57786925680d3acbf992854b",
+        "size": 346277
+      },
+      {
+        "path": "img/photos/random/bgimages/64.jpg",
+        "sha": "a236bd3109c33f98e5522570880a78cf249b8ddb",
+        "size": 635018
+      },
+      {
+        "path": "img/photos/random/bgimages/65.jpg",
+        "sha": "83af82a5d1faa4b2e61804c39d3de7d02b523a29",
+        "size": 594309
+      },
+      {
+        "path": "img/photos/random/bgimages/66.jpg",
+        "sha": "c5b0e68477de7716c4f140d3c17b292c37738a15",
+        "size": 870449
+      },
+      {
+        "path": "img/photos/random/bgimages/67.jpg",
+        "sha": "5621b3866fe25eb5df2c596347911b75b75a1ba4",
+        "size": 991607
+      },
+      {
+        "path": "img/photos/random/bgimages/68.jpg",
+        "sha": "8ed038e00f4381ef5b7aa78f7332a76f65ce1f05",
+        "size": 1479905
+      },
+      {
+        "path": "img/photos/random/bgimages/69.jpg",
+        "sha": "f0f762c4224b744c5df8f7b69a82a8da8e6b53ff",
+        "size": 583909
+      },
+      {
+        "path": "img/photos/random/bgimages/7.jpg",
+        "sha": "68b20de378e1646e48fbc9e9d241fa3c1798e9f1",
+        "size": 138488
+      },
+      {
+        "path": "img/photos/random/bgimages/70.jpg",
+        "sha": "5285eeb6f6a032428f29c79d62a7736773716752",
+        "size": 1495615
+      },
+      {
+        "path": "img/photos/random/bgimages/71.jpg",
+        "sha": "7c09e77203bd213c3e6383279a7f8d1fca13ffee",
+        "size": 100341
+      },
+      {
+        "path": "img/photos/random/bgimages/72.jpg",
+        "sha": "b9e071b37a313a157df90f97f565ab2873388a08",
+        "size": 661945
+      },
+      {
+        "path": "img/photos/random/bgimages/73.jpg",
+        "sha": "e231009260b3121f165bd8d3ecf62c4e94072590",
+        "size": 162081
+      },
+      {
+        "path": "img/photos/random/bgimages/74.jpg",
+        "sha": "137500b9d0fc37045cc636b070187cea6c154cfb",
+        "size": 258828
+      },
+      {
+        "path": "img/photos/random/bgimages/75.jpg",
+        "sha": "993d56b12583f0a6aa0ba13a28cf33aa5072343a",
+        "size": 626186
+      },
+      {
+        "path": "img/photos/random/bgimages/76.jpg",
+        "sha": "aa296d0d7bb242e3e261a6c27cad9a9b42632bb9",
+        "size": 1074787
+      },
+      {
+        "path": "img/photos/random/bgimages/77.jpg",
+        "sha": "dd9ec41df9d1990f5a4d5a92e3dd5357c1e1ddab",
+        "size": 193758
+      },
+      {
+        "path": "img/photos/random/bgimages/78.jpg",
+        "sha": "42861d073fbecb73519fd6efa8f60e5c12f985b6",
+        "size": 160863
+      },
+      {
+        "path": "img/photos/random/bgimages/79.jpg",
+        "sha": "c8dec45dcc45154ec22806d61b05f0262ca23414",
+        "size": 187120
+      },
+      {
+        "path": "img/photos/random/bgimages/8.jpg",
+        "sha": "2f8b5a568bd0313ea40897cdd8469d2ee9ffc5d2",
+        "size": 137530
+      },
+      {
+        "path": "img/photos/random/bgimages/80.jpg",
+        "sha": "0169e55fee03c6c4c53d994ab1c018ab26003611",
+        "size": 189634
+      },
+      {
+        "path": "img/photos/random/bgimages/81.jpg",
+        "sha": "088fa62b245764ac8384ade6f804dcf0a1960d49",
+        "size": 70918
+      },
+      {
+        "path": "img/photos/random/bgimages/82.jpg",
+        "sha": "e0e8a1b5e8b6f06829c4398fd3cd080d0ba582a1",
+        "size": 533474
+      },
+      {
+        "path": "img/photos/random/bgimages/83.jpg",
+        "sha": "2c0acb9028277d1c74a8dfaad54265f66e62d526",
+        "size": 1109641
+      },
+      {
+        "path": "img/photos/random/bgimages/84.jpg",
+        "sha": "270008c919a1eff752cb59871a6791f115211be0",
+        "size": 877036
+      },
+      {
+        "path": "img/photos/random/bgimages/85.jpg",
+        "sha": "d92cb0461ed6f249882d69334e98119fb280bd28",
+        "size": 799480
+      },
+      {
+        "path": "img/photos/random/bgimages/86.jpg",
+        "sha": "7c8f3ba6194a66bc83947571f5cc432450468353",
+        "size": 145893
+      },
+      {
+        "path": "img/photos/random/bgimages/87.jpg",
+        "sha": "ccb793bdcf4c22f6cc1ec52d4783d4718175561b",
+        "size": 88465
+      },
+      {
+        "path": "img/photos/random/bgimages/88.jpg",
+        "sha": "2972649e8dcf9861bb67654cf42021665da0360f",
+        "size": 116490
+      },
+      {
+        "path": "img/photos/random/bgimages/89.jpg",
+        "sha": "39440d34d578891df36cee0e404739b69cf43a32",
+        "size": 142797
+      },
+      {
+        "path": "img/photos/random/bgimages/9.jpg",
+        "sha": "b0778d29dc43356d1cf219fa129d44ca2dd127f7",
+        "size": 110020
+      },
+      {
+        "path": "img/photos/random/bgimages/90.jpg",
+        "sha": "7d9a95d363b9ef2bfedd2344e8fe276a8313f2b3",
+        "size": 87165
+      },
+      {
+        "path": "img/photos/random/bgimages/91.jpg",
+        "sha": "07c79f4d96c3cbd15a890d835426448ffcfb309d",
+        "size": 269731
+      },
+      {
+        "path": "img/photos/random/bgimages/92.jpg",
+        "sha": "acf89a354d35398d8a767b264088dec4a3c1892e",
+        "size": 133418
+      },
+      {
+        "path": "img/photos/random/bgimages/93.jpg",
+        "sha": "0c71a837b6a214a56bb1e0a7c3598c54e62d9c67",
+        "size": 82837
+      },
+      {
+        "path": "img/photos/random/bgimages/94.jpg",
+        "sha": "9f4c6026e8fcf7cb9c1dccb840b5280b63a93369",
+        "size": 69631
+      },
+      {
+        "path": "img/photos/random/bgimages/95.jpg",
+        "sha": "2bef2f460518b90af31ddf38b97b8879af62e703",
+        "size": 64501
+      },
+      {
+        "path": "img/photos/random/bgimages/96.jpg",
+        "sha": "2c054fe0cac69e5da9462a5f285a9226eb3046ff",
+        "size": 53541
+      },
+      {
+        "path": "img/photos/random/bgimages/97.jpg",
+        "sha": "7cac11c69f2a56a15b56810b943afe4aa23ab441",
+        "size": 99052
+      },
+      {
+        "path": "img/photos/random/bgimages/98.jpg",
+        "sha": "47f5b494eba00ad013d69ad2ec936d79d06f36b6",
+        "size": 69515
+      },
+      {
+        "path": "img/photos/random/bgimages/99.jpg",
+        "sha": "3c4addd334cd941e26ed6c56a77e7e55c9511be3",
+        "size": 108585
+      }
+    ]
+  },
+  "limits": [
+    "This is a browser reconstruction of the pinned Git source, not independent evidence of the live website in 2017.",
+    "External font availability and browser rendering vary by platform."
+  ]
+}
