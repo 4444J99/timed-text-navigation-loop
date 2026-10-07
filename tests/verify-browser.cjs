@@ -30,7 +30,7 @@ for (let i = 2; i < process.argv.length; i += 2) {
 const originalDir = path.resolve(args.original || path.join(__dirname, '../provenance/original-2017'));
 const publicDir = path.resolve(args.public || path.join(__dirname, '../public'));
 const vendorDir = path.resolve(args.vendor || path.join(publicDir, 'vendor/bootstrap-3.3.5'));
-const outputDir = path.resolve(args.output || path.join(__dirname, '../verification/browser'));
+const outputDir = path.resolve(args.output || path.join(__dirname, '../test-results/browser'));
 const chamberIds = ['040615','040715','040815','040915','041015','041315','041415','041715','042115','042215','051815','072716'];
 const routes = ['loophole.html', ...chamberIds.map(id => `labyrinth/${id}.html`)];
 const devices = [
