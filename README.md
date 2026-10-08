@@ -64,7 +64,7 @@ Futura remains the requested system typeface where the original declares it. The
 | Location | Contents |
 | --- | --- |
 | `public/` | Complete, deployable artwork; no build required |
-| `provenance/original-2017/` | Nineteen original source files, preserved with Git blob and SHA-256 identities; text files use an inert `.txt` suffix |
+| `provenance/original-2017/` | Nineteen original source files, preserved under their original relative filenames with Git blob and SHA-256 identities |
 | `provenance/source-manifest.json` | Reference commit, path mapping, source identities, timings, and historical decisions |
 | `provenance/bootstrap-provenance.json` | Exact release/CDN dependency identities |
 | `provenance/extraction-diff.patch` | Reviewable changes from original HTML and navigation script |
@@ -72,7 +72,7 @@ Futura remains the requested system typeface where the original declares it. The
 | `tests/` | Browser fidelity and standalone behavior verification |
 | `verification/` | Recorded verification results |
 
-Original files are evidence, not another live edition: the `.txt` suffix prevents their historical analytics and scripts from executing when casually opened. The entire serving boundary is `public/`.
+Original files are evidence, not another live edition: they keep their original relative filenames so the historical tree reconstructs pathname-exactly, and they live outside the serving boundary — only `public/` is published.
 
 ## Verify
 

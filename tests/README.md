@@ -14,7 +14,7 @@ On a Linux machine missing browser system libraries, use `npx playwright install
 
 `npm test` first verifies source and dependency identities with Python's standard library, then runs `tests/verify-browser.cjs`. The browser script uses Playwright 1.62.1 and pngjs 7.0.0, pinned in the lockfile.
 
-The script starts and closes its own loopback HTTP server. It reads original source from `provenance/original-2017/`, resolving the archive's inert `.txt` suffix internally while returning the original content type. Missing historical paths remain missing. Only the two original Bootstrap CDN stylesheet URLs are fulfilled from the exact local vendor files. All other external requests are blocked.
+The script starts and closes its own loopback HTTP server. It reads original source from `provenance/original-2017/` under the files' original relative filenames (a legacy inert `.txt` suffix is still tolerated) while returning the original content type. Missing historical paths remain missing. Only the two original Bootstrap CDN stylesheet URLs are fulfilled from the exact local vendor files. All other external requests are blocked.
 
 ## Scope
 

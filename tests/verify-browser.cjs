@@ -74,8 +74,9 @@ function compare(name, actual, expected) {
 function unique(array) { return [...new Set(array)].sort(); }
 function cleanURL(url) { return url.replace(/#[^#]*$/, ''); }
 function historicalFile(candidate) {
-  // The distributed archive appends .txt to executable text sources. Its HTTP
-  // test mount restores only the original filenames, keeping original bytes.
+  // Provenance sources keep their original relative filenames. Older archives
+  // appended an inert .txt suffix to executable text sources; the HTTP test
+  // mount still tolerates that suffix while serving the original content type.
   return fs.existsSync(candidate) ? candidate : fs.existsSync(candidate + '.txt') ? candidate + '.txt' : candidate;
 }
 const mime = {

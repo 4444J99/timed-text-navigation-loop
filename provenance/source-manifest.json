@@ -13,7 +13,7 @@
       "source_git_blob_sha1": "3cc917756725f4dd749ce8cf110f53683a30bb40",
       "sha256": "caab9f652dbc9046db726b4ba1304c16e452db8bcdd8c69705836fb94e1f19b2",
       "bytes": 3947,
-      "preserved_path": "provenance/original-2017/loophole.html.txt",
+      "preserved_path": "provenance/original-2017/loophole.html",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/loophole.html"
     },
     {
@@ -21,7 +21,7 @@
       "source_git_blob_sha1": "f8e717674c2d1411d46006419551da6dfe66620a",
       "sha256": "c5052ed326805861ef4ddd934922fa9c26e0453e3c78c84434ff161e8ec273c0",
       "bytes": 870,
-      "preserved_path": "provenance/original-2017/js/loophole.js.txt",
+      "preserved_path": "provenance/original-2017/js/loophole.js",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/js/loophole.js"
     },
     {
@@ -29,7 +29,7 @@
       "source_git_blob_sha1": "2fb9b554c3f5c277998add7a43c44e256839b96b",
       "sha256": "e81cd4d8d724f9067551093715f5f9fc80b8ea02e1b846552f49fad6e9e6150a",
       "bytes": 1460,
-      "preserved_path": "provenance/original-2017/js/main.js.txt",
+      "preserved_path": "provenance/original-2017/js/main.js",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/js/main.js"
     },
     {
@@ -37,7 +37,7 @@
       "source_git_blob_sha1": "6e5963e56c62d22874020b8cba119017ee08fac2",
       "sha256": "2eea9140ec7f46de94db391f5afe67df4e2fe8ac542f16418f7f4ba00cf8947c",
       "bytes": 411,
-      "preserved_path": "provenance/original-2017/js/analytics.js.txt",
+      "preserved_path": "provenance/original-2017/js/analytics.js",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/js/analytics.js"
     },
     {
@@ -45,7 +45,7 @@
       "source_git_blob_sha1": "81c6f31ea4b8d36d19133c690c0701c240200e7e",
       "sha256": "f4d7e8250f8f124f8b7d087e5e260766a34b079fddc43e7b20d8c18ca1e92e51",
       "bytes": 7797,
-      "preserved_path": "provenance/original-2017/css/normalize.css.txt",
+      "preserved_path": "provenance/original-2017/css/normalize.css",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/css/normalize.css"
     },
     {
@@ -53,7 +53,7 @@
       "source_git_blob_sha1": "87897dbbc2ab0e66123e4de04884d3453c751d00",
       "sha256": "f09c991c33300af7028768fe77980f9c174821ae0f6ee3a8c449a36f6807ae1a",
       "bytes": 28635,
-      "preserved_path": "provenance/original-2017/css/styles_old.css.txt",
+      "preserved_path": "provenance/original-2017/css/styles_old.css",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/css/styles_old.css"
     },
     {
@@ -69,7 +69,7 @@
       "source_git_blob_sha1": "50056a1b78f9945f5d7ec141fc41ed9a5e36063f",
       "sha256": "4b20cc23bef0590cc4f3aafd7b6ec11569cf7f4e80f8dd9fcc033b8a70a4cdca",
       "bytes": 5386,
-      "preserved_path": "provenance/original-2017/labyrinth/040615.html.txt",
+      "preserved_path": "provenance/original-2017/labyrinth/040615.html",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/040615.html"
     },
     {
@@ -77,7 +77,7 @@
       "source_git_blob_sha1": "1272a3cac2114af285b3630afa0254c656e01fb4",
       "sha256": "85cd20f69f266a1dbe11b25ac3b1bd271f63b02028d0efe4b456e471dac19867",
       "bytes": 4196,
-      "preserved_path": "provenance/original-2017/labyrinth/040715.html.txt",
+      "preserved_path": "provenance/original-2017/labyrinth/040715.html",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/040715.html"
     },
     {
@@ -85,7 +85,7 @@
       "source_git_blob_sha1": "c32c578ae782bb0ee3d18681a328fb8621536cd5",
       "sha256": "155c37f750c9412a477ab86a521039a922b0082738039ddfd3b109ea26654c27",
       "bytes": 4580,
-      "preserved_path": "provenance/original-2017/labyrinth/040815.html.txt",
+      "preserved_path": "provenance/original-2017/labyrinth/040815.html",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/040815.html"
     },
     {
@@ -93,7 +93,7 @@
       "source_git_blob_sha1": "ee488ecc84c0899de81e76cdb409fcbb4ec19fe6",
       "sha256": "4c8d424ef53134d46b9f5903b2812ecb830fd04cf4d7e43799454eaa7797dbdf",
       "bytes": 4206,
-      "preserved_path": "provenance/original-2017/labyrinth/040915.html.txt",
+      "preserved_path": "provenance/original-2017/labyrinth/040915.html",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/040915.html"
     },
     {
@@ -101,7 +101,7 @@
       "source_git_blob_sha1": "53c0035ad8a10b6e57e3f74a2b588c7b162f1e61",
       "sha256": "c5bb59d39cff5d86c3e676373710dfc5b9999867400000afbb71f2466e3d286c",
       "bytes": 11104,
-      "preserved_path": "provenance/original-2017/labyrinth/041015.html.txt",
+      "preserved_path": "provenance/original-2017/labyrinth/041015.html",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/041015.html"
     },
     {
@@ -109,7 +109,7 @@
       "source_git_blob_sha1": "054f8fa8273f5f3671825d34e72a577d4bf15e0f",
       "sha256": "6b115d0fcd5215825b593d4733511fdc78760c0df8dca21005d8c28327bd0198",
       "bytes": 4226,
-      "preserved_path": "provenance/original-2017/labyrinth/041315.html.txt",
+      "preserved_path": "provenance/original-2017/labyrinth/041315.html",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/041315.html"
     },
     {
@@ -117,7 +117,7 @@
       "source_git_blob_sha1": "c737ab8ab84504dec39f6edc5f02d9e3a60e8742",
       "sha256": "4fd501768a5098143d332815b68bd2699bda81ff8c85cc2dbbac365b3bf72346",
       "bytes": 4369,
-      "preserved_path": "provenance/original-2017/labyrinth/041415.html.txt",
+      "preserved_path": "provenance/original-2017/labyrinth/041415.html",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/041415.html"
     },
     {
@@ -125,7 +125,7 @@
       "source_git_blob_sha1": "bd06b8c42514f5ce8c77cf4ee9dc824692d97028",
       "sha256": "a2f69aed73bcd980f1dc6e7235f8ed70b3255f4a1ef0083c83be6d892a443ba3",
       "bytes": 4371,
-      "preserved_path": "provenance/original-2017/labyrinth/041715.html.txt",
+      "preserved_path": "provenance/original-2017/labyrinth/041715.html",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/041715.html"
     },
     {
@@ -133,7 +133,7 @@
       "source_git_blob_sha1": "2ebb77b3de260923127d3cfb2766d3f586d5f5c3",
       "sha256": "0e0e5bc0c2cc9a84484b65010039434e578bcb4b61add2ee74af0d9890e12a9f",
       "bytes": 4216,
-      "preserved_path": "provenance/original-2017/labyrinth/042115.html.txt",
+      "preserved_path": "provenance/original-2017/labyrinth/042115.html",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/042115.html"
     },
     {
@@ -141,7 +141,7 @@
       "source_git_blob_sha1": "ff7d8a565e8c3f968fa096c821a0a05d52b226c1",
       "sha256": "eaa80958459e0fc0c7eb56768ea1d212e8841aea7e456a0671009a4603a61e40",
       "bytes": 4234,
-      "preserved_path": "provenance/original-2017/labyrinth/042215.html.txt",
+      "preserved_path": "provenance/original-2017/labyrinth/042215.html",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/042215.html"
     },
     {
@@ -149,7 +149,7 @@
       "source_git_blob_sha1": "2f0bdabb626797443423d2eb7a6e5f49eeba6da5",
       "sha256": "892cc6783d6daa1ca067528a63bd395050937a1362348b20c3ef17851f241d18",
       "bytes": 2677,
-      "preserved_path": "provenance/original-2017/labyrinth/051815.html.txt",
+      "preserved_path": "provenance/original-2017/labyrinth/051815.html",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/051815.html"
     },
     {
@@ -157,7 +157,7 @@
       "source_git_blob_sha1": "73d34987c1e98b6408f90cbdf5c8acc7cae6a539",
       "sha256": "980f0704e4574db55e1dfdccb18d4e2863f7031d9505f9dba3a24a90b90f0106",
       "bytes": 2698,
-      "preserved_path": "provenance/original-2017/labyrinth/072716.html.txt",
+      "preserved_path": "provenance/original-2017/labyrinth/072716.html",
       "source_url": "https://github.com/unnamedplay-r/etceter4/blob/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0/labyrinth/072716.html"
     }
   ],
