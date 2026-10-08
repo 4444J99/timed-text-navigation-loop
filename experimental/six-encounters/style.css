@@ -94,8 +94,12 @@ body[data-screen=generative][data-phase=exiting] .canvas-holder{animation:loop-e
 .character-cell{position:relative;display:inline-block;overflow:hidden;vertical-align:bottom;height:1.2em;background:transparent}
 .character-source{visibility:hidden}
 .character-plane{position:absolute;inset:0;animation-delay:var(--character-delay)!important}
-.character-copy{position:absolute;width:100%;height:100%;white-space:pre}
-.character-copy::before{content:attr(data-character)}
+.character-plane::before{content:attr(data-character);white-space:pre;text-shadow:
+ calc(-1 * var(--glyph-width)) 0, var(--glyph-width) 0,
+ 0 -1.2em,0 1.2em,
+ calc(-1 * var(--glyph-width)) -1.2em,var(--glyph-width) -1.2em,
+ calc(-1 * var(--glyph-width)) 1.2em,var(--glyph-width) 1.2em}
+
 body[data-screen=generative][data-phase=active] .character-plane{animation:character-horizontal 2400ms linear infinite}
 body[data-screen=generative][data-phase=active] [data-axis=vertical] .character-plane{animation-name:character-vertical;animation-duration:3100ms}
 body[data-screen=generative][data-phase=active] [data-axis=diagonal] .character-plane{animation-name:character-diagonal;animation-duration:3700ms}

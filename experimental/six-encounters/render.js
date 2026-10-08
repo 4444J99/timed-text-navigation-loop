@@ -28,9 +28,7 @@
         cell.style.setProperty('--character-delay',`${-(wordIndex*text.length+index)*.137}s`);
         const original=document.createElement('span');original.className='character-source';original.textContent=char;
         const plane=document.createElement('span');plane.className='character-plane';plane.setAttribute('aria-hidden','true');
-        for(let y=-1;y<=1;y++)for(let x=-1;x<=1;x++){
-          const copy=document.createElement('span');copy.className='character-copy';copy.dataset.character=char;copy.style.left=`${x*100}%`;copy.style.top=`${y*100}%`;plane.append(copy);
-        }
+        plane.dataset.character=char;
         cell.append(original,plane);span.append(cell);
       });
       if(colors){span.style.color=colors[wordIndex%colors.length];span.style.setProperty('--word-delay',`${-wordIndex*.09}s`);wordIndex++;}
@@ -62,6 +60,13 @@
       rects(svg, memory.bounds, 8); canvas.append(svg);
     }
     holder.append(canvas); viewport.append(holder); container.append(viewport);
+    // Measure only unique glyph advances; CSS shadows tile without extra DOM copies.
+    const advances=new Map();
+    canvas.querySelectorAll('.character-cell').forEach(cell=>{
+      const char=cell.textContent;
+      if(!advances.has(char))advances.set(char,cell.offsetWidth);
+      cell.style.setProperty('--glyph-width',`${advances.get(char)}px`);
+    });
     const cellWidth = id === '041015' ? canvas.querySelector('.phrase').getBoundingClientRect().width : null;
     if (cellWidth) {
       c.width = cellWidth * (chambers[id].columns + 1);
