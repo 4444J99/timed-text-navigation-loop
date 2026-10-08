@@ -1,6 +1,6 @@
 # hole-loop · experimental edition 01
 
-A complete, no-build browser artwork and four independent formal studies. The score is **040915 → 041015 → 042115 → 040915 → 041015 → 042115**. Every departure returns to the entrance; entering again always needs another action.
+A complete, no-build browser artwork with word-routed generative loops, the protected six-encounter composition, and four independent formal studies. The score is **040915 → 041015 → 042115 → 040915 → 041015 → 042115**. Every departure returns to the entrance; entering again always needs another action.
 
 ## Experience it
 
@@ -12,11 +12,13 @@ python3 -m http.server 8080 --bind 127.0.0.1 --directory experimental/six-encoun
 
 From the repository root, then open `http://127.0.0.1:8080/`. A static server at any subdirectory also works. There are no runtime dependencies, remote fonts, API calls, accounts, persistent storage, or analytics.
 
-Choose **Reader-paced** (default) or explicitly choose **Timed**, then **Begin**. **Return** takes you to the entrance. **Enter next chamber** is a separate action. Timed chambers return after 5,000 eligible milliseconds; the entrance never runs a progression timer. Pause, hidden pages, and Reading view suspend exposure. The clock measures display duration, not attention or comprehension.
+On the landing page, select a colored LOOPHOLE row for the generative experience. Underlined words lead directly to another loop after an exit animation; without a selection, five eligible seconds return to a newly spaced entrance. The row color becomes the chamber field, with seeded colored text and motion. Pause and Reading view remain available; stationary **Words / routes** supplies accessible route equivalents. See `docs/GENERATIVE.md` for exact rules and recorded configuration.
+
+For the deterministic score, open **Score & studies**, choose **Reader-paced** (default) or explicitly choose **Timed**, then **Begin**. **Return** takes you to the entrance. **Enter next chamber** is a separate action. Timed chambers return after 5,000 eligible milliseconds; the entrance never runs a progression timer. Pause, hidden pages, and Reading view suspend exposure. The clock measures display duration, not attention or comprehension.
 
 After six returns, use **Reread**, **Restart**, or **Exit**. During a run, mode changes require **Restart to change mode** at the entrance. Restart clears all session consequences and waits for Begin. Early exit preserves a partial diagnostic record without fabricating a return or cycle.
 
-The initial entrance offers **Explore four studies**. Each study has a baseline, variants, Reset study, a visible configuration record, and optional JSON download. Time conditions require separate entry actions. Memory's second encounter becomes available only after the first layout is measured. Study visits never affect the composition. Optional observations remain in memory until reset; the app does not submit them anywhere.
+The **Score & studies** panel offers **Explore four studies**. Each study has a baseline, variants, Reset study, a visible configuration record, and optional JSON download. Time conditions require separate entry actions. Memory's second encounter becomes available only after the first layout is measured. Study visits never affect the composition. Optional observations remain in memory until reset; the app does not submit them anywhere.
 
 **Fit whole field** preserves the entire arrangement. **Scroll detail** keeps full-size text and allows panning; the focusable viewport supports keyboard scrolling. **Reading view** exposes both Moment clauses, all 42 I/you rows of nine occurrences, and Forced progress. Controls have native keyboard activation and visible focus. No animation is needed to distinguish state.
 
@@ -25,6 +27,7 @@ The initial entrance offers **Explore four studies**. Each study has a baseline,
 | File | Responsibility |
 | --- | --- |
 | `content.js` | Immutable, versioned wording and composition configuration |
+| `generation.js` | Independent seeded spacing, color, motion and word-route state |
 | `engine.js` | Session transitions, unique identities, memory, monotonic exposure accumulation |
 | `render.js` | Actual layout capture and coordinate-based rendering |
 | `app.js` | Reader actions, independent studies, ready/visibility/pause wiring |
@@ -63,3 +66,5 @@ Original artwork and language: Anthony James Padavano / ETCETER4. This edition a
 ## Presentation 1.1.0
 
 Scored chambers fill the browser viewport with their source cyan/black/pink fields and white type. Moment and I/you are rendered uppercase through CSS without changing the source strings. Futura is preferred where installed; Century Gothic, Trebuchet MS, Arial, and generic sans-serif are local fallbacks. Compact controls overlay the field, and the entrance’s eleven colored LOOPHOLE rows retain a small history/control overlay. Study explanations and configuration records stay on their independent pages. Full-screen here means the browser content area; Safari’s address/status bars remain under Safari’s control. `verification/fullscreen/` contains evidence of this revision.
+
+Generative verification: `tests/generation.test.cjs` and `tests/generation-browser.cjs` run with the main npm scripts; `verification/generative/` records this edition’s evidence. Runtime now includes `generation.js` (no added runtime dependency).

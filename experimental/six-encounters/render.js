@@ -8,7 +8,7 @@
       layer.append(r);
     });
   }
-  function mount(container, id, { variant = false, memory = null, color = null, immersive = false } = {}) {
+  function mount(container, id, { variant = false, memory = null, color = null, immersive = false, routes = null, colors = null } = {}) {
     const c = { ...(id === '040915' ? config.moment : id === '041015' ? config.field : config.progress) };
     if(id === '041015') c.width = 1800; // Provisional width, resolved from real glyph advance below.
     const viewport = document.createElement('div'); viewport.className = 'viewport'; viewport.tabIndex = 0;
@@ -20,16 +20,28 @@
     canvas.style.color = c.foreground || config.colors.foreground;
     canvas.style.textTransform = c.uppercase ? 'uppercase' : 'none';
     if (immersive) { viewport.classList.add('immersive-viewport'); viewport.style.backgroundColor=canvas.style.backgroundColor; }
+    let wordIndex=0;
+    function word(text,routeIndex=null,focusable=true){
+      const span=document.createElement('span');span.className='loop-word';span.textContent=text;
+      if(colors){span.style.color=colors[wordIndex%colors.length];span.style.setProperty('--word-delay',`${-wordIndex*.09}s`);wordIndex++;}
+      if(routeIndex===null)return span;
+      const b=document.createElement('button');b.className='route-word';b.append(span);b.dataset.route=routeIndex;
+      if(colors)b.style.color=span.style.color;
+      b.setAttribute('aria-label',`${text} → ${chambers[routes.links[routeIndex].target].name}`);
+      b.tabIndex=focusable?0:-1;b.onclick=()=>routes.choose(routeIndex);return b;
+    }
     if (id === '041015') {
       for (let row = 0; row < chambers[id].rows; row++) for (let col = 0; col < chambers[id].columns; col++) {
         const el = document.createElement('span'); el.className = 'phrase';
-        el.textContent = chambers[id].phrase; el.dataset.instance = row * chambers[id].columns + col;
+        if(routes)el.append(word(chambers[id].phrase,col%2,row===0&&col<2));else el.textContent=chambers[id].phrase;
+        el.dataset.instance = row * chambers[id].columns + col;
         el.style.font = `400 ${c.size}px/${c.rowHeight}px ${c.font}`; el.style.width='max-content';
         el.dataset.row = row; el.dataset.column = col;
         el.style.top = `${26 + row * c.rowHeight}px`; canvas.append(el);
       }
     } else chambers[id].clauses.forEach((text, i) => {
-      const el = document.createElement('p'); el.className = 'art-text'; el.textContent = text;
+      const el = document.createElement('p'); el.className = 'art-text';
+      if(routes)text.split(' ').forEach((part,i)=>{if(i)el.append(' ');const ri=routes.links.findIndex(r=>r.word===part);el.append(word(part,ri<0?null:ri));});else el.textContent=text;
       el.style.font = `${c.weight} ${c.size}px/1.2 ${c.font}`; el.style.left=`${c.x}px`; el.style.top=`${c.y + i * (c.clauseInterval || 0)}px`;
       if(id==='040915') {el.style.left='50%';el.style.transform='translateX(-50%)';el.style.textAlign='center';}
       canvas.append(el);
@@ -74,7 +86,7 @@
           return { x:(b.x-origin.x)/scale, y:(b.y-origin.y)/scale, width:b.width/scale, height:b.height/scale };
         }) };
       },
-      destroy() { observer.disconnect(); }
+      destroy() { observer.disconnect(); canvas.getAnimations({subtree:true}).forEach(a=>a.cancel()); }
     };
   }
   function symbol(id) {

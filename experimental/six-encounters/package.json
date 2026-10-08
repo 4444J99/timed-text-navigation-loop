@@ -4,8 +4,8 @@
   "private": true,
   "description": "No-build browser artwork; dependencies are verification-only",
   "scripts": {
-    "test": "node --test tests/state.test.cjs",
-    "test:browser": "node tests/browser.cjs"
+    "test": "node --test tests/state.test.cjs tests/generation.test.cjs",
+    "test:browser": "node tests/browser.cjs && node tests/generation-browser.cjs"
   },
   "devDependencies": {"playwright": "1.62.1"},
   "engines": {"node": ">=20"}

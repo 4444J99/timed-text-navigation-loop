@@ -15,3 +15,7 @@ Rerun using the experimental README's instructions. New evidence goes to ignored
 ## Full-screen revision 1.1.0
 
 `fullscreen/` retains a separate current evidence set: desktop 1440×1000, narrow mobile 390×844, small phone 320×568, and landscape 844×390. Automated checks establish edge-to-edge viewport bounds, all six source field colors, white type, preferred Futura stack, source capitalization, eleven entrance rows, and unobstructed 44px controls including Pause on small/landscape screens. The full state/timing and browser suites remain required. The entrance controls were visually corrected to paint above the repeated field after screenshot inspection. These are Linux Chromium viewport tests, not physical iOS tests.
+
+## Word-routed generative edition
+
+`generative/` contains generated entrances, chamber entry/active/exit frames, color-coupled fields, routed Moment and 378-instance I/you layouts. Nineteen total pure tests pass (eleven protected-score plus eight new generative tests); seven new browser groups plus the existing 23 groups pass. Pause/reading/visibility wiring, no-selection return, direct word routes, score isolation, early Exit cancellation, native keyboard operation and reduced motion are checked. The 320×568 reduced-motion control check supplements desktop/mobile runs; the gen report records those environments. See `docs/GENERATIVE.md` for method and limitations.

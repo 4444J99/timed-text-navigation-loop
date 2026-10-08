@@ -27,7 +27,7 @@ function check(name){reports.push(name);console.log('PASS',name);}
       assert.equal(await page.locator('.entrance-field>div').count(),11);
       await page.screenshot({path:path.join(output,`${name}-entrance.png`),fullPage:true});
       // Native keyboard activation and visible focus.
-      await page.locator('#mode').focus();await page.keyboard.press('Tab');
+      await page.getByRole('button',{name:'Score & studies',exact:true}).click();await page.locator('#mode').focus();await page.keyboard.press('Tab');
       assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Begin');
       assert.ok(await page.evaluate(()=>getComputedStyle(document.activeElement).outlineStyle!=='none'));
       await page.keyboard.press('Enter');await page.clock.runFor(100);
@@ -92,7 +92,7 @@ function check(name){reports.push(name);console.log('PASS',name);}
     for(const [name,viewport] of [['small-mobile',{width:320,height:568}],['landscape',{width:844,height:390}]]) {
       info.viewports.push({name,...viewport});
       const p=await context.newPage();await p.setViewportSize(viewport);await p.clock.install();await p.goto(url);await p.clock.runFor(100);
-      await p.locator('#mode').selectOption('timed');await p.getByRole('button',{name:'Begin',exact:true}).click();await p.clock.runFor(100);
+      await p.getByRole('button',{name:'Score & studies',exact:true}).click();await p.locator('#mode').selectOption('timed');await p.getByRole('button',{name:'Begin',exact:true}).click();await p.clock.runFor(100);
       for(const label of ['Return','Pause','Reading view','Exit','Fit whole field','Scroll detail']) {
         assert.equal(await p.getByRole('button',{name:label,exact:true}).evaluate(e=>{
           const b=e.getBoundingClientRect(),target=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);
@@ -107,7 +107,7 @@ function check(name){reports.push(name);console.log('PASS',name);}
       check(`${name}: fullscreen viewport and unobstructed 44px controls including pause`);await p.close();
     }
     const page=await context.newPage();await page.setViewportSize({width:1440,height:1000});await page.clock.install();await page.goto(url);await page.clock.runFor(100);
-    await page.locator('#mode').selectOption('timed');await page.getByRole('button',{name:'Begin',exact:true}).click();await page.clock.runFor(1000);
+    await page.getByRole('button',{name:'Score & studies',exact:true}).click();await page.locator('#mode').selectOption('timed');await page.getByRole('button',{name:'Begin',exact:true}).click();await page.clock.runFor(1000);
     await page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});document.dispatchEvent(new Event('visibilitychange'));});
     const hiddenTime=await page.evaluate(()=>HLDiagnostics.clock.elapsed);await page.clock.runFor(120000);assert.equal(await page.evaluate(()=>HLDiagnostics.clock.elapsed),hiddenTime);
     await page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'visible'});document.dispatchEvent(new Event('visibilitychange'));});
@@ -132,7 +132,7 @@ function check(name){reports.push(name);console.log('PASS',name);}
     }
     assert.equal((await page.evaluate(()=>HLDiagnostics.snapshot())).completedCycles,2);assert.equal(await page.evaluate(()=>HLDiagnostics.clock),null);
     check('full timed six-encounter score and reading before initial readiness');
-    await page.goto(url+'subdirectory/');assert.equal(await page.title(),'hole-loop · six encounters');await page.goto('file://'+path.join(root,'index.html'));await page.clock.runFor(100);await page.getByRole('button',{name:'Begin',exact:true}).click();await page.clock.runFor(100);assert.equal(await page.locator('.art-text').count(),2);check('HTTP subdirectory and file:// run without build');
+    await page.goto(url+'subdirectory/');assert.equal(await page.title(),'hole-loop · six encounters');await page.goto('file://'+path.join(root,'index.html'));await page.clock.runFor(100);await page.getByRole('button',{name:'Score & studies',exact:true}).click();await page.getByRole('button',{name:'Begin',exact:true}).click();await page.clock.runFor(100);assert.equal(await page.locator('.art-text').count(),2);check('HTTP subdirectory and file:// run without build');
     await page.close();fs.writeFileSync(path.join(output,'browser-report.json'),JSON.stringify(info,null,2));
   } finally {await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

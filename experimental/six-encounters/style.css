@@ -12,15 +12,15 @@ button,select,textarea{font:inherit;color:inherit}button,select{background:trans
 
 /* The score occupies the browser viewport. Study apparatus stays on its own pages. */
 .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important}
-body[data-screen=entrance],body[data-screen=chamber]{--ink:#fff;--paper:#000;--line:#555;--muted:#ddd;background:#000;color:#fff;font-family:Futura,"Century Gothic","Trebuchet MS",Arial,sans-serif}
-body[data-screen=entrance] header,body[data-screen=chamber] header{position:fixed;z-index:5;top:0;left:0;right:0;border:0;padding:12px max(12px,env(safe-area-inset-right));pointer-events:none;justify-content:flex-end}
-body[data-screen=entrance] header .wordmark,body[data-screen=chamber] header .wordmark{display:none}
-body[data-screen=entrance] header button,body[data-screen=chamber] header button{pointer-events:auto}
-body[data-screen=entrance] footer,body[data-screen=chamber] footer{display:none}
-body[data-screen=entrance] button,body[data-screen=chamber] button,body[data-screen=entrance] select{background:#0009;color:#fff;border-color:#ffffff80;font-size:13px;min-height:44px;padding:8px 12px}
-body[data-screen=entrance] button.primary,body[data-screen=chamber] button.primary{background:#fff;color:#000;border-color:#fff}
-body[data-screen=entrance] button:hover,body[data-screen=chamber] button:hover{background:#333;color:#fff}
-body[data-screen=entrance] :focus-visible,body[data-screen=chamber] :focus-visible{outline:3px solid #fff;outline-offset:3px;box-shadow:0 0 0 5px #000}
+body[data-screen=entrance],body:is([data-screen=chamber],[data-screen=generative]){--ink:#fff;--paper:#000;--line:#555;--muted:#ddd;background:#000;color:#fff;font-family:Futura,"Century Gothic","Trebuchet MS",Arial,sans-serif}
+body[data-screen=entrance] header,body:is([data-screen=chamber],[data-screen=generative]) header{position:fixed;z-index:5;top:0;left:0;right:0;border:0;padding:12px max(12px,env(safe-area-inset-right));pointer-events:none;justify-content:flex-end}
+body[data-screen=entrance] header .wordmark,body:is([data-screen=chamber],[data-screen=generative]) header .wordmark{display:none}
+body[data-screen=entrance] header button,body:is([data-screen=chamber],[data-screen=generative]) header button{pointer-events:auto}
+body[data-screen=entrance] footer,body:is([data-screen=chamber],[data-screen=generative]) footer{display:none}
+body[data-screen=entrance] button,body:is([data-screen=chamber],[data-screen=generative]) button,body[data-screen=entrance] select{background:#0009;color:#fff;border-color:#ffffff80;font-size:13px;min-height:44px;padding:8px 12px}
+body[data-screen=entrance] button.primary,body:is([data-screen=chamber],[data-screen=generative]) button.primary{background:#fff;color:#000;border-color:#fff}
+body[data-screen=entrance] button:hover,body:is([data-screen=chamber],[data-screen=generative]) button:hover{background:#333;color:#fff}
+body[data-screen=entrance] :focus-visible,body:is([data-screen=chamber],[data-screen=generative]) :focus-visible{outline:3px solid #fff;outline-offset:3px;box-shadow:0 0 0 5px #000}
 body[data-screen=entrance] main{min-height:100vh;min-height:100dvh;padding:76px 24px max(20px,env(safe-area-inset-bottom));display:flex;flex-direction:column;max-width:850px}
 body[data-screen=entrance] .entrance{display:flex;flex-direction:column;justify-content:center;flex:1;gap:0;min-height:0;text-align:center}
 body[data-screen=entrance] .entrance>div:last-child{order:-1}
@@ -33,20 +33,20 @@ body[data-screen=entrance] .eyebrow{margin-bottom:10px}
 body[data-screen=entrance] .trace-strip{margin-top:24px;min-height:0;justify-content:center;border:0;padding:0}
 body[data-screen=entrance] .trace{border:0}
 body[data-screen=entrance] .trace small{font-size:9px}
-body[data-screen=chamber] main{padding:0;max-width:none}
-body[data-screen=chamber] .chamber-top{display:contents}
-body[data-screen=chamber] .chamber-top h1,body[data-screen=chamber] .chamber-top .eyebrow{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-body[data-screen=chamber] .chamber-status{position:fixed;z-index:4;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 100px);left:12px;margin:0;color:#fff;background:#000b;padding:2px 6px;font-size:11px;pointer-events:none}
-body[data-screen=chamber] #chamber-actions{position:fixed;z-index:4;bottom:max(12px,env(safe-area-inset-bottom));left:12px;display:flex;gap:8px}
-body[data-screen=chamber] .cycles{position:fixed;z-index:4;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 60px);left:12px;margin:0;background:#000b;color:#fff;padding:4px 6px;font-size:11px}
-body[data-screen=chamber] .marker.complete{background:#fff}
-body[data-screen=chamber] .view-tools{position:fixed;z-index:4;bottom:max(12px,env(safe-area-inset-bottom));right:12px;margin:0;gap:6px}
-body[data-screen=chamber] .view-tools p{display:none}
-body[data-screen=chamber] .view-tools button{font-size:11px;padding:8px;min-width:44px}
+body:is([data-screen=chamber],[data-screen=generative]) main{padding:0;max-width:none}
+body:is([data-screen=chamber],[data-screen=generative]) .chamber-top{display:contents}
+body:is([data-screen=chamber],[data-screen=generative]) .chamber-top h1,body:is([data-screen=chamber],[data-screen=generative]) .chamber-top .eyebrow{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+body:is([data-screen=chamber],[data-screen=generative]) .chamber-status{position:fixed;z-index:4;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 100px);left:12px;margin:0;color:#fff;background:#000b;padding:2px 6px;font-size:11px;pointer-events:none}
+body:is([data-screen=chamber],[data-screen=generative]) #chamber-actions{position:fixed;z-index:4;bottom:max(12px,env(safe-area-inset-bottom));left:12px;display:flex;gap:8px}
+body:is([data-screen=chamber],[data-screen=generative]) .cycles{position:fixed;z-index:4;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 60px);left:12px;margin:0;background:#000b;color:#fff;padding:4px 6px;font-size:11px}
+body:is([data-screen=chamber],[data-screen=generative]) .marker.complete{background:#fff}
+body:is([data-screen=chamber],[data-screen=generative]) .view-tools{position:fixed;z-index:4;bottom:max(12px,env(safe-area-inset-bottom));right:12px;margin:0;gap:6px}
+body:is([data-screen=chamber],[data-screen=generative]) .view-tools p{display:none}
+body:is([data-screen=chamber],[data-screen=generative]) .view-tools button{font-size:11px;padding:8px;min-width:44px}
 .immersive-viewport{position:fixed;inset:0;width:100%;height:100vh;height:100dvh;border:0;display:flex;align-items:center;overflow:auto}
 .immersive-viewport .canvas-holder{flex:none}
 .immersive-viewport.detail{display:block}
-@media(max-width:450px){body[data-screen=chamber] #chamber-actions{gap:4px}body[data-screen=chamber] #chamber-actions button{font-size:11px;padding:8px}body[data-screen=chamber] .view-tools{gap:4px}body[data-screen=entrance] main{padding:76px 16px 20px}body[data-screen=entrance] .portal{margin-bottom:12px}body[data-screen=entrance] .trace-strip{margin-top:16px}}
+@media(max-width:450px){body:is([data-screen=chamber],[data-screen=generative]) #chamber-actions{gap:4px}body:is([data-screen=chamber],[data-screen=generative]) #chamber-actions button{font-size:11px;padding:8px}body:is([data-screen=chamber],[data-screen=generative]) .view-tools{gap:4px}body[data-screen=entrance] main{padding:76px 16px 20px}body[data-screen=entrance] .portal{margin-bottom:12px}body[data-screen=entrance] .trace-strip{margin-top:16px}}
 body[data-screen=entrance]{--ink:#000;--paper:#fff;--line:#555;--muted:#222;background:#fff;color:#000}
 .entrance-field{position:fixed;inset:0;display:flex;flex-direction:column;overflow:hidden;pointer-events:none}
 .entrance-field>div{display:flex;justify-content:space-between;align-items:center;flex:1;min-height:0;padding:0 10px;font:400 clamp(44px,12vw,180px)/.9 Futura,"Century Gothic","Trebuchet MS",Arial,sans-serif}
@@ -64,3 +64,41 @@ body[data-screen=entrance] button.primary{background:#000;color:#fff;border-colo
 body[data-screen=entrance] .trace-strip{position:relative;background:#ffffffed;max-width:660px;padding:8px;margin-top:8px}
 body[data-screen=entrance] .trace-strip:empty{display:none}
 body[data-screen=entrance] :focus-visible{outline-color:#000;box-shadow:0 0 0 5px #fff}
+
+/* Generative edition: one closed gap per row; the text itself is the route. */
+body[data-screen=entrance] .header-actions{max-width:none;gap:4px}
+body[data-screen=entrance] main{pointer-events:none}
+body[data-screen=entrance] .entrance{pointer-events:auto}
+body[data-screen=entrance] .entrance-field{inset:90px 0 12px;overflow:auto;pointer-events:auto}
+body[data-screen=entrance][data-has-traces=true] .entrance-field{bottom:112px}
+body[data-screen=entrance] .entrance-field>div{display:flex;padding:0;font-size:inherit;flex:1;min-height:44px}
+body[data-screen=entrance] button.entrance-route{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:44px;flex:1;padding:0 10px;border:0;background:transparent;font:400 clamp(28px,7vh,120px)/1 Futura,"Century Gothic","Trebuchet MS",Arial,sans-serif}
+body[data-screen=entrance] button.entrance-route:hover,body[data-screen=entrance] button.entrance-route:focus-visible{background:var(--row-color);color:var(--row-ink)!important;outline-offset:-3px}
+body[data-screen=entrance][data-menu=closed] .entrance{display:none}
+body[data-screen=entrance][data-menu=open] .entrance{margin-bottom:112px}
+body[data-screen=entrance] .trace-strip{position:fixed;z-index:2;left:12px;right:12px;bottom:12px;max-width:660px;margin:0}
+.landing-hint{position:fixed;z-index:3;top:62px;left:12px;right:12px;margin:0;color:#000;background:#fffffff0;font:11px/1.5 Arial,sans-serif;pointer-events:none}
+body:is([data-screen=chamber],[data-screen=generative]) .landing-hint{display:none}
+body[data-screen=generative] h1{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#free-controls{position:fixed;z-index:4;bottom:max(12px,env(safe-area-inset-bottom));left:12px;display:flex;gap:6px}
+.free-status{position:fixed;z-index:4;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 118px);left:12px;margin:0;color:#fff;background:#000d;padding:4px 6px;font:11px/1.5 Arial,sans-serif}
+.word-routes{position:fixed;z-index:5;right:12px;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 60px);padding:0;margin:0;border:0;max-width:calc(100vw - 24px);color:#fff;font:13px/1.5 Arial,sans-serif}
+.word-routes summary{padding:10px 12px;background:#000d;min-height:44px;cursor:pointer;border:1px solid #fff9}
+.word-routes>div{position:absolute;right:0;bottom:44px;display:grid;gap:6px;width:300px;max-width:calc(100vw - 24px);padding:8px;background:#000}
+body[data-screen=generative] button.route-word{display:inline;padding:0;border:0;border-bottom:1px dashed currentColor;min-height:0;border-radius:0;background:transparent;font:inherit;line-height:inherit;text-transform:inherit;vertical-align:baseline;white-space:nowrap}
+body[data-screen=generative] button.route-word:disabled{opacity:1;cursor:default}
+body[data-screen=generative] button.route-word:focus-visible{outline-width:2px;outline-offset:2px}
+.loop-word{display:inline-block;transform-origin:center;animation-delay:var(--word-delay,0s)!important}
+body[data-screen=generative][data-phase=entering] .canvas-holder{animation:loop-enter 450ms both cubic-bezier(.2,.8,.2,1)}
+body[data-screen=generative][data-phase=exiting] .canvas-holder{animation:loop-exit 350ms both ease-in}
+body[data-screen=generative][data-phase=active] [data-motion=wave] .loop-word{animation:word-wave 1800ms ease-in-out infinite alternate}
+body[data-screen=generative][data-phase=active] [data-motion=drift] .loop-word{animation:word-drift 2200ms ease-in-out infinite alternate}
+body[data-screen=generative][data-phase=active] [data-motion=stretch] .loop-word{animation:word-stretch 2000ms ease-in-out infinite alternate}
+body[data-paused=true] .canvas-holder,body[data-paused=true] .loop-word,body[data-hidden=true] .canvas-holder,body[data-hidden=true] .loop-word{animation-play-state:paused!important}
+button.route-word:focus-within .loop-word{animation-play-state:paused!important}
+@keyframes loop-enter{from{opacity:0;transform:translate(var(--enter-x),var(--enter-y)) scale(.8)}to{opacity:1;transform:translate(0,0) scale(1)}}
+@keyframes loop-exit{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:0;transform:translate(calc(var(--enter-x) * -.7),calc(var(--enter-y) * -.7)) scale(1.15)}}
+@keyframes word-wave{from{transform:translateY(-.22em)}to{transform:translateY(.22em)}}
+@keyframes word-drift{from{transform:translateX(-.16em) rotate(-3deg)}to{transform:translateX(.16em) rotate(3deg)}}
+@keyframes word-stretch{from{transform:scaleX(.88)}to{transform:scaleX(1.12)}}
+@media(prefers-reduced-motion:reduce){body[data-screen=generative] .canvas-holder,body[data-screen=generative] .loop-word{animation:none!important}}
