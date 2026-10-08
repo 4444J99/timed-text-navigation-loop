@@ -92,14 +92,7 @@ The Git bundle supplied with this package can reconstruct the repository and its
 git clone hole-loop.bundle hole-loop-repository
 ```
 
-GitHub publication can use the complete prepared repository. With an authenticated GitHub CLI and a new, unoccupied destination, the creation command is:
-
-```sh
-gh repo create 4444J99/hole-loop --private --source . --remote origin --push
-git push origin source/2017-07-20
-```
-
-These commands describe the remaining publication operation when no GitHub remote has been created. Do not run them against an existing unrelated repository. No hosted deployment is needed to run the artwork locally.
+The imported repository is published by the Pages workflow from `public/` on `main`. Set the Pages source to **GitHub Actions**. No hosted deployment is needed to run the artwork locally.
 
 ## Credits and rights
 
