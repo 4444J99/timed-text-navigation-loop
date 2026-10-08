@@ -1,0 +1,285 @@
+[
+  {
+    "key": "govern",
+    "title": "[Epic] hole-loop experimental edition — concentric development",
+    "circle": 0,
+    "parent": null,
+    "dependencies": [],
+    "status": "Circles 1–2 verified; Circles 3–4 planned",
+    "body": "## Intended experience / problem\nThe same words acquire another meaning because something has happened between encounters.\n\n## Concrete deliverable\nAn isolated playable six-encounter edition, four working studies, recorded verification, creative evaluation, and an evidence-gated plan for expanded work.\n\n## Dependencies\nNone. Independent of historical restoration PR #1.\n\n## Scope\nNew experimental edition only, in experimental/six-encounters. Read-only source input; no restoration dependency or production route change. One repository until independent ownership, reuse or deployment is demonstrated.\n\n## Acceptance criteria\n- Circles 1 and 2 implemented and verified.\n- Circles 3 and 4 have linked, explicit planned deliverables and evidence gates.\n- Feature branch and reviewable PR.\n- Planned / implemented / verified / artist-reviewed / deployed states remain distinct.\n\n## Expected verification evidence\nExperimental README; source census; engine/browser test reports; screenshots; evaluation; linked PR. No hosted preview is claimed without successful deployment.\n\n## Priority and completion status\nAssignment scope: Circles 1–2 implemented and verified; Circles 3–4 planned. Artist-reviewed: no. Deployed: no. Implemented and locally verified on the feature branch; merge is a separate state.\n",
+    "trackerNumber": 2,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/2",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "core",
+    "title": "[Epic · Circle 1] Playable three-chamber core",
+    "circle": 1,
+    "parent": "govern",
+    "dependencies": [],
+    "status": "verified",
+    "body": "## Intended experience / problem\nReturn is a scored event and the entrance accumulates consequences.\n\n## Concrete deliverable\nDeterministic six-entry composition, explicit session state, controls, timing, recorded memory, reading access and completion.\n\n## Dependencies\nNone. Independent of historical restoration PR #1.\n\n## Scope\nOnly the three selected chambers; reader-paced default, timed opt-in; session-local memory.\n\n## Acceptance criteria\n- Sequence 040915 → 041015 → 042115 twice.\n- Two visits per chamber, six returns, two cycles.\n- Entrance waits for action; traces 4–6 after completion.\n- Restart, early exit, pause and reread follow the contract.\n\n## Expected verification evidence\n11 state/timing tests and recorded desktop/mobile browser checks.\n\n## Priority and completion status\nCircle 1. Status: verified. Artist-reviewed: no. Deployed: no. Implemented and locally verified on the feature branch; merge is a separate state.\n",
+    "trackerNumber": 4,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/4",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "studies",
+    "title": "[Epic · Circle 2] Four formal studies and documented evaluation",
+    "circle": 2,
+    "parent": "govern",
+    "dependencies": [
+      "core"
+    ],
+    "status": "verified",
+    "body": "## Intended experience / problem\nChange one parameter and compare without contaminating the score.\n\n## Concrete deliverable\nColor, space, time and memory instruments with baseline/variants/reset/configuration; browser evidence and creative assessment.\n\n## Dependencies\ncore\n\n## Scope\nExisting source language only; agent assessment explicitly separate from actual reader observations.\n\n## Acceptance criteria\n- Four interactive studies.\n- Explicit reset and recorded configurations.\n- Exact fixed-property, phrase-count and geometry checks.\n- Desktop/mobile evidence; concise retain/revise/reject/review decisions.\n\n## Expected verification evidence\nBrowser-report.json, first/second screenshots, docs/EVALUATION.md. Artist and external reader review remain uncollected.\n\n## Priority and completion status\nCircle 2. Status: verified. Artist-reviewed: no. Deployed: no. Implemented and locally verified on the feature branch; merge is a separate state.\n",
+    "trackerNumber": 56,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/56",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "language",
+    "title": "[Epic · Circle 3] Expanded language and chamber-specific behavior",
+    "circle": 3,
+    "parent": "govern",
+    "dependencies": [
+      "studies"
+    ],
+    "status": "planned",
+    "body": "## Intended experience / problem\nEach chamber should develop a function justified by its language.\n\n## Concrete deliverable\nColor adoption decisions, controlled voice/address experiments, and nine chamber behavior prototypes after earlier review.\n\n## Dependencies\nstudies\n\n## Scope\nNo generic effect applied to every chamber; no source editing in this phase. Full source census at docs/source-census.json.\n\n## Acceptance criteria\n- Each chamber proposal cites actual path/revision and asks a testable question.\n- Color adoption has reader/artist evidence.\n- Voice experiments isolate scale, weight, placement and pronoun handling.\n- Source wording/attribution decisions documented.\n\n## Expected verification evidence\nComparison records, reader observations labeled as such, artist decisions and prototype captures.\n\n## Priority and completion status\nCircle 3. Status: planned. Artist-reviewed: no. Deployed: no. No implementation is claimed for this planned scope.\n",
+    "trackerNumber": 5,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/5",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "rich",
+    "title": "[Epic · Circle 4] Evidence-dependent richer composition",
+    "circle": 4,
+    "parent": "govern",
+    "dependencies": [
+      "language"
+    ],
+    "status": "planned",
+    "body": "## Intended experience / problem\nAdditional media and routes must perform defined work in the composition.\n\n## Concrete deliverable\nGated writing, sound, route and optional computational/AI experiments.\n\n## Dependencies\nlanguage\n\n## Scope\nOne repository by default. No accounts, analytics or deployment expansion without a demonstrated need.\n\n## Acceptance criteria\n- Every addition names earlier evidence that justifies it.\n- Sound has a defined function and silent equivalent.\n- New text and transformations have provenance/constraints.\n- Route changes retain controllable entrance and explain state consequences.\n- Repo split only with demonstrated independent boundary.\n\n## Expected verification evidence\nBefore/after comparisons, explicit gates, source manifests, evaluation decisions and bounded prototype tests.\n\n## Priority and completion status\nCircle 4. Status: planned. Artist-reviewed: no. Deployed: no. No implementation is claimed for this planned scope.\n",
+    "trackerNumber": 6,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/6",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "sequence",
+    "title": "[Circle 1] Deterministic score, entrance and bounded session history",
+    "circle": 1,
+    "parent": "core",
+    "dependencies": [],
+    "status": "verified",
+    "body": "## Intended experience / problem\nMake repeat encounters distinguishable and let the entrance retain returns.\n\n## Concrete deliverable\nSession engine and entrance rendering, unique encounter IDs, six-entry history, three-trace queue and cycle markers.\n\n## Dependencies\nNone. Independent of historical restoration PR #1.\n\n## Scope\nImmutable content/config, scored entries, visits and return events; no storage or random routes.\n\n## Acceptance criteria\n- Exactly six entries/two visits each.\n- Exactly-once return; 3-trace bound separate from layouts.\n- Markers only after returns three and six.\n- Completion has no active encounter or timer.\n\n## Expected verification evidence\nNode transition assertions; browser final state and screenshots.\n\n## Priority and completion status\nCircle 1. Status: verified. Artist-reviewed: no. Deployed: no. Implemented and locally verified on the feature branch; merge is a separate state.\n",
+    "trackerNumber": 16,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/16",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "timing",
+    "title": "[Circle 1] Eligible-display clock and lifecycle controls",
+    "circle": 1,
+    "parent": "core",
+    "dependencies": [
+      "sequence"
+    ],
+    "status": "verified",
+    "body": "## Intended experience / problem\nTimed departure must exclude hidden and paused intervals and preserve reader entry control.\n\n## Concrete deliverable\nMonotonic 5000ms clock, ready/visibility/pause wiring, cancellation and explicit mode choice/restart.\n\n## Dependencies\nsequence\n\n## Scope\nNo timer at entrance; no attention measurement; manual and timer returns compete safely.\n\n## Acceptance criteria\n- 3000 + extended hidden + 1999 stays active.\n- Eligible 5000ms tick returns once.\n- Resume/visibility event alone never navigates.\n- Reader-paced holds indefinitely.\n- Exit/restart cancel pending progress.\n\n## Expected verification evidence\nInjected-clock boundary tests plus clock-controlled real-browser lifecycle checks and visibility-event simulation.\n\n## Priority and completion status\nCircle 1. Status: verified. Artist-reviewed: no. Deployed: no. Implemented and locally verified on the feature branch; merge is a separate state.\n",
+    "trackerNumber": 18,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/18",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "memoryaccess",
+    "title": "[Circle 1] Remembered geometry, responsive fields and unscored reading",
+    "circle": 1,
+    "parent": "core",
+    "dependencies": [
+      "sequence"
+    ],
+    "status": "verified",
+    "body": "## Intended experience / problem\nLayout memory should survive trace eviction and resize without losing language or controls.\n\n## Concrete deliverable\nFirst-visit bounds, transformed revisit outline, complete 42×9 field, fit/detail and Reading view.\n\n## Dependencies\nsequence\n\n## Scope\nActual geometry only; same logical stage transform; reading suspends timed exposure without scoring.\n\n## Acceptance criteria\n- Moment trace matches recorded bounds.\n- I/you has 378 row-major instances at both widths.\n- Keyboard/focus controls; readable full-size alternatives.\n- Reread does not change state; restart clears memory.\n\n## Expected verification evidence\nDOM coordinate assertions, resize screenshots, desktop/mobile reading and control checks.\n\n## Priority and completion status\nCircle 1. Status: verified. Artist-reviewed: no. Deployed: no. Implemented and locally verified on the feature branch; merge is a separate state.\n",
+    "trackerNumber": 19,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/19",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "color",
+    "title": "[Circle 2] Color as a relationship",
+    "circle": 2,
+    "parent": "studies",
+    "dependencies": [
+      "memoryaccess"
+    ],
+    "status": "verified",
+    "body": "## Intended experience / problem\nCan the field change reading while the figure remains fixed?\n\n## Concrete deliverable\nThree fields, baseline/variant toggles, reset and record.\n\n## Dependencies\nmemoryaccess\n\n## Scope\n042115 fixed wording, foreground, font, weight, size and placement; only #ede6d6 / #b8d6c4 / #d3bde2 changes.\n\n## Acceptance criteria\n- Computed fixed properties and bounds equal.\n- Actual color values in record.\n- No score visits added; no winner invented.\n\n## Expected verification evidence\nRecorded browser assertions/screenshots and docs/EVALUATION.md; actual reader observations not collected.\n\n## Priority and completion status\nCircle 2. Status: verified. Artist-reviewed: no. Deployed: no. Implemented and locally verified on the feature branch; merge is a separate state.\n",
+    "trackerNumber": 29,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/29",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "space",
+    "title": "[Circle 2] Space as syntax",
+    "circle": 2,
+    "parent": "studies",
+    "dependencies": [
+      "memoryaccess"
+    ],
+    "status": "verified",
+    "body": "## Intended experience / problem\nDoes a full-height interval become a boundary or passage?\n\n## Concrete deliverable\nContinuous and one-cell-gap 42×9 field, reset and record.\n\n## Dependencies\nmemoryaccess\n\n## Scope\nColumns 5–9 shift by measured first-cell width; preserve all 378 instance identities.\n\n## Acceptance criteria\n- 378 instances in original row-major order.\n- Gap across all rows.\n- Actual measured cell advance; smaller-screen fit/detail and reading access.\n\n## Expected verification evidence\nRecorded browser assertions/screenshots and docs/EVALUATION.md; actual reader observations not collected.\n\n## Priority and completion status\nCircle 2. Status: verified. Artist-reviewed: no. Deployed: no. Implemented and locally verified on the feature branch; merge is a separate state.\n",
+    "trackerNumber": 30,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/30",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "time",
+    "title": "[Circle 2] Time as an instruction",
+    "circle": 2,
+    "parent": "studies",
+    "dependencies": [
+      "timing"
+    ],
+    "status": "verified",
+    "body": "## Intended experience / problem\nHow does reader duration versus system departure change forced progress?\n\n## Concrete deliverable\nIndependent reader-paced/timed conditions with identical phrase presentation.\n\n## Dependencies\ntiming\n\n## Scope\nExplicit condition choice and separate entry; 5000ms eligible time, manual Return.\n\n## Acceptance criteria\n- Identical presentation across conditions.\n- Timed return obeys the shared clock contract.\n- Study entrance holds; composition state untouched.\n\n## Expected verification evidence\nRecorded browser assertions/screenshots and docs/EVALUATION.md; actual reader observations not collected.\n\n## Priority and completion status\nCircle 2. Status: verified. Artist-reviewed: no. Deployed: no. Implemented and locally verified on the feature branch; merge is a separate state.\n",
+    "trackerNumber": 18,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/18",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "return",
+    "title": "[Circle 2] Return as memory",
+    "circle": 2,
+    "parent": "studies",
+    "dependencies": [
+      "memoryaccess"
+    ],
+    "status": "verified",
+    "body": "## Intended experience / problem\nCan the prior encounter appear through static geometry?\n\n## Concrete deliverable\nFirst/second Moment comparison using captured bounds, reset and record.\n\n## Dependencies\nmemoryaccess\n\n## Scope\nSame text/order/placement; visibility of real prior bounds is the changed parameter.\n\n## Acceptance criteria\n- No first-visit trace.\n- Exactly two captured-bound outlines on revisit.\n- No copied words; reset removes geometry.\n\n## Expected verification evidence\nRecorded browser assertions/screenshots and docs/EVALUATION.md; actual reader observations not collected.\n\n## Priority and completion status\nCircle 2. Status: verified. Artist-reviewed: no. Deployed: no. Implemented and locally verified on the feature branch; merge is a separate state.\n",
+    "trackerNumber": 57,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/57",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "evaluation",
+    "title": "[Circle 2] Verification evidence and creative evaluation",
+    "circle": 2,
+    "parent": "studies",
+    "dependencies": [
+      "color",
+      "space",
+      "time",
+      "return"
+    ],
+    "status": "verified",
+    "body": "## Intended experience / problem\nFunctionality and interpretation need separate evidence.\n\n## Concrete deliverable\nReproducible automated suites, screenshots, methods, decisions and local run instructions.\n\n## Dependencies\ncolor, space, time, return\n\n## Scope\nLinux Chromium desktop/mobile viewport emulation; explicit limitations for simulated visibility, devices and uncollected observations.\n\n## Acceptance criteria\n- Exact required state/timing conditions checked.\n- First/second visits inspected.\n- Each study has question/source/fixed/variable/rule/evidence/decision.\n- Artist-reviewed and deployed remain false.\n\n## Expected verification evidence\n11 passing Node tests; browser-report.json; PNGs; README and evaluation.\n\n## Priority and completion status\nCircle 2. Status: verified. Artist-reviewed: no. Deployed: no. Implemented and locally verified on the feature branch; merge is a separate state.\n",
+    "trackerNumber": 20,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/20",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "adoptcolor",
+    "title": "[Circle 3] Apply color findings only after comparison evidence",
+    "circle": 3,
+    "parent": "language",
+    "dependencies": [
+      "color",
+      "evaluation"
+    ],
+    "status": "planned",
+    "body": "## Intended experience / problem\nNo winning palette has been established by the current study.\n\n## Concrete deliverable\nArtist-reviewed field decision and source/versioned score update if justified.\n\n## Dependencies\ncolor, evaluation\n\n## Scope\nReuse current comparison instrument; collect observations before changing the score.\n\n## Acceptance criteria\n- Record comparative figure–ground/legibility/reading observations.\n- Explain adoption or rejection without universal color claims.\n- Rerun fixed-property and score checks.\n\n## Expected verification evidence\nLabeled reader notes, artist decision and reviewed configuration diff.\n\n## Priority and completion status\nCircle 3. Status: planned. Artist-reviewed: no. Deployed: no. No implementation is claimed for this planned scope.\n",
+    "trackerNumber": 29,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/29",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "voice",
+    "title": "[Circle 3] Typography, voice and address experiments",
+    "circle": 3,
+    "parent": "language",
+    "dependencies": [
+      "evaluation"
+    ],
+    "status": "planned",
+    "body": "## Intended experience / problem\nHow do scale, weight, placement and pronouns change apparent speaker and authority?\n\n## Concrete deliverable\nControlled one-parameter typography studies referencing Kruger/Holzer as proposed working methods.\n\n## Dependencies\nevaluation\n\n## Scope\nUse existing language first; separate any pronoun rewrite from pure rendering comparisons.\n\n## Acceptance criteria\n- Fix language while varying one formal parameter.\n- State question and source/wording version.\n- Compare apparent voice/address with actual observations.\n- Preserve readable access and avoid a predetermined response.\n\n## Expected verification evidence\nConfigurations, rendered captures, labeled observations, retain/revise/reject decisions.\n\n## Priority and completion status\nCircle 3. Status: planned. Artist-reviewed: no. Deployed: no. No implementation is claimed for this planned scope.\n",
+    "trackerNumber": 23,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/23",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "remaining",
+    "title": "[Circle 3] Develop nine remaining chambers from their source language",
+    "circle": 3,
+    "parent": "language",
+    "dependencies": [
+      "evaluation",
+      "voice"
+    ],
+    "status": "planned",
+    "body": "## Intended experience / problem\nDialogue, refusal, interruption, confinement and release should have distinct linguistic grounds.\n\n## Concrete deliverable\nNine bounded prototypes with source-specific questions and behavior proposals listed below.\n\n## Dependencies\nevaluation, voice\n\n## Scope\nRead-only source text nodes at revision 9fc3c006f2764e1887b79293e32eb9a3a1875344; no historical asset recovery. All paths use provenance/original-2017/labyrinth/<ID>.html.txt.\n\n## Acceptance criteria\n- Each prototype preserves a baseline and names the changed rule.\n- Source wording/order and attribution reviewed before adoption.\n- Stop/exit/read access and return semantics remain clear.\n- Do not add these to the score without evaluation.\n\n## Expected verification evidence\nSource census identities, prototype configs/captures and reader/artist decisions.\n\n## Priority and completion status\nCircle 3. Status: planned. Artist-reviewed: no. Deployed: no. No implementation is claimed for this planned scope.\n\n## Source-specific proposals (planned)\n\n| ID / source material | Proposed behavior | Question |\n| --- | --- | --- |\n| 040615 · long passage beginning “I have tried to permanently subvert senses”, recurring failure clauses and isolated “o f” nodes | Confinement: expose a scrollable fixed-width passage, then offer an expanded reading plane with the same language | Does spatial restriction perform the effort/failure described, or merely obstruct reading? |\n| 040715 · Poor Minotaur / where are you now / lost frown | Address: vary the distance between the invocation and successive questions | Does interval make the addressed figure seem absent, approaching or unreachable? |\n| 040815 · “why did you lie / to me ?” and “because i am a wild / animal.” | Dialogue: reader reveals the reply separately, preserving clause order | Does withholding the reply change the apparent relationship between speakers? |\n| 041315 · your / favors / do not / threaten / us | Refusal: stable word sequence with a comparison of weight concentrated on “your” versus “us” | Which speaker or addressee appears to control the refusal? |\n| 041415 · can you pray for me, stephen / chainlink smile / complete sable / hamlet iago | Appeal/interruption: layers reveal these nodes in source order while a reading view remains complete | Does the appeal remain a frame for the fragments, or become one fragment among them? |\n| 041715 · seven inspected lines beginning “April is the cruellest month” | Seasonal interval: compare continuous lines with controlled whitespace between the spring/winter sections | Does spatial interval alter the relation between memory, desire and shelter? |\n| 042215 · spaced Sunday distraction / brood posession pulse / eyes without a face / beheading / final question | Interruption: successive reader-triggered frames retain a visible source-order map | Does interruption make distraction operate as a score, or destroy the phrase relationships? |\n| 051815 · f a t e d / f a i t h f u l / f a t a l | Release: compare three parallel fields with a converging common reading plane | Do shared letter structures create relation without collapsing distinct words? |\n| 072716 · two lines about proper sedation and a telephone number | Instruction/refusal: keep the source visible but require an explicit decision to return; no dial action | Does an inert instruction still appear authoritative? |\n\nThese are proposals, not implemented functions or documented original influences. Exact text nodes, including spelling/spacing, are in the census. Third-party quotation attribution and the status of the telephone text require artist/source review before any expanded public edition.\n",
+    "trackerNumber": 21,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/21",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "writing",
+    "title": "[Circle 4] New writing as an explicit edition change",
+    "circle": 4,
+    "parent": "rich",
+    "dependencies": [
+      "remaining",
+      "evaluation"
+    ],
+    "status": "planned",
+    "body": "## Intended experience / problem\nWhich gaps in the current language call for additional writing?\n\n## Concrete deliverable\nA versioned new-text set and bounded score variant.\n\n## Dependencies\nremaining, evaluation\n\n## Scope\nEarlier chamber review identifies an unresolved compositional function that the existing language cannot perform. Scope is an isolated prototype; current edition unchanged.\n\n## Acceptance criteria\n- Artist authors/reviews text.\n- New language distinctly versioned/provenanced.\n- Compare against unchanged score; no automatic adoption.\n\n## Expected verification evidence\nEvidence gate record; before/after comparison; explicit source manifest; bounded verification and artist decision.\n\n## Priority and completion status\nCircle 4. Status: planned. Artist-reviewed: no. Deployed: no. No implementation is claimed for this planned scope.\n",
+    "trackerNumber": 58,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/58",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "sound",
+    "title": "[Circle 4] Sound with a defined compositional function",
+    "circle": 4,
+    "parent": "rich",
+    "dependencies": [
+      "remaining",
+      "evaluation"
+    ],
+    "status": "planned",
+    "body": "## Intended experience / problem\nCan sound articulate interval or retained history rather than simply decorate the field?\n\n## Concrete deliverable\nOne optional sound experiment and a silent equivalent.\n\n## Dependencies\nremaining, evaluation\n\n## Scope\nPrior evaluation identifies a timing/history relation not perceptible through the current text and geometry. Scope is an isolated prototype; current edition unchanged.\n\n## Acceptance criteria\n- Name the function and source of each sound.\n- Explicit reader activation, mute/exit and silent equivalent.\n- Compare the function before/after; no autoplay or ambient layer by default.\n\n## Expected verification evidence\nEvidence gate record; before/after comparison; explicit source manifest; bounded verification and artist decision.\n\n## Priority and completion status\nCircle 4. Status: planned. Artist-reviewed: no. Deployed: no. No implementation is claimed for this planned scope.\n",
+    "trackerNumber": 34,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/34",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "routes",
+    "title": "[Circle 4] Richer route relationships and navigation",
+    "circle": 4,
+    "parent": "rich",
+    "dependencies": [
+      "remaining",
+      "evaluation"
+    ],
+    "status": "planned",
+    "body": "## Intended experience / problem\nWhich chamber relationships justify alternatives to the deterministic score?\n\n## Concrete deliverable\nA small explicit route graph and scored variant preserving entrance control.\n\n## Dependencies\nremaining, evaluation\n\n## Scope\nCircle 3 comparisons reveal specific language relationships that the two-cycle route fails to express. Scope is an isolated prototype; current edition unchanged.\n\n## Acceptance criteria\n- Version graph and transition rules.\n- Separate return and next-entry actions.\n- Define refusal/interruption/release paths.\n- Verify bounded memory, partial exit and completion semantics.\n\n## Expected verification evidence\nEvidence gate record; before/after comparison; explicit source manifest; bounded verification and artist decision.\n\n## Priority and completion status\nCircle 4. Status: planned. Artist-reviewed: no. Deployed: no. No implementation is claimed for this planned scope.\n",
+    "trackerNumber": 24,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/24",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  },
+  {
+    "key": "compute",
+    "title": "[Circle 4] Optional computational / AI transformations with provenance",
+    "circle": 4,
+    "parent": "rich",
+    "dependencies": [
+      "remaining",
+      "evaluation"
+    ],
+    "status": "planned",
+    "body": "## Intended experience / problem\nIs a rule-based or model transformation needed for a stated artistic question?\n\n## Concrete deliverable\nA constrained, inspectable prototype with recorded inputs, parameters and outputs.\n\n## Dependencies\nremaining, evaluation\n\n## Scope\nA prior artist-reviewed experiment identifies a transformation that fixed composition and simple deterministic rules cannot adequately test. Scope is an isolated prototype; current edition unchanged.\n\n## Acceptance criteria\n- Prefer a deterministic rule where sufficient.\n- Explicit input custody, constraints, model/version/seed where relevant, output provenance.\n- Baseline and untransformed reading view.\n- Failure/latency/cost limits; no opaque live dependency added to the current edition.\n\n## Expected verification evidence\nEvidence gate record; before/after comparison; explicit source manifest; bounded verification and artist decision.\n\n## Priority and completion status\nCircle 4. Status: planned. Artist-reviewed: no. Deployed: no. No implementation is claimed for this planned scope.\n",
+    "trackerNumber": 32,
+    "trackerUrl": "https://github.com/4444J99/timed-text-navigation-loop/issues/32",
+    "statusScope": "This assignment deliverable only; reused broader issues remain open for their additional acceptance."
+  }
+]

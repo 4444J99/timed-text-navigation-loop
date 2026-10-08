@@ -1,0 +1,12 @@
+{
+  "name": "hole-loop-experimental-six-encounters",
+  "version": "1.0.0",
+  "private": true,
+  "description": "No-build browser artwork; dependencies are verification-only",
+  "scripts": {
+    "test": "node --test tests/state.test.cjs",
+    "test:browser": "node tests/browser.cjs"
+  },
+  "devDependencies": {"playwright": "1.62.1"},
+  "engines": {"node": ">=20"}
+}
