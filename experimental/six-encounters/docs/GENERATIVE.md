@@ -26,3 +26,20 @@ My visual inspection: removing one gap creates visibly fused pairs and uneven in
 Verification: eight additional pure-rule/state tests plus the existing eleven state/timing tests. Seven new browser groups cover desktop 1440×1000, mobile 390×844 and keyboard/reduced-motion controls at 320×568. Screenshots in `verification/generative/` include generated entrances, entry/active/exit frames, routed Moment, and all 378 I/you instances. The existing 23 browser groups also pass for the protected composition and studies. Environment: Linux Chromium 138.0.7204.0, Playwright 1.62.1. Hidden-page wiring is simulated; physical Safari/phone testing and artist approval remain outstanding.
 
 Relevant existing roadmap issues: #24 seeded routes, #29 relational color, #23 typography/device evidence, #18 clocks. This implements a bounded three-chamber slice of those broader issues; it does not close their other deliverables or gates.
+
+## Character cells — version 1.1.0
+
+Artist direction: each character occupies a transparent cell and wraps across its
+opposite boundary. Implemented in the generative loops only. A cell retains the
+natural glyph advance and a 1.2em line height. Its clipped 3×3 periodic glyph tile
+moves one whole cell per period: horizontal 2400ms, vertical 3100ms, diagonal
+3700ms. Negative stagger offsets give each character a different position.
+Copies use CSS generated content in an aria-hidden plane; the source character
+remains once in DOM text. Words remain fixed selectable targets. Focus, pause and
+hidden state stop movement; reduced motion presents stationary letters.
+
+Assessment: the split fragments make recurrence visible at the scale of a letter.
+This is an implementation assessment, awaiting artist review. No reader testing
+or physical Safari verification is claimed. Browser checks verify clipping,
+opposite tiles, midpoint movement and periodic endpoint continuity on desktop
+and narrow mobile, alongside the existing score and timing checks.

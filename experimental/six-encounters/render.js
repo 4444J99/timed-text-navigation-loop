@@ -22,7 +22,17 @@
     if (immersive) { viewport.classList.add('immersive-viewport'); viewport.style.backgroundColor=canvas.style.backgroundColor; }
     let wordIndex=0;
     function word(text,routeIndex=null,focusable=true){
-      const span=document.createElement('span');span.className='loop-word';span.textContent=text;
+      const span=document.createElement('span');span.className='loop-word';
+      [...text].forEach((char,index)=>{
+        const cell=document.createElement('span');cell.className='character-cell';cell.dataset.axis=['horizontal','vertical','diagonal'][index%3];
+        cell.style.setProperty('--character-delay',`${-(wordIndex*text.length+index)*.137}s`);
+        const original=document.createElement('span');original.className='character-source';original.textContent=char;
+        const plane=document.createElement('span');plane.className='character-plane';plane.setAttribute('aria-hidden','true');
+        for(let y=-1;y<=1;y++)for(let x=-1;x<=1;x++){
+          const copy=document.createElement('span');copy.className='character-copy';copy.dataset.character=char;copy.style.left=`${x*100}%`;copy.style.top=`${y*100}%`;plane.append(copy);
+        }
+        cell.append(original,plane);span.append(cell);
+      });
       if(colors){span.style.color=colors[wordIndex%colors.length];span.style.setProperty('--word-delay',`${-wordIndex*.09}s`);wordIndex++;}
       if(routeIndex===null)return span;
       const b=document.createElement('button');b.className='route-word';b.append(span);b.dataset.route=routeIndex;

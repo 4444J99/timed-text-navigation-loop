@@ -91,14 +91,19 @@ body[data-screen=generative] button.route-word:focus-visible{outline-width:2px;o
 .loop-word{display:inline-block;transform-origin:center;animation-delay:var(--word-delay,0s)!important}
 body[data-screen=generative][data-phase=entering] .canvas-holder{animation:loop-enter 450ms both cubic-bezier(.2,.8,.2,1)}
 body[data-screen=generative][data-phase=exiting] .canvas-holder{animation:loop-exit 350ms both ease-in}
-body[data-screen=generative][data-phase=active] [data-motion=wave] .loop-word{animation:word-wave 1800ms ease-in-out infinite alternate}
-body[data-screen=generative][data-phase=active] [data-motion=drift] .loop-word{animation:word-drift 2200ms ease-in-out infinite alternate}
-body[data-screen=generative][data-phase=active] [data-motion=stretch] .loop-word{animation:word-stretch 2000ms ease-in-out infinite alternate}
-body[data-paused=true] .canvas-holder,body[data-paused=true] .loop-word,body[data-hidden=true] .canvas-holder,body[data-hidden=true] .loop-word{animation-play-state:paused!important}
-button.route-word:focus-within .loop-word{animation-play-state:paused!important}
+.character-cell{position:relative;display:inline-block;overflow:hidden;vertical-align:bottom;height:1.2em;background:transparent}
+.character-source{visibility:hidden}
+.character-plane{position:absolute;inset:0;animation-delay:var(--character-delay)!important}
+.character-copy{position:absolute;width:100%;height:100%;white-space:pre}
+.character-copy::before{content:attr(data-character)}
+body[data-screen=generative][data-phase=active] .character-plane{animation:character-horizontal 2400ms linear infinite}
+body[data-screen=generative][data-phase=active] [data-axis=vertical] .character-plane{animation-name:character-vertical;animation-duration:3100ms}
+body[data-screen=generative][data-phase=active] [data-axis=diagonal] .character-plane{animation-name:character-diagonal;animation-duration:3700ms}
+body[data-paused=true] .canvas-holder,body[data-paused=true] .character-plane,body[data-hidden=true] .canvas-holder,body[data-hidden=true] .character-plane{animation-play-state:paused!important}
+button.route-word:focus-within .character-plane{animation-play-state:paused!important}
+@keyframes character-horizontal{from{transform:translate(0,0)}to{transform:translate(100%,0)}}
+@keyframes character-vertical{from{transform:translate(0,0)}to{transform:translate(0,100%)}}
+@keyframes character-diagonal{from{transform:translate(0,0)}to{transform:translate(100%,100%)}}
 @keyframes loop-enter{from{opacity:0;transform:translate(var(--enter-x),var(--enter-y)) scale(.8)}to{opacity:1;transform:translate(0,0) scale(1)}}
 @keyframes loop-exit{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:0;transform:translate(calc(var(--enter-x) * -.7),calc(var(--enter-y) * -.7)) scale(1.15)}}
-@keyframes word-wave{from{transform:translateY(-.22em)}to{transform:translateY(.22em)}}
-@keyframes word-drift{from{transform:translateX(-.16em) rotate(-3deg)}to{transform:translateX(.16em) rotate(3deg)}}
-@keyframes word-stretch{from{transform:scaleX(.88)}to{transform:scaleX(1.12)}}
-@media(prefers-reduced-motion:reduce){body[data-screen=generative] .canvas-holder,body[data-screen=generative] .loop-word{animation:none!important}}
+@media(prefers-reduced-motion:reduce){body[data-screen=generative] .canvas-holder,body[data-screen=generative] .character-plane{animation:none!important}}

@@ -1,7 +1,7 @@
 /* Seeded formal rules and a separate, bounded generative route session. No DOM. */
 (function(root){
   function freeze(o){Object.values(o).forEach(v=>{if(v&&typeof v==='object')freeze(v);});return Object.freeze(o);}
-  const config=freeze({version:'1.0.0',exposure:5000,entry:450,exit:350,historyLimit:32,traceLimit:3,
+  const config=freeze({version:'1.1.0',characterMotion:{axes:['horizontal','vertical','diagonal'],periods:[2400,3100,3700],tile:[3,3],clip:true},exposure:5000,entry:450,exit:350,historyLimit:32,traceLimit:3,
     backgrounds:Object.freeze(['#000000','#00ffff','#ff00ff','#ffff00']),
     routes:Object.freeze({'040915':Object.freeze([{word:'before',target:'041015'},{word:'again',target:'042115'}]),
       '041015':Object.freeze([{word:'whereiendandubegin',target:'040915'},{word:'whereiendandubegin',target:'042115'}]),
