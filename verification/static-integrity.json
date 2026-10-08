@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "source_commit": "7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0",
+  "original_files_verified": 19,
+  "vendor_files_verified": 8,
+  "historical_pages": 13,
+  "served_html_routes": 14,
+  "resolved_local_references": 60,
+  "chambers": 12,
+  "repeated_text_instances": 378,
+  "runtime_external_dependencies": 0,
+  "scope": "Source integrity, markup, styles, timers, dependency closure, and route graph. Browser execution is verified separately."
+}

@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "package": "bootstrap",
+  "version": "3.3.5",
+  "upstream_repository": "https://github.com/twbs/bootstrap",
+  "tag": "v3.3.5",
+  "commit": "16b48259a62f576e52c903c476bd42b90ab22482",
+  "tag_metadata_url": "https://api.github.com/repos/twbs/bootstrap/git/ref/tags/v3.3.5",
+  "retrieved_at_utc": "2026-10-07T21:14:38.828036+00:00",
+  "license": "MIT",
+  "files": [
+    {
+      "path": "bootstrap-3.3.5/css/bootstrap.min.css",
+      "upstream_path": "dist/css/bootstrap.min.css",
+      "source_url": "https://raw.githubusercontent.com/twbs/bootstrap/16b48259a62f576e52c903c476bd42b90ab22482/dist/css/bootstrap.min.css",
+      "upstream_html_url": "https://github.com/twbs/bootstrap/blob/16b48259a62f576e52c903c476bd42b90ab22482/dist/css/bootstrap.min.css",
+      "metadata_url": "https://api.github.com/repos/twbs/bootstrap/contents/dist/css/bootstrap.min.css?ref=16b48259a62f576e52c903c476bd42b90ab22482",
+      "sha256": "31fbd99641c212a6ad3681a2397bde13c148c0ccd98385bce6a7eb7c81417d87",
+      "git_blob_sha1": "d65c66b1ba297eeb3b5976b71c64c736b41bb763",
+      "git_blob_verified_against_github": true,
+      "bytes": 122540,
+      "source_map_references": [],
+      "original_cdn_verification": {
+        "url": "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css",
+        "retrieved": true,
+        "bytes": 122540,
+        "sha256": "31fbd99641c212a6ad3681a2397bde13c148c0ccd98385bce6a7eb7c81417d87",
+        "matches_bundled_file": true
+      }
+    },
+    {
+      "path": "bootstrap-3.3.5/css/bootstrap-theme.min.css",
+      "upstream_path": "dist/css/bootstrap-theme.min.css",
+      "source_url": "https://raw.githubusercontent.com/twbs/bootstrap/16b48259a62f576e52c903c476bd42b90ab22482/dist/css/bootstrap-theme.min.css",
+      "upstream_html_url": "https://github.com/twbs/bootstrap/blob/16b48259a62f576e52c903c476bd42b90ab22482/dist/css/bootstrap-theme.min.css",
+      "metadata_url": "https://api.github.com/repos/twbs/bootstrap/contents/dist/css/bootstrap-theme.min.css?ref=16b48259a62f576e52c903c476bd42b90ab22482",
+      "sha256": "6c7422a9c15b9c96f542187ad5163d70c87a911d204ee418ea214e063d728f4d",
+      "git_blob_sha1": "61358b13d045694a6963c5334eab2831e53978ac",
+      "git_blob_verified_against_github": true,
+      "bytes": 23357,
+      "source_map_references": [],
+      "original_cdn_verification": {
+        "url": "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css",
+        "retrieved": true,
+        "bytes": 23357,
+        "sha256": "6c7422a9c15b9c96f542187ad5163d70c87a911d204ee418ea214e063d728f4d",
+        "matches_bundled_file": true
+      }
+    },
+    {
+      "path": "bootstrap-3.3.5/LICENSE",
+      "upstream_path": "LICENSE",
+      "source_url": "https://raw.githubusercontent.com/twbs/bootstrap/16b48259a62f576e52c903c476bd42b90ab22482/LICENSE",
+      "upstream_html_url": "https://github.com/twbs/bootstrap/blob/16b48259a62f576e52c903c476bd42b90ab22482/LICENSE",
+      "metadata_url": "https://api.github.com/repos/twbs/bootstrap/contents/LICENSE?ref=16b48259a62f576e52c903c476bd42b90ab22482",
+      "sha256": "6bc4df63ae3aed15e88c0ec2b6e069576d01dd6d0885d474246fdcc1717fa111",
+      "git_blob_sha1": "f4c52d6a4b3e13836fc2b516b962b5365a1d19c8",
+      "git_blob_verified_against_github": true,
+      "bytes": 1084,
+      "source_map_references": []
+    },
+    {
+      "path": "bootstrap-3.3.5/fonts/glyphicons-halflings-regular.eot",
+      "upstream_path": "dist/fonts/glyphicons-halflings-regular.eot",
+      "source_url": "https://raw.githubusercontent.com/twbs/bootstrap/16b48259a62f576e52c903c476bd42b90ab22482/dist/fonts/glyphicons-halflings-regular.eot",
+      "upstream_html_url": "https://github.com/twbs/bootstrap/blob/16b48259a62f576e52c903c476bd42b90ab22482/dist/fonts/glyphicons-halflings-regular.eot",
+      "metadata_url": "https://api.github.com/repos/twbs/bootstrap/contents/dist/fonts/glyphicons-halflings-regular.eot?ref=16b48259a62f576e52c903c476bd42b90ab22482",
+      "sha256": "13634da87d9e23f8c3ed9108ce1724d183a39ad072e73e1b3d8cbf646d2d0407",
+      "git_blob_sha1": "b93a4953fff68df523aa7656497ee339d6026d64",
+      "git_blob_verified_against_github": true,
+      "bytes": 20127,
+      "source_map_references": []
+    },
+    {
+      "path": "bootstrap-3.3.5/fonts/glyphicons-halflings-regular.svg",
+      "upstream_path": "dist/fonts/glyphicons-halflings-regular.svg",
+      "source_url": "https://raw.githubusercontent.com/twbs/bootstrap/16b48259a62f576e52c903c476bd42b90ab22482/dist/fonts/glyphicons-halflings-regular.svg",
+      "upstream_html_url": "https://github.com/twbs/bootstrap/blob/16b48259a62f576e52c903c476bd42b90ab22482/dist/fonts/glyphicons-halflings-regular.svg",
+      "metadata_url": "https://api.github.com/repos/twbs/bootstrap/contents/dist/fonts/glyphicons-halflings-regular.svg?ref=16b48259a62f576e52c903c476bd42b90ab22482",
+      "sha256": "42f60659d265c1a3c30f9fa42abcbb56bd4a53af4d83d316d6dd7a36903c43e5",
+      "git_blob_sha1": "94fb5490a2ed10b2c69a4a567a4fd2e4f706d841",
+      "git_blob_verified_against_github": true,
+      "bytes": 108738,
+      "source_map_references": []
+    },
+    {
+      "path": "bootstrap-3.3.5/fonts/glyphicons-halflings-regular.ttf",
+      "upstream_path": "dist/fonts/glyphicons-halflings-regular.ttf",
+      "source_url": "https://raw.githubusercontent.com/twbs/bootstrap/16b48259a62f576e52c903c476bd42b90ab22482/dist/fonts/glyphicons-halflings-regular.ttf",
+      "upstream_html_url": "https://github.com/twbs/bootstrap/blob/16b48259a62f576e52c903c476bd42b90ab22482/dist/fonts/glyphicons-halflings-regular.ttf",
+      "metadata_url": "https://api.github.com/repos/twbs/bootstrap/contents/dist/fonts/glyphicons-halflings-regular.ttf?ref=16b48259a62f576e52c903c476bd42b90ab22482",
+      "sha256": "e395044093757d82afcb138957d06a1ea9361bdcf0b442d06a18a8051af57456",
+      "git_blob_sha1": "1413fc609ab6f21774de0cb7e01360095584f65b",
+      "git_blob_verified_against_github": true,
+      "bytes": 45404,
+      "source_map_references": []
+    },
+    {
+      "path": "bootstrap-3.3.5/fonts/glyphicons-halflings-regular.woff",
+      "upstream_path": "dist/fonts/glyphicons-halflings-regular.woff",
+      "source_url": "https://raw.githubusercontent.com/twbs/bootstrap/16b48259a62f576e52c903c476bd42b90ab22482/dist/fonts/glyphicons-halflings-regular.woff",
+      "upstream_html_url": "https://github.com/twbs/bootstrap/blob/16b48259a62f576e52c903c476bd42b90ab22482/dist/fonts/glyphicons-halflings-regular.woff",
+      "metadata_url": "https://api.github.com/repos/twbs/bootstrap/contents/dist/fonts/glyphicons-halflings-regular.woff?ref=16b48259a62f576e52c903c476bd42b90ab22482",
+      "sha256": "a26394f7ede100ca118eff2eda08596275a9839b959c226e15439557a5a80742",
+      "git_blob_sha1": "9e612858f802245ddcbf59788a0db942224bab35",
+      "git_blob_verified_against_github": true,
+      "bytes": 23424,
+      "source_map_references": []
+    },
+    {
+      "path": "bootstrap-3.3.5/fonts/glyphicons-halflings-regular.woff2",
+      "upstream_path": "dist/fonts/glyphicons-halflings-regular.woff2",
+      "source_url": "https://raw.githubusercontent.com/twbs/bootstrap/16b48259a62f576e52c903c476bd42b90ab22482/dist/fonts/glyphicons-halflings-regular.woff2",
+      "upstream_html_url": "https://github.com/twbs/bootstrap/blob/16b48259a62f576e52c903c476bd42b90ab22482/dist/fonts/glyphicons-halflings-regular.woff2",
+      "metadata_url": "https://api.github.com/repos/twbs/bootstrap/contents/dist/fonts/glyphicons-halflings-regular.woff2?ref=16b48259a62f576e52c903c476bd42b90ab22482",
+      "sha256": "fe185d11a49676890d47bb783312a0cda5a44c4039214094e7957b4c040ef11c",
+      "git_blob_sha1": "64539b54c3751a6d9adb44c8e3a45ba5a73b77f0",
+      "git_blob_verified_against_github": true,
+      "bytes": 18028,
+      "source_map_references": []
+    }
+  ],
+  "self_containment": {
+    "runtime_css_urls": [
+      "../fonts/glyphicons-halflings-regular.eot",
+      "../fonts/glyphicons-halflings-regular.eot?#iefix",
+      "../fonts/glyphicons-halflings-regular.woff2",
+      "../fonts/glyphicons-halflings-regular.woff",
+      "../fonts/glyphicons-halflings-regular.ttf",
+      "../fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular"
+    ],
+    "all_runtime_css_urls_resolve_locally": true,
+    "source_map_references": [],
+    "source_maps_bundled": false,
+    "source_map_note": "The upstream v3.3.5 minified CSS files contain no sourceMappingURL directives. No source maps or Less sources are required for these files.",
+    "modified_upstream_bytes": false
+  }
+}

@@ -1,0 +1,67 @@
+name: Publish historical edition
+on:
+  workflow_run:
+    workflows: ["Verify historical edition"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  publish:
+    # Publish only a successful verification of a push to main in this
+    # repository (never a pull-request run), or a manual dispatch.
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'main' &&
+          github.event.workflow_run.head_repository.full_name == github.repository
+        )
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Skip superseded verification runs
+        id: current
+        if: ${{ github.event_name == 'workflow_run' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          main_sha="$(gh api "repos/${REPO}/commits/main" --jq .sha)"
+          if [ "$main_sha" = "$VERIFIED_SHA" ]; then
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Verified ${VERIFIED_SHA} is no longer the tip of main (${main_sha}); not publishing an older site."
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: ${{ steps.current.outputs.stale != 'true' }}
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Verify preserved sources and standalone routes
+        if: ${{ steps.current.outputs.stale != 'true' }}
+        run: python3 scripts/verify.py
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d
+        if: ${{ steps.current.outputs.stale != 'true' }}
+      - uses: actions/upload-pages-artifact@98ef48e41587a300b82de4cf298aa98b57b2faae
+        if: ${{ steps.current.outputs.stale != 'true' }}
+        with:
+          path: public
+      - name: Deploy
+        id: deployment
+        if: ${{ steps.current.outputs.stale != 'true' }}
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346
