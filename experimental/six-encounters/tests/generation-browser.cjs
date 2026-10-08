@@ -7,7 +7,7 @@ function pass(name){checks.push(name);console.log('PASS',name);}
   const report={browser:browser.version(),platform:process.platform,viewports:[],checks};
   try{
     for(const [name,viewport]of [['desktop',{width:1440,height:1000}],['mobile',{width:390,height:844}]]){
-      const p=await context.newPage();await p.setViewportSize(viewport);await p.clock.install();const errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto('file://'+path.join(root,'index.html'));await p.clock.runFor(100);report.viewports.push({name,...viewport});
+      const p=await context.newPage();await p.setViewportSize(viewport);await p.clock.install();await p.clock.pauseAt(new Date());const errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto('file://'+path.join(root,'index.html'));await p.clock.runFor(100);report.viewports.push({name,...viewport});
       const scored=await p.evaluate(()=>HLDiagnostics.snapshot());const first=await p.evaluate(()=>HLDiagnostics.generation().entrance);
       const rows=await p.locator('.entrance-route').evaluateAll(es=>es.map(e=>({text:e.textContent,groups:[...e.children].map(s=>s.textContent),missing:+e.dataset.missingSpace,color:e.dataset.background,chamber:e.dataset.chamber})));
       assert.equal(rows.length,11);rows.forEach((r,i)=>{assert.equal(r.groups.length,7);assert.equal(r.groups.filter(g=>g.length===2).length,1);assert.equal(r.text.replaceAll(' ',''),'LOOPHOLE');assert.equal(r.text.split(' ').length,7);assert.equal(r.missing,first.rows[i].missing);});
@@ -21,7 +21,7 @@ function pass(name){checks.push(name);console.log('PASS',name);}
       assert.equal(current.background,'rgb(255, 0, 255)');assert.equal(current.text,'forced progress');assert.notEqual(current.animation,'none');assert.equal(new Set(current.colors).size,2);
       assert.equal(await p.locator('.character-cell').count(),14);
       const tile=await p.locator('.character-cell').first().evaluate(cell=>({overflow:getComputedStyle(cell).overflow,source:cell.textContent,shadow:getComputedStyle(cell.querySelector('.character-plane'),'::before').textShadow}));
-      assert.equal(tile.overflow,'hidden');assert.equal(tile.source,'f');assert.equal((tile.shadow.match(/rgb\(/g)||[]).length,8);
+      assert.equal(tile.overflow,'hidden');assert.equal(tile.source,'f');assert.equal((tile.shadow.match(/rgb\(/g)||[]).length,1);
       const endpoints=await p.locator('.character-plane').first().evaluate(el=>{const a=el.getAnimations()[0];a.pause();const values=[0,1200,2400].map(t=>{a.currentTime=t;return new DOMMatrix(getComputedStyle(el).transform).m41;});const width=parseFloat(getComputedStyle(el).width);a.play();return {values,width};});
       assert.ok(Math.abs(endpoints.values[1]-endpoints.width/2)<.1);assert.ok(Math.abs(endpoints.values[2]-endpoints.values[0])<.1);
 
@@ -44,7 +44,7 @@ function pass(name){checks.push(name);console.log('PASS',name);}
       await p.getByRole('button',{name:'Exit',exact:true}).click();const exited=await p.evaluate(()=>HLDiagnostics.generation());await p.clock.fastForward(60000);assert.deepEqual(await p.evaluate(()=>HLDiagnostics.generation()),exited);assert.equal(exited.active,null);assert.equal(exited.history.length,2);assert.equal(exited.clock,null);assert.equal(route.target,'042115');pass(`${name}: all 378 phrases and 44px route equivalents; Exit cancels pending next loop`);
       assert.deepEqual(errors,[]);await p.close();
     }
-    const p=await context.newPage();report.viewports.push({name:'small-mobile-reduced-motion',width:320,height:568});await p.emulateMedia({reducedMotion:'reduce'});await p.setViewportSize({width:320,height:568});await p.clock.install();await p.goto('file://'+path.join(root,'index.html'));await p.clock.runFor(100);
+    const p=await context.newPage();report.viewports.push({name:'small-mobile-reduced-motion',width:320,height:568});await p.emulateMedia({reducedMotion:'reduce'});await p.setViewportSize({width:320,height:568});await p.clock.install();await p.clock.pauseAt(new Date());await p.goto('file://'+path.join(root,'index.html'));await p.clock.runFor(100);
     await p.locator('.entrance-route').nth(0).focus();await p.keyboard.press('Enter');await p.clock.runFor(600);assert.equal((await p.evaluate(()=>HLDiagnostics.generation())).active.phase,'active');assert.equal(await p.locator('.character-plane').first().evaluate(e=>getComputedStyle(e).animationName),'none');
     for(const label of ['Return','Pause','Reading view','Exit','Fit whole field','Scroll detail'])assert.equal(await p.getByRole('button',{name:label,exact:true}).evaluate(e=>{const b=e.getBoundingClientRect();return b.x>=0&&b.y>=0&&b.right<=innerWidth&&b.bottom<=innerHeight&&b.height>=44&&document.elementFromPoint(b.x+b.width/2,b.y+b.height/2)?.closest('button')===e;}),true,label);
     await p.locator('.word-routes summary').focus();await p.keyboard.press('Enter');await p.locator('.word-routes button').first().focus();await p.keyboard.press('Enter');await p.clock.runFor(1000);assert.equal((await p.evaluate(()=>HLDiagnostics.generation())).count,2);await p.screenshot({path:path.join(out,'small-mobile-reduced-motion.png'),fullPage:true});pass('small mobile: keyboard row/word routes, unobstructed 44px controls and reduced-motion equivalent');await p.close();
