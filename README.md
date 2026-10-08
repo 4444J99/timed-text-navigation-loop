@@ -4,6 +4,8 @@ The original **LOOPHOLE / labyrinth** artwork, extracted from ETCETER4 as an ind
 
 The reference is [ETCETER4 commit `7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0`](https://github.com/unnamedplay-r/etceter4/commit/7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0), committed **July 20, 2017**. It is the last ancestor of the inspected `master` before October 8, 2017. This extraction implements that edition's existing experience.
 
+Repository: `timed-text-navigation-loop` — a self-contained browser artwork combining text, typography, color, and timed navigation. Readers enter randomly selected chambers, encounter fragments for fixed intervals, and return to a shared entrance. The live historical edition is published at <https://4444j99.github.io/timed-text-navigation-loop/>.
+
 ## Open it
 
 Open **`public/index.html`** in a browser. All runtime files are local; the artwork needs no installation, build step, API key, account, or network connection. `public/loophole.html` remains the original entrance URL.
@@ -84,16 +86,25 @@ This validates source hashes, exact body/inline-style preservation, return inter
 
 ## Git history and publication
 
-The repository contains a source-preservation commit tagged `source/2017-07-20`, followed by the working extraction on `main`. The source tag identifies this bounded extraction; the upstream historical SHA above remains the authority for the original repository.
+The two original extraction commits and the source-preservation tag `source/2017-07-20` are not part of this repository's own history; they are preserved losslessly in [`provenance/hole-loop.bundle`](provenance/hole-loop.bundle) (see [RESTORATION-IMPORT.md](RESTORATION-IMPORT.md)). The source tag identifies this bounded extraction; the upstream historical SHA above remains the authority for the original repository.
 
-The Git bundle supplied with this package can reconstruct the repository and its history. Run this from the folder containing the bundle; the new directory is separate from the supplied plain working files:
+To recover that history, run this from the repository root; the new directory is separate from this checkout:
 
 ```sh
-git clone hole-loop.bundle hole-loop-repository
+git clone provenance/hole-loop.bundle hole-loop-repository
+git -C hole-loop-repository show --stat source/2017-07-20
 ```
 
-The imported repository is published by the Pages workflow from `public/` on `main`. Set the Pages source to **GitHub Actions**. No hosted deployment is needed to run the artwork locally.
+The site is published by the Pages workflow from `public/` on `main`, only after the full source and browser verification succeeds on that commit. No hosted deployment is needed to run the artwork locally.
 
 ## Credits and rights
 
 Original artwork and source: **ET CETER4 / Anthony James Padavano**, as retained from the source and its repository history. This extraction introduces no project-wide license grant. Original creative materials retain their existing rights. Bootstrap and Normalize.css retain their accompanying upstream license notices. See [COPYRIGHT.md](COPYRIGHT.md).
+
+## New experimental edition (separate track)
+
+The same words acquire another meaning because something has happened between encounters.
+
+The six-encounter composition and four formal studies are implemented on [PR #59](https://github.com/4444J99/timed-text-navigation-loop/pull/59), with passing CI and a separate [owner-review preview](https://hole-loop-experimental.ajpadavano.chatgpt.site). The preview requires the owner's ChatGPT account. Merge, artist review and physical iPhone/Safari verification are separate, pending states.
+
+Development follows the [canonical C0–C6 GitHub roadmap](https://github.com/4444J99/timed-text-navigation-loop/issues/2) and [architecture / composition map](docs/ROADMAP.md). Product capabilities, company processes and repository boundaries are planned separately. Historical restoration is an independent track and does not gate experimental delivery.
