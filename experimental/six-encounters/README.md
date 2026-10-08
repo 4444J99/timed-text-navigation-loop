@@ -28,7 +28,7 @@ The initial entrance offers **Explore four studies**. Each study has a baseline,
 | `engine.js` | Session transitions, unique identities, memory, monotonic exposure accumulation |
 | `render.js` | Actual layout capture and coordinate-based rendering |
 | `app.js` | Reader actions, independent studies, ready/visibility/pause wiring |
-| `style.css` | Page frame, controls, responsive fit and scroll surfaces |
+| `style.css` | Edge-to-edge score, control overlays, independent study pages |
 | `docs/source-census.json` | Inspected chamber paths, exact revision, SHA-256 and read-only source text nodes |
 | `docs/PROVENANCE.md` | Source authority, normalization and research reference |
 | `docs/EVALUATION.md` | Working methods and assessment, separated from reader observations |
@@ -56,6 +56,10 @@ An existing Chromium can be selected with `HL_CHROMIUM_PATH=/absolute/path/to/ch
 
 ## Delivery boundary
 
-This branch starts at `main` revision `ee25e7a50019fd75ef1fae790d1e0f80b6b436e4`. It adds only this experimental directory and its dedicated verification workflow. It does not rely on the restoration PR, modify its sources, change production routing, or deploy an older edition. No existing suitable preview service was configured on the inspected default branch; this delivery does not claim a hosted preview.
+This branch starts at `main` revision `ee25e7a50019fd75ef1fae790d1e0f80b6b436e4`. It adds only this experimental directory and its dedicated verification workflow. It does not rely on the restoration PR, modify its sources, change production routing, or deploy an older edition. No existing suitable preview service was configured on the inspected default branch; a separate owner-private experimental deployment is now available at https://hole-loop-experimental.ajpadavano.chatgpt.site. This is independent of production routing and the historical edition.
 
 Original artwork and language: Anthony James Padavano / ETCETER4. This edition asserts no new license over the source artwork or third-party quotations. Proposed research methods are not claims about the original artwork's influences.
+
+## Presentation 1.1.0
+
+Scored chambers fill the browser viewport with their source cyan/black/pink fields and white type. Moment and I/you are rendered uppercase through CSS without changing the source strings. Futura is preferred where installed; Century Gothic, Trebuchet MS, Arial, and generic sans-serif are local fallbacks. Compact controls overlay the field, and the entrance’s eleven colored LOOPHOLE rows retain a small history/control overlay. Study explanations and configuration records stay on their independent pages. Full-screen here means the browser content area; Safari’s address/status bars remain under Safari’s control. `verification/fullscreen/` contains evidence of this revision.

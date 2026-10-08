@@ -9,3 +9,58 @@ button,select,textarea{font:inherit;color:inherit}button,select{background:trans
 .trace-strip{display:flex;gap:12px;min-height:116px;border-top:1px solid var(--line);padding:18px 0}.trace{flex:1;max-width:220px;border:1px solid var(--line);padding:10px}.trace svg{display:block;width:100%;height:44px}.trace small{font-size:10px;letter-spacing:1px}.trace-caption{font-size:12px;color:var(--muted)}
 .chamber-top{display:flex;justify-content:space-between;align-items:start;gap:20px;margin-bottom:20px}.chamber-top h1{font-size:42px;margin:8px 0}.chamber-status{font-size:13px;color:var(--muted);min-height:24px}.viewport{width:100%;overflow:auto;border:1px solid var(--line);position:relative;background:#ede6d6}.canvas-holder{position:relative;margin:auto}.canvas{position:absolute;top:0;left:0;transform-origin:top left;color:#292b29;overflow:hidden}.art-text{position:absolute;margin:0;white-space:nowrap;line-height:1.2}.phrase{position:absolute;font:400 16px/19px monospace;white-space:nowrap;width:180px;height:19px}.memory-layer{position:absolute;inset:0;pointer-events:none;width:100%;height:100%}.memory-layer rect{fill:none;stroke:currentColor;stroke-width:1;opacity:.25}.view-tools{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:12px 0 20px}.view-tools p{font-size:12px;color:var(--muted);margin:0}.study-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:28px 0}.study-card{border:1px solid var(--line);padding:24px;display:flex;flex-direction:column;align-items:start}.study-card p{color:var(--muted);flex:1}.study-card .number{font:38px Georgia,serif;color:var(--muted)}.variants{margin:20px 0}.study-question{max-width:720px;color:var(--muted)}details{border-top:1px solid var(--line);padding-top:16px;margin-top:24px}summary{cursor:pointer;min-height:44px}pre{overflow:auto;background:#eae6dd;padding:16px;font-size:12px}textarea{width:100%;min-height:100px;background:transparent;border:1px solid var(--line);padding:12px}.reading{max-width:800px}.reading .clause{font:24px/1.6 Georgia,serif}.reading-rows{overflow:auto;max-height:55vh;border:1px solid var(--line);padding:12px}.reading-rows li{white-space:nowrap;font:14px/1.8 monospace;padding-left:8px}.reading .actions{margin-top:24px}
 @media(max-width:650px){header{padding:20px;align-items:start}.wordmark{font-size:28px}.wordmark span{font-size:8px}.header-actions{gap:6px;max-width:175px}.header-actions button{padding:8px 10px;font-size:12px}main{padding:24px 20px}.entrance{grid-template-columns:1fr;gap:0}.portal{width:140px;height:140px;margin:12px auto 24px}.portal .count{font-size:48px}.portal span:last-child{bottom:20px;font-size:8px}.entrance .intro{order:2}.study-grid{grid-template-columns:1fr}.chamber-top{flex-direction:column}.chamber-top h1{font-size:34px}footer{padding:20px;flex-direction:column;align-items:start}.trace small{font-size:9px}.trace{padding:6px}.trace-strip{gap:6px}h1{letter-spacing:-1px}.view-tools button{font-size:13px;padding:10px}.reading .clause{font-size:21px}}
+
+/* The score occupies the browser viewport. Study apparatus stays on its own pages. */
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important}
+body[data-screen=entrance],body[data-screen=chamber]{--ink:#fff;--paper:#000;--line:#555;--muted:#ddd;background:#000;color:#fff;font-family:Futura,"Century Gothic","Trebuchet MS",Arial,sans-serif}
+body[data-screen=entrance] header,body[data-screen=chamber] header{position:fixed;z-index:5;top:0;left:0;right:0;border:0;padding:12px max(12px,env(safe-area-inset-right));pointer-events:none;justify-content:flex-end}
+body[data-screen=entrance] header .wordmark,body[data-screen=chamber] header .wordmark{display:none}
+body[data-screen=entrance] header button,body[data-screen=chamber] header button{pointer-events:auto}
+body[data-screen=entrance] footer,body[data-screen=chamber] footer{display:none}
+body[data-screen=entrance] button,body[data-screen=chamber] button,body[data-screen=entrance] select{background:#0009;color:#fff;border-color:#ffffff80;font-size:13px;min-height:44px;padding:8px 12px}
+body[data-screen=entrance] button.primary,body[data-screen=chamber] button.primary{background:#fff;color:#000;border-color:#fff}
+body[data-screen=entrance] button:hover,body[data-screen=chamber] button:hover{background:#333;color:#fff}
+body[data-screen=entrance] :focus-visible,body[data-screen=chamber] :focus-visible{outline:3px solid #fff;outline-offset:3px;box-shadow:0 0 0 5px #000}
+body[data-screen=entrance] main{min-height:100vh;min-height:100dvh;padding:76px 24px max(20px,env(safe-area-inset-bottom));display:flex;flex-direction:column;max-width:850px}
+body[data-screen=entrance] .entrance{display:flex;flex-direction:column;justify-content:center;flex:1;gap:0;min-height:0;text-align:center}
+body[data-screen=entrance] .entrance>div:last-child{order:-1}
+body[data-screen=entrance] h1{font:400 clamp(40px,7vw,72px)/1.1 Futura,"Century Gothic","Trebuchet MS",Arial,sans-serif;letter-spacing:0;margin-bottom:20px}
+body[data-screen=entrance] .portal{margin:0 auto 20px}
+body[data-screen=entrance] .portal .count{font-family:inherit}
+body[data-screen=entrance] .cycles,body[data-screen=entrance] .actions{justify-content:center}
+body[data-screen=entrance] .mode{margin:16px auto;max-width:420px;font-size:12px}
+body[data-screen=entrance] .eyebrow{margin-bottom:10px}
+body[data-screen=entrance] .trace-strip{margin-top:24px;min-height:0;justify-content:center;border:0;padding:0}
+body[data-screen=entrance] .trace{border:0}
+body[data-screen=entrance] .trace small{font-size:9px}
+body[data-screen=chamber] main{padding:0;max-width:none}
+body[data-screen=chamber] .chamber-top{display:contents}
+body[data-screen=chamber] .chamber-top h1,body[data-screen=chamber] .chamber-top .eyebrow{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+body[data-screen=chamber] .chamber-status{position:fixed;z-index:4;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 100px);left:12px;margin:0;color:#fff;background:#000b;padding:2px 6px;font-size:11px;pointer-events:none}
+body[data-screen=chamber] #chamber-actions{position:fixed;z-index:4;bottom:max(12px,env(safe-area-inset-bottom));left:12px;display:flex;gap:8px}
+body[data-screen=chamber] .cycles{position:fixed;z-index:4;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 60px);left:12px;margin:0;background:#000b;color:#fff;padding:4px 6px;font-size:11px}
+body[data-screen=chamber] .marker.complete{background:#fff}
+body[data-screen=chamber] .view-tools{position:fixed;z-index:4;bottom:max(12px,env(safe-area-inset-bottom));right:12px;margin:0;gap:6px}
+body[data-screen=chamber] .view-tools p{display:none}
+body[data-screen=chamber] .view-tools button{font-size:11px;padding:8px;min-width:44px}
+.immersive-viewport{position:fixed;inset:0;width:100%;height:100vh;height:100dvh;border:0;display:flex;align-items:center;overflow:auto}
+.immersive-viewport .canvas-holder{flex:none}
+.immersive-viewport.detail{display:block}
+@media(max-width:450px){body[data-screen=chamber] #chamber-actions{gap:4px}body[data-screen=chamber] #chamber-actions button{font-size:11px;padding:8px}body[data-screen=chamber] .view-tools{gap:4px}body[data-screen=entrance] main{padding:76px 16px 20px}body[data-screen=entrance] .portal{margin-bottom:12px}body[data-screen=entrance] .trace-strip{margin-top:16px}}
+body[data-screen=entrance]{--ink:#000;--paper:#fff;--line:#555;--muted:#222;background:#fff;color:#000}
+.entrance-field{position:fixed;inset:0;display:flex;flex-direction:column;overflow:hidden;pointer-events:none}
+.entrance-field>div{display:flex;justify-content:space-between;align-items:center;flex:1;min-height:0;padding:0 10px;font:400 clamp(44px,12vw,180px)/.9 Futura,"Century Gothic","Trebuchet MS",Arial,sans-serif}
+body[data-screen=entrance] main{max-width:none;position:relative;justify-content:flex-end}
+body[data-screen=entrance] .entrance{position:relative;z-index:1;flex:0;align-items:flex-start;text-align:left;max-width:440px;background:#ffffffed;padding:12px}
+body[data-screen=entrance] .entrance h1{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+body[data-screen=entrance] .portal{width:auto;height:auto;border:0;display:flex;gap:10px;align-items:baseline;margin:0}
+body[data-screen=entrance] .portal:before{display:none}
+body[data-screen=entrance] .portal .count{font-size:24px}
+body[data-screen=entrance] .portal span:last-child{position:static;font-size:10px}
+body[data-screen=entrance] .cycles,body[data-screen=entrance] .actions{justify-content:flex-start}
+body[data-screen=entrance] .cycles{margin:6px 0 12px}
+body[data-screen=entrance] button,body[data-screen=entrance] select,body[data-screen=entrance] header button{background:#fff;color:#000;border-color:#0009}
+body[data-screen=entrance] button.primary{background:#000;color:#fff;border-color:#000}
+body[data-screen=entrance] .trace-strip{position:relative;background:#ffffffed;max-width:660px;padding:8px;margin-top:8px}
+body[data-screen=entrance] .trace-strip:empty{display:none}
+body[data-screen=entrance] :focus-visible{outline-color:#000;box-shadow:0 0 0 5px #fff}

@@ -19,7 +19,7 @@
     const row = document.createElement('div'); row.className = 'actions';
     list.forEach(([label, action, cls]) => row.append(button(label, action, cls))); parent.append(row); return row;
   }
-  function clear() { renderGeneration++; art?.destroy(); art = null; app.replaceChildren(); }
+  function clear() { renderGeneration++; art?.destroy(); art = null; app.replaceChildren(); document.body.dataset.screen=screen; }
   function focusHeading() { const el = app.querySelector('h1'); if (el) { el.tabIndex=-1; el.focus({preventScroll:true}); } }
   function cancelClock() {
     if (clock) { clock.cancel(); const s = studySession?.active || session.active; if (s) s.elapsed = clock.elapsed; }
@@ -34,8 +34,10 @@
   function entrance() {
     cancelClock(); screen = 'entrance'; clear();
     const complete = session.history.length === 6;
-    app.innerHTML = `<section class="entrance"><div class="intro"><p class="eyebrow">Six encounters / ${session.mode === 'timed' ? 'timed return' : 'reader-paced'}</p><h1>${complete ? 'Again is<br>another place.' : session.history.length ? 'Something<br>remains.' : 'Enter.<br>Return.<br>Encounter again.'}</h1><p>The same words acquire another meaning because something has happened between encounters.</p><div id="entrance-controls"></div></div><div><div class="portal" aria-label="${session.history.length} returned encounters"><span class="count">${session.history.length.toString().padStart(2,'0')}</span><span>RETURNS / 06</span></div>${cycles(session)}</div></section>${traces(session)}<p class="trace-caption">${session.history.length ? 'The three most recent returns, oldest to newest. Earlier positions remain in session memory.' : 'The entrance will retain the consequences of your returns.'}</p>`;
+    app.innerHTML = `<section class="entrance"><div class="intro"><p class="eyebrow">Six encounters / ${session.mode === 'timed' ? 'timed return' : 'reader-paced'}</p><h1>${complete ? 'again' : session.history.length ? 'return' : 'hole-loop'}</h1><p class="sr-only">The same words acquire another meaning because something has happened between encounters.</p><div id="entrance-controls"></div></div><div><div class="portal" aria-label="${session.history.length} returned encounters"><span class="count">${session.history.length.toString().padStart(2,'0')}</span><span>RETURNS / 06</span></div>${cycles(session)}</div></section>${traces(session)}<p class="trace-caption sr-only">${session.history.length ? 'The three most recent returns, oldest to newest. Earlier positions remain in session memory.' : 'The entrance will retain the consequences of your returns.'}</p>`;
     const controls = app.querySelector('#entrance-controls');
+    const field=document.createElement('div');field.className='entrance-field';field.setAttribute('aria-hidden','true');
+    HLScore.entrance.rows.forEach(color=>{const row=document.createElement('div');row.style.color=color;[...HLContent.entranceLabel].forEach(letter=>{const span=document.createElement('span');span.textContent=letter;row.append(span);});field.append(row);});app.prepend(field);
     if (!session.entries.length) {
       const label = document.createElement('label'); label.className='mode'; label.textContent='Choose the duration rule';
       const select = document.createElement('select'); select.id='mode'; select.setAttribute('aria-label','Duration rule');
@@ -91,11 +93,11 @@
   function chamber(s, previous = null, previousPaused = false) {
     cancelClock();paused=previousPaused;screen=s===session?'chamber':'study-time';clear();
     const e=s.active,c=HLContent.chambers[e.chamber];
-    app.innerHTML=`<div class="chamber-top"><div><p class="eyebrow">${s===session ? `Encounter ${s.entries.length} / 6 · visit ${e.visit}` : 'Independent time study'}</p><h1>${c.name}</h1><p class="chamber-status"></p></div><div id="chamber-actions"></div></div>${s===session?cycles(s):''}<div id="artwork"></div>${s===session?traces(s):''}`;
+    app.innerHTML=`<div class="chamber-top"><div><p class="eyebrow">${s===session ? `Encounter ${s.entries.length} / 6 · visit ${e.visit}` : 'Independent time study'}</p><h1>${c.name}</h1><p class="chamber-status"></p></div><div id="chamber-actions"></div></div>${s===session?cycles(s):''}<div id="artwork"></div>`;
     const controls=app.querySelector('#chamber-actions');
     controls.append(button('Return',()=>returnFrom(s,e.id),'primary'));
     if (s.mode==='timed') { const b=button('Pause',()=>togglePause(s,b));b.textContent=paused?'Resume':'Pause';b.setAttribute('aria-pressed',String(paused));controls.append(b); }
-    mountArt(app.querySelector('#artwork'),e.chamber,{variant:e.visit===2,memory:s.layouts[e.chamber]},layout=>{
+    mountArt(app.querySelector('#artwork'),e.chamber,{variant:e.visit===2,memory:s.layouts[e.chamber],immersive:s===session},layout=>{
       s.recordLayout(e.id,layout); if(s.active?.id===e.id) startClock(s,previous);
     });
     updateStatus(s);focusHeading();
@@ -136,7 +138,7 @@
     cancelClock();screen='study';clear();const s=studies[study];
     app.innerHTML=`<p class="eyebrow">Study · ${s.reference}</p><h1>${s.title}</h1><p class="study-question">${s.question}</p><div class="variants"></div><div id="study-art"></div>`;
     const variants=app.querySelector('.variants');
-    const choices=study==='color'?[['baseline','Baseline · ivory'],['green','Variant · green'],['violet','Variant · violet']]:study==='space'?[['baseline','Baseline · continuous'],['gap','Variant · interval']]:[['baseline','First encounter'],['trace','Second encounter · trace']];
+    const choices=study==='color'?[['baseline','Baseline · pink'],['green','Variant · green'],['violet','Variant · violet']]:study==='space'?[['baseline','Baseline · continuous'],['gap','Variant · interval']]:[['baseline','First encounter'],['trace','Second encounter · trace']];
     choices.forEach(([v,label])=>{
       const b=button(label,()=>{
         if(study==='memory' && v==='trace' && !studyMemory) return;

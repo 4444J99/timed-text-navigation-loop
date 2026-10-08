@@ -24,6 +24,7 @@ function check(name){reports.push(name);console.log('PASS',name);}
       const page=await context.newPage();await page.setViewportSize(viewport);info.viewports.push({name,...viewport});
       const errors=[];page.on('pageerror',e=>errors.push(e.message));
       await page.clock.install();await page.goto(url);await page.clock.runFor(100);
+      assert.equal(await page.locator('.entrance-field>div').count(),11);
       await page.screenshot({path:path.join(output,`${name}-entrance.png`),fullPage:true});
       // Native keyboard activation and visible focus.
       await page.locator('#mode').focus();await page.keyboard.press('Tab');
@@ -36,6 +37,14 @@ function check(name){reports.push(name);console.log('PASS',name);}
       for(let i=0;i<6;i++){
         if(i){await page.getByRole('button',{name:'Enter next chamber',exact:true}).click();await page.clock.runFor(100);}
         const s=await page.evaluate(()=>HLDiagnostics.snapshot());assert.equal(s.active.chamber,sequence[i]);
+        const presentation=await page.locator('.viewport').evaluate(e=>{
+          const b=e.getBoundingClientRect(),canvas=e.querySelector('.canvas'),style=getComputedStyle(canvas);
+          return {x:b.x,y:b.y,width:b.width,height:b.height,field:style.backgroundColor,color:style.color,uppercase:style.textTransform,font:getComputedStyle(canvas.firstElementChild).fontFamily};
+        });
+        assert.deepEqual([presentation.x,presentation.y,presentation.width,presentation.height],[0,0,viewport.width,viewport.height]);
+        assert.equal(presentation.field,sequence[i]==='040915'?'rgb(0, 255, 255)':sequence[i]==='041015'?'rgb(0, 0, 0)':'rgb(255, 0, 170)');
+        assert.equal(presentation.color,'rgb(255, 255, 255)');assert.ok(presentation.font.startsWith('Futura'));
+        assert.equal(presentation.uppercase,sequence[i]==='042115'?'none':'uppercase');
         if(i===0){firstMoment=s.layouts['040915'];assert.equal(await page.locator('.memory-layer rect').count(),0);}
         if(i===3){
           const bounds=await page.locator('.memory-layer rect').evaluateAll(es=>es.map(e=>({x:+e.getAttribute('x'),y:+e.getAttribute('y'),width:+e.getAttribute('width'),height:+e.getAttribute('height')})));
@@ -65,19 +74,37 @@ function check(name){reports.push(name);console.log('PASS',name);}
       await page.getByRole('button',{name:'Back to experience',exact:true}).click();
       await page.getByRole('button',{name:'Restart',exact:true}).click();assert.equal((await page.evaluate(()=>HLDiagnostics.snapshot())).history.length,0);
       check(`${name}: complete score, reader-paced hold, entrance hold, reread, restart`);
+      check(`${name}: edge-to-edge source fields, white type and source capitalization on all six encounters`);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
       await page.getByRole('button',{name:'Explore four studies'}).click();
       await page.locator('.study-card').nth(0).getByRole('button',{name:'Open study'}).click();await page.clock.runFor(100);
       const fixed=()=>page.locator('.art-text').evaluate(e=>{const s=getComputedStyle(e),b=e.getBoundingClientRect();return {text:e.textContent,font:s.fontFamily,size:s.fontSize,weight:s.fontWeight,color:s.color,x:b.x,y:b.y,width:b.width,height:b.height};});
       const baseline=await fixed();const fields=[];
-      for(const condition of ['Baseline · ivory','Variant · green','Variant · violet']){await page.getByRole('button',{name:condition,exact:true}).click();await page.clock.runFor(100);assert.deepEqual(await fixed(),baseline);fields.push(await page.locator('.canvas').evaluate(e=>getComputedStyle(e).backgroundColor));await page.screenshot({path:path.join(output,`${name}-color-${fields.length}.png`),fullPage:true});}
+      for(const condition of ['Baseline · pink','Variant · green','Variant · violet']){await page.getByRole('button',{name:condition,exact:true}).click();await page.clock.runFor(100);assert.deepEqual(await fixed(),baseline);fields.push(await page.locator('.canvas').evaluate(e=>getComputedStyle(e).backgroundColor));await page.screenshot({path:path.join(output,`${name}-color-${fields.length}.png`),fullPage:true});}
       assert.equal(new Set(fields).size,3);check(`${name}: color comparison fixes all prescribed properties`);
-      await page.getByRole('button',{name:'Reset study'}).click();assert.equal(await page.getByRole('button',{name:'Baseline · ivory'}).getAttribute('aria-pressed'),'true');
+      await page.getByRole('button',{name:'Reset study'}).click();assert.equal(await page.getByRole('button',{name:'Baseline · pink'}).getAttribute('aria-pressed'),'true');
       await page.getByRole('button',{name:'Study index',exact:true}).click();await page.locator('.study-card').nth(1).getByRole('button',{name:'Open study'}).click();await page.clock.runFor(100);assert.equal(await page.locator('.phrase').count(),378);await page.getByRole('button',{name:'Variant · interval'}).click();await page.clock.runFor(100);assert.equal(await page.locator('.phrase').count(),378);await page.getByRole('button',{name:'Reset study'}).click();
       await page.getByRole('button',{name:'Study index',exact:true}).click();await page.locator('.study-card').nth(3).getByRole('button',{name:'Open study'}).click();await page.clock.runFor(100);await page.getByRole('button',{name:'Second encounter · trace'}).click();await page.clock.runFor(100);assert.equal(await page.locator('.memory-layer rect').count(),2);await page.getByRole('button',{name:'Reset study'}).click();assert.equal(await page.locator('.memory-layer rect').count(),0);
       await page.getByRole('button',{name:'Study index',exact:true}).click();await page.locator('.study-card').nth(2).getByRole('button',{name:'Open study'}).click();await page.getByRole('button',{name:'Enter condition'}).click();await page.clock.runFor(7000);assert.equal(await page.getByRole('button',{name:'Return',exact:true}).count(),1);const timeFixed=await fixed();await page.getByRole('button',{name:'Return',exact:true}).click();await page.getByRole('button',{name:'Timed · five seconds'}).click();await page.getByRole('button',{name:'Enter condition'}).click();await page.clock.runFor(100);assert.deepEqual(await fixed(),timeFixed);await page.clock.runFor(5000);assert.equal(await page.getByRole('button',{name:'Enter condition'}).count(),1);assert.equal((await page.evaluate(()=>HLDiagnostics.snapshot())).entries.length,0);
       check(`${name}: all study resets, independent sessions and time presentation`);
       assert.deepEqual(errors,[]);await page.close();
+    }
+    for(const [name,viewport] of [['small-mobile',{width:320,height:568}],['landscape',{width:844,height:390}]]) {
+      info.viewports.push({name,...viewport});
+      const p=await context.newPage();await p.setViewportSize(viewport);await p.clock.install();await p.goto(url);await p.clock.runFor(100);
+      await p.locator('#mode').selectOption('timed');await p.getByRole('button',{name:'Begin',exact:true}).click();await p.clock.runFor(100);
+      for(const label of ['Return','Pause','Reading view','Exit','Fit whole field','Scroll detail']) {
+        assert.equal(await p.getByRole('button',{name:label,exact:true}).evaluate(e=>{
+          const b=e.getBoundingClientRect(),target=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);
+          return b.x>=0&&b.y>=0&&b.right<=innerWidth&&b.bottom<=innerHeight&&b.height>=44&&target?.closest('button')===e;
+        }),true,`${name}: ${label} must be visible, reachable and unoccluded`);
+      }
+      await p.screenshot({path:path.join(output,`${name}-encounter-1.png`),fullPage:true});
+      await p.getByRole('button',{name:'Return',exact:true}).click();await p.getByRole('button',{name:'Enter next chamber',exact:true}).click();await p.clock.runFor(100);
+      assert.equal(await p.locator('.phrase').count(),378);
+      const box=await p.locator('.viewport').boundingBox();assert.deepEqual(box,{x:0,y:0,...viewport});
+      await p.screenshot({path:path.join(output,`${name}-encounter-2.png`),fullPage:true});
+      check(`${name}: fullscreen viewport and unobstructed 44px controls including pause`);await p.close();
     }
     const page=await context.newPage();await page.setViewportSize({width:1440,height:1000});await page.clock.install();await page.goto(url);await page.clock.runFor(100);
     await page.locator('#mode').selectOption('timed');await page.getByRole('button',{name:'Begin',exact:true}).click();await page.clock.runFor(1000);

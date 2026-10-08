@@ -8,7 +8,7 @@
       layer.append(r);
     });
   }
-  function mount(container, id, { variant = false, memory = null, color = null } = {}) {
+  function mount(container, id, { variant = false, memory = null, color = null, immersive = false } = {}) {
     const c = { ...(id === '040915' ? config.moment : id === '041015' ? config.field : config.progress) };
     if(id === '041015') c.width = 1800; // Provisional width, resolved from real glyph advance below.
     const viewport = document.createElement('div'); viewport.className = 'viewport'; viewport.tabIndex = 0;
@@ -17,6 +17,9 @@
     const canvas = document.createElement('div'); canvas.className = `canvas ${id === '040915' ? 'moment' : id === '041015' ? 'field' : 'progress'}`;
     canvas.style.width = `${c.width}px`; canvas.style.height = `${c.height}px`;
     canvas.style.backgroundColor = color || c.field || config.colors.baseline;
+    canvas.style.color = c.foreground || config.colors.foreground;
+    canvas.style.textTransform = c.uppercase ? 'uppercase' : 'none';
+    if (immersive) { viewport.classList.add('immersive-viewport'); viewport.style.backgroundColor=canvas.style.backgroundColor; }
     if (id === '041015') {
       for (let row = 0; row < chambers[id].rows; row++) for (let col = 0; col < chambers[id].columns; col++) {
         const el = document.createElement('span'); el.className = 'phrase';
@@ -27,7 +30,9 @@
       }
     } else chambers[id].clauses.forEach((text, i) => {
       const el = document.createElement('p'); el.className = 'art-text'; el.textContent = text;
-      el.style.font = `${c.weight} ${c.size}px/1.2 ${c.font}`; el.style.left=`${c.x}px`; el.style.top=`${c.y + i * (c.clauseInterval || 0)}px`; canvas.append(el);
+      el.style.font = `${c.weight} ${c.size}px/1.2 ${c.font}`; el.style.left=`${c.x}px`; el.style.top=`${c.y + i * (c.clauseInterval || 0)}px`;
+      if(id==='040915') {el.style.left='50%';el.style.transform='translateX(-50%)';el.style.textAlign='center';}
+      canvas.append(el);
     });
     if (variant && memory && id === '040915') {
       const svg = document.createElementNS(ns, 'svg'); svg.classList.add('memory-layer');
@@ -46,9 +51,17 @@
     }
     let scale = 1, detail = false;
     function resize() {
-      scale = detail ? 1 : Math.min(1, viewport.clientWidth / c.width);
+      scale = detail ? 1 : immersive ? id === '041015' ? viewport.clientWidth / c.width : Math.min(viewport.clientWidth / c.width, viewport.clientHeight / c.height) : Math.min(1, viewport.clientWidth / c.width);
+      if (immersive && id === '041015') {
+        // Fit keeps every logical row and column. Distribute row intervals over the screen;
+        // detail restores the unscaled, closely set source field for reading and panning.
+        const logicalHeight = detail ? 850 : viewport.clientHeight / scale;
+        c.height=logicalHeight;canvas.style.height=`${logicalHeight}px`;
+        canvas.querySelectorAll('.phrase').forEach(el=>{el.style.top=`${detail ? 26 + +el.dataset.row * c.rowHeight : 60 + +el.dataset.row * (logicalHeight-120)/42}px`;});
+      }
       holder.style.width = `${c.width * scale}px`; holder.style.height = `${c.height * scale}px`;
-      canvas.style.transform = `scale(${scale})`; viewport.style.maxHeight = detail ? '65vh' : 'none';
+      canvas.style.transform = `scale(${scale})`; viewport.style.maxHeight = immersive ? 'none' : detail ? '65vh' : 'none';
+      if (immersive) {holder.style.margin=detail?'0': 'auto';viewport.classList.toggle('detail',detail);}
     }
     const observer = new ResizeObserver(resize); observer.observe(viewport); resize();
     return {
