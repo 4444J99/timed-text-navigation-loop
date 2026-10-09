@@ -118,9 +118,8 @@
     const pause=button(freePaused?'Resume':'Pause',()=>{freePaused=!freePaused;freeClock?.set({paused:freePaused});document.body.dataset.paused=String(freePaused);pause.textContent=freePaused?'Resume':'Pause';pause.setAttribute('aria-pressed',String(freePaused));freeStatus();});pause.setAttribute('aria-pressed',String(freePaused));controls.append(pause);
     e.links.forEach((r,i)=>{const b=button(`${r.word} → ${HLContent.chambers[r.target].name}`,()=>freeChoose(i));b.disabled=e.phase!=='active';app.querySelector('.word-routes>div').append(b);});
     app.querySelector('.word-routes>div').append(button('Download variation record',downloadGeneration));
-    mountArt(app.querySelector('#artwork'),e.chamber,{immersive:true,color:e.background,colors:e.colors,routes:{links:e.links,choose:freeChoose}},()=>{
-      if(exploration.active?.id!==id)return;
-      art.canvas.dataset.motion=e.motion;
+    mountArt(app.querySelector('#artwork'),e.chamber,{immersive:true,color:e.background,colors:e.colors,seed:e.seed,motion:e.motion,routes:{links:e.links,choose:freeChoose}},()=>{
+      if(exploration.active?.id!==id || (!reuse && exploration.active.phase!=='entering'))return;
       if(reuse){freeTime(reuse.duration,reuse.onExpire,reuse);return;}
       freeTime(HLGeneration.config.entry,()=>{
         if(!exploration.ready(id))return;document.body.dataset.phase='active';document.querySelectorAll('.route-word,.word-routes button').forEach(b=>b.disabled=false);

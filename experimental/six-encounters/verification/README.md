@@ -19,3 +19,16 @@ Rerun using the experimental README's instructions. New evidence goes to ignored
 ## Word-routed generative edition
 
 `generative/` contains generated entrances, chamber entry/active/exit frames, color-coupled fields, routed Moment and 378-instance I/you layouts. Nineteen total pure tests pass (eleven protected-score plus eight new generative tests); seven new browser groups plus the existing 23 groups pass. Pause/reading/visibility wiring, no-selection return, direct word routes, score isolation, early Exit cancellation, native keyboard operation and reduced motion are checked. The 320×568 reduced-motion control check supplements desktop/mobile runs; the gen report records those environments. See `docs/GENERATIVE.md` for method and limitations.
+
+## Character-cell revision 1.2.0 (2026-10-09)
+
+The refreshed `generative/` captures represent the current glyph renderer.
+`character-cells/browser-report.json` records 39 additional checks: all three
+axes × all three motion families × four full-screen viewport sizes, then
+seed replay, reduced motion/source accessibility and the early Return race.
+Each axis/family run checks both motion signs, fixed cell bounds, CSS/model
+agreement and pixel-identical endpoints across a complete wrap period.
+Twenty-one pure tests pass. Protected-score/previous generative checks remain
+required. Chromium viewport emulation does not establish physical iOS behavior;
+Safari, dynamic browser chrome, safe areas, assistive technology, touch and
+dense-field frame rate still require physical-device verification.

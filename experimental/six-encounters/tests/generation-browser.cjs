@@ -20,14 +20,13 @@ function pass(name){checks.push(name);console.log('PASS',name);}
       const current=await p.locator('.canvas').evaluate(e=>({background:getComputedStyle(e).backgroundColor,motion:e.dataset.motion,text:e.querySelector('.art-text').textContent,colors:[...e.querySelectorAll('.loop-word')].map(w=>getComputedStyle(w).color),animation:getComputedStyle(e.querySelector('.character-plane')).animationName}));
       assert.equal(current.background,'rgb(255, 0, 255)');assert.equal(current.text,'forced progress');assert.notEqual(current.animation,'none');assert.equal(new Set(current.colors).size,2);
       assert.equal(await p.locator('.character-cell').count(),14);
-      const tile=await p.locator('.character-cell').first().evaluate(cell=>({overflow:getComputedStyle(cell).overflow,source:cell.textContent,shadow:getComputedStyle(cell.querySelector('.character-plane'),'::before').textShadow}));
-      assert.equal(tile.overflow,'hidden');assert.equal(tile.source,'f');assert.equal((tile.shadow.match(/rgb\(/g)||[]).length,1);
-      const endpoints=await p.locator('.character-plane').first().evaluate(el=>{const a=el.getAnimations()[0];a.pause();const values=[0,1200,2400].map(t=>{a.currentTime=t;return new DOMMatrix(getComputedStyle(el).transform).m41;});const width=parseFloat(getComputedStyle(el).width);a.play();return {values,width};});
-      assert.ok(Math.abs(endpoints.values[1]-endpoints.width/2)<.1);assert.ok(Math.abs(endpoints.values[2]-endpoints.values[0])<.1);
+      const tile=await p.locator('.character-cell').first().evaluate(cell=>({overflow:getComputedStyle(cell).overflow,source:cell.textContent,shadow:getComputedStyle(cell.querySelector('.character-plane'),'::before').textShadow,transparent:getComputedStyle(cell).backgroundColor}));
+      assert.equal(tile.overflow,'hidden');assert.equal(tile.source,'f');assert.equal(tile.transparent,'rgba(0, 0, 0, 0)');assert.equal((tile.shadow.match(/rgb\(/g)||[]).length,8);
+      assert.equal(current.animation,`character-${e.motion}`);
 
       await p.screenshot({path:path.join(out,`${name}-progress-active.png`),fullPage:true});
       await p.locator('.word-routes summary').click();const downloaded=p.waitForEvent('download');await p.getByRole('button',{name:'Download variation record',exact:true}).click();
-      const file=await downloaded,record=JSON.parse(fs.readFileSync(await file.path(),'utf8'));assert.equal(record.active.seed,e.seed);assert.deepEqual(record.active.colors,e.colors);assert.equal(record.configuration.version,'1.1.0');await p.locator('.word-routes summary').click();
+      const file=await downloaded,record=JSON.parse(fs.readFileSync(await file.path(),'utf8'));assert.equal(record.active.seed,e.seed);assert.deepEqual(record.active.colors,e.colors);assert.equal(record.configuration.version,'1.2.0');await p.locator('.word-routes summary').click();
       const oldId=e.id,link=e.links[0];await p.locator('.route-word[data-route="0"]').click();assert.equal((await p.evaluate(()=>HLDiagnostics.generation())).active.phase,'exiting');assert.equal(await p.locator('.canvas-holder').evaluate(e=>getComputedStyle(e).animationName),'loop-exit');await p.screenshot({path:path.join(out,`${name}-progress-exiting.png`),fullPage:true});
       await p.clock.runFor(1000);e=(await p.evaluate(()=>HLDiagnostics.generation())).active;assert.notEqual(e.id,oldId);assert.equal(e.chamber,link.target);assert.equal(e.background,link.background);assert.equal(e.phase,'active');
       assert.deepEqual(await p.evaluate(()=>HLDiagnostics.snapshot()),scored);await p.screenshot({path:path.join(out,`${name}-moment-after-word.png`),fullPage:true});pass(`${name}: one gap per row, row-color entry, animated text, direct word route, score isolation`);

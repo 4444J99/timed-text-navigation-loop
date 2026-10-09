@@ -8,7 +8,7 @@
       layer.append(r);
     });
   }
-  function mount(container, id, { variant = false, memory = null, color = null, immersive = false, routes = null, colors = null } = {}) {
+  function mount(container, id, { variant = false, memory = null, color = null, immersive = false, routes = null, colors = null, seed = 0, motion = 'drift', characterMotion = undefined } = {}) {
     const c = { ...(id === '040915' ? config.moment : id === '041015' ? config.field : config.progress) };
     if(id === '041015') c.width = 1800; // Provisional width, resolved from real glyph advance below.
     const viewport = document.createElement('div'); viewport.className = 'viewport'; viewport.tabIndex = 0;
@@ -20,12 +20,16 @@
     canvas.style.color = c.foreground || config.colors.foreground;
     canvas.style.textTransform = c.uppercase ? 'uppercase' : 'none';
     if (immersive) { viewport.classList.add('immersive-viewport'); viewport.style.backgroundColor=canvas.style.backgroundColor; }
-    let wordIndex=0;
+    canvas.dataset.motion=motion;
+    let wordIndex=0,glyphIndex=0;
     function word(text,routeIndex=null,focusable=true){
       const span=document.createElement('span');span.className='loop-word';
       [...text].forEach((char,index)=>{
-        const cell=document.createElement('span');cell.className='character-cell';cell.dataset.axis=['horizontal','vertical','diagonal'][index%3];
-        cell.style.setProperty('--character-delay',`${-(wordIndex*text.length+index)*.137}s`);
+        const cell=document.createElement('span');cell.className='character-cell';const plan=root.HLGeneration.character(seed,glyphIndex++,characterMotion);cell.dataset.axis=plan.axis;
+        cell.style.setProperty('--character-period',`${plan.period}ms`);
+        cell.style.setProperty('--travel-x',`${plan.axis==='vertical'?0:plan.direction*100}%`);
+        cell.style.setProperty('--travel-y',`${plan.axis==='horizontal'?0:plan.direction*100}%`);
+        cell.style.setProperty('--character-delay',`${-plan.phase*plan.period}ms`);
         const original=document.createElement('span');original.className='character-source';original.textContent=char;
         const plane=document.createElement('span');plane.className='character-plane';plane.setAttribute('aria-hidden','true');
         plane.dataset.character=char;
@@ -60,7 +64,7 @@
       rects(svg, memory.bounds, 8); canvas.append(svg);
     }
     holder.append(canvas); viewport.append(holder); container.append(viewport);
-    // Measure only unique glyph advances; CSS shadows tile without extra DOM copies.
+    // Measure only unique glyph advances; CSS shadows tile all neighboring cells without extra DOM copies.
     const advances=new Map();
     canvas.querySelectorAll('.character-cell').forEach(cell=>{
       const char=cell.textContent;

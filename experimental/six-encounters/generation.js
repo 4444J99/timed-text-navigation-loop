@@ -1,7 +1,7 @@
 /* Seeded formal rules and a separate, bounded generative route session. No DOM. */
 (function(root){
   function freeze(o){Object.values(o).forEach(v=>{if(v&&typeof v==='object')freeze(v);});return Object.freeze(o);}
-  const config=freeze({version:'1.1.0',characterMotion:{axes:['horizontal','vertical','diagonal'],periods:[2400,3100,3700],tile:[3,3],clip:true},exposure:5000,entry:450,exit:350,historyLimit:32,traceLimit:3,
+  const config=freeze({version:'1.2.0',characterMotion:{axes:['horizontal','vertical','diagonal'],periods:[2400,3100,3700],tile:[3,3],clip:true},exposure:5000,entry:450,exit:350,historyLimit:32,traceLimit:3,
     backgrounds:Object.freeze(['#000000','#00ffff','#ff00ff','#ffff00']),
     routes:Object.freeze({'040915':Object.freeze([{word:'before',target:'041015'},{word:'again',target:'042115'}]),
       '041015':Object.freeze([{word:'whereiendandubegin',target:'040915'},{word:'whereiendandubegin',target:'042115'}]),
@@ -16,6 +16,19 @@
     if(contrast(background,color)>=4.5&&!result.includes(color))result.push(color);
   }const fallback=contrast(background,'#ffffff')>=4.5?['#ffffff','#eeeeee','#dddddd']:['#000000','#101010','#202020'];
     for(const c of fallback)if(result.length<3&&!result.includes(c)&&contrast(background,c)>=4.5)result.push(c);return result;
+  }
+  // Independent seeded streams avoid consuming/changing route and palette randomness.
+  function character(seed,index,{axes=config.characterMotion.axes,periods=config.characterMotion.periods}={}){
+    if(!axes.length || axes.some(a=>!config.characterMotion.axes.includes(a)) || periods.length!==axes.length || periods.some(p=>!Number.isFinite(p)||p<=0))throw new RangeError('Invalid character motion configuration');
+    const rng=random((seed ^ Math.imul(index+1,0x9e3779b1))>>>0),slot=Math.floor(rng()*axes.length);
+    return {axis:axes[slot],period:periods[slot],phase:rng(),direction:rng()<.5?-1:1};
+  }
+  // Normalized torus position: wave and stretch change velocity, never territories.
+  function characterPosition(plan,time,family='drift'){
+    const t=((time/plan.period+plan.phase)%1+1)%1;
+    const wave=v=>v-Math.sin(2*Math.PI*v)/(2*Math.PI),lo=Math.floor(t*8)/8;
+    const u=family==='wave'?wave(lo)+(wave(lo+1/8)-wave(lo))*(t-lo)*8:family==='stretch'?(t<.5?t*.5:.25+(t-.5)*1.5):t;
+    return {x:plan.axis==='vertical'?0:u*plan.direction,y:plan.axis==='horizontal'?0:u*plan.direction};
   }
   let serial=0;
   class RouteSession {
@@ -36,6 +49,6 @@
     exit(){this.active=null;}
     snapshot(){return structuredClone({configVersion:config.version,count:this.count,visits:this.visits,active:this.active,history:this.history,traces:this.history.slice(-config.traceLimit)});}
   }
-  root.HLGeneration={config,random,spaces,entrance,palette,contrast,RouteSession};
+  root.HLGeneration={config,random,spaces,entrance,palette,contrast,character,characterPosition,RouteSession};
   if(typeof module!=='undefined')module.exports=root.HLGeneration;
 })(typeof window==='undefined'?globalThis:window);

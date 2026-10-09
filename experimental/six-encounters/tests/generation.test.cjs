@@ -35,3 +35,24 @@ test('generative history is bounded, visits remain separate and configurations c
 test('entry and exit clocks exclude hidden/paused/not-ready time; event setters never navigate',()=>{
   let now=0,finished=0;const c=new ExposureClock({now:()=>now,duration:350,onExpire:()=>finished++});c.set({ready:true,visible:true});now=200;c.tick();c.set({visible:false});now+=100000;c.set({visible:true});assert.equal(finished,0);now+=149;c.tick();assert.equal(finished,0);c.set({paused:true});now+=10000;c.set({paused:false});assert.equal(finished,0);now++;c.tick();assert.equal(finished,1);c.tick();assert.equal(finished,1);
 });
+
+test('character plans replay independently from routes, vary with seed, and accept axis/period configuration',()=>{
+  const plans=seed=>Array.from({length:100},(_,i)=>G.character(seed,i));
+  assert.deepEqual(plans(12),plans(12));assert.notDeepEqual(plans(12),plans(13));
+  assert.equal(new Set(plans(12).map(p=>p.axis)).size,3);assert.equal(new Set(plans(12).map(p=>p.direction)).size,2);
+  assert.equal(G.character(12,0,{axes:['vertical'],periods:[1000]}).axis,'vertical');
+  assert.throws(()=>G.character(1,0,{axes:['bogus'],periods:[1000]}),RangeError);
+});
+test('all axes and families repeat on the torus continuously at positive/negative and corner boundaries',()=>{
+  for(const axis of G.config.characterMotion.axes)for(const direction of [-1,1])for(const family of ['drift','wave','stretch']){
+    const plan={axis,direction,period:2400,phase:0},start=G.characterPosition(plan,0,family),end=G.characterPosition(plan,2400,family);
+    assert.deepEqual(start,end);
+    for(const time of [0,100,1200,2399]){const a=G.characterPosition(plan,time,family),b=G.characterPosition(plan,time+2400,family);assert.ok(Math.abs(a.x-b.x)<1e-12&&Math.abs(a.y-b.y)<1e-12);}
+    const before=G.characterPosition(plan,2399.999,family),after=G.characterPosition(plan,2400.001,family);
+    for(const key of ['x','y']){const delta=Math.abs(before[key]-after[key]);assert.ok(Math.min(delta,Math.abs(delta-1))<.00001);}
+    assert.ok(start.x===0 && start.y===0);
+  }
+  const plan={axis:'diagonal',period:2400,phase:0,direction:1};
+  assert.notDeepEqual(G.characterPosition(plan,600,'drift'),G.characterPosition(plan,600,'wave'));
+  assert.notDeepEqual(G.characterPosition(plan,600,'drift'),G.characterPosition(plan,600,'stretch'));
+});

@@ -92,19 +92,18 @@ body[data-screen=generative] button.route-word:focus-visible{outline-width:2px;o
 body[data-screen=generative][data-phase=entering] .canvas-holder{animation:loop-enter 450ms both cubic-bezier(.2,.8,.2,1)}
 body[data-screen=generative][data-phase=exiting] .canvas-holder{animation:loop-exit 350ms both ease-in}
 .character-cell{position:relative;display:inline-block;overflow:hidden;vertical-align:bottom;height:1.2em;background:transparent}
-.character-source{visibility:hidden}
+.character-source{opacity:0}
 .character-plane{position:absolute;inset:0;animation-delay:var(--character-delay)!important}
-.character-plane::before{content:attr(data-character);white-space:pre;text-shadow:calc(-1 * var(--glyph-width)) 0}
-[data-axis=vertical] .character-plane::before{text-shadow:0 -1.2em}
-[data-axis=diagonal] .character-plane::before{text-shadow:calc(-1 * var(--glyph-width)) 0,0 -1.2em,calc(-1 * var(--glyph-width)) -1.2em}
-body[data-screen=generative][data-phase=active] .character-plane{animation:character-horizontal 2400ms linear infinite}
-body[data-screen=generative][data-phase=active] [data-axis=vertical] .character-plane{animation-name:character-vertical;animation-duration:3100ms}
-body[data-screen=generative][data-phase=active] [data-axis=diagonal] .character-plane{animation-name:character-diagonal;animation-duration:3700ms}
+/* A 3×3 toroidal tile covers either sign of motion and both corner crossings. */
+.character-plane::before{content:attr(data-character);white-space:pre;text-shadow:calc(-1 * var(--glyph-width)) 0,var(--glyph-width) 0,0 -1.2em,0 1.2em,calc(-1 * var(--glyph-width)) -1.2em,var(--glyph-width) -1.2em,calc(-1 * var(--glyph-width)) 1.2em,var(--glyph-width) 1.2em}
+body[data-screen=generative][data-phase=active] .character-plane{animation:character-drift var(--character-period) linear infinite}
+body[data-screen=generative][data-phase=active] [data-motion=wave] .character-plane{animation-name:character-wave}
+body[data-screen=generative][data-phase=active] [data-motion=stretch] .character-plane{animation-name:character-stretch}
 body[data-paused=true] .canvas-holder,body[data-paused=true] .character-plane,body[data-hidden=true] .canvas-holder,body[data-hidden=true] .character-plane{animation-play-state:paused!important}
 button.route-word:focus-within .character-plane{animation-play-state:paused!important}
-@keyframes character-horizontal{from{transform:translate(0,0)}to{transform:translate(100%,0)}}
-@keyframes character-vertical{from{transform:translate(0,0)}to{transform:translate(0,100%)}}
-@keyframes character-diagonal{from{transform:translate(0,0)}to{transform:translate(100%,100%)}}
+@keyframes character-drift{from{transform:translate(0,0)}to{transform:translate(var(--travel-x),var(--travel-y))}}
+@keyframes character-wave{0%{transform:translate(calc(var(--travel-x) * 0.00000000),calc(var(--travel-y) * 0.00000000))}12.5%{transform:translate(calc(var(--travel-x) * 0.01246046),calc(var(--travel-y) * 0.01246046))}25%{transform:translate(calc(var(--travel-x) * 0.09084506),calc(var(--travel-y) * 0.09084506))}37.5%{transform:translate(calc(var(--travel-x) * 0.26246046),calc(var(--travel-y) * 0.26246046))}50%{transform:translate(calc(var(--travel-x) * 0.50000000),calc(var(--travel-y) * 0.50000000))}62.5%{transform:translate(calc(var(--travel-x) * 0.73753954),calc(var(--travel-y) * 0.73753954))}75%{transform:translate(calc(var(--travel-x) * 0.90915494),calc(var(--travel-y) * 0.90915494))}87.5%{transform:translate(calc(var(--travel-x) * 0.98753954),calc(var(--travel-y) * 0.98753954))}100%{transform:translate(calc(var(--travel-x) * 1.00000000),calc(var(--travel-y) * 1.00000000))}}
+@keyframes character-stretch{0%{transform:translate(0,0)}50%{transform:translate(calc(var(--travel-x) * .25),calc(var(--travel-y) * .25))}100%{transform:translate(var(--travel-x),var(--travel-y))}}
 @keyframes loop-enter{from{opacity:0;transform:translate(var(--enter-x),var(--enter-y)) scale(.8)}to{opacity:1;transform:translate(0,0) scale(1)}}
 @keyframes loop-exit{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:0;transform:translate(calc(var(--enter-x) * -.7),calc(var(--enter-y) * -.7)) scale(1.15)}}
 @media(prefers-reduced-motion:reduce){body[data-screen=generative] .canvas-holder,body[data-screen=generative] .character-plane{animation:none!important}}

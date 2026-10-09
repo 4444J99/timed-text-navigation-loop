@@ -1,4 +1,4 @@
-# Word-routed generative loops · configuration 1.0.0
+# Word-routed generative loops · configuration 1.2.0
 
 Implemented from the artist's request: one random omitted space on each entrance row per generation; row colors as chamber fields; varying colored words; animated text and entrances/exits; words lead onward; no selection returns to the beginning.
 
@@ -27,19 +27,51 @@ Verification: eight additional pure-rule/state tests plus the existing eleven st
 
 Relevant existing roadmap issues: #24 seeded routes, #29 relational color, #23 typography/device evidence, #18 clocks. This implements a bounded three-chamber slice of those broader issues; it does not close their other deliverables or gates.
 
-## Character cells — version 1.1.0
+## Character cells — version 1.2.0
 
-Artist direction: each character occupies a transparent cell and wraps across its
-opposite boundary. Implemented in the generative loops only. A cell retains the
-natural glyph advance and a 1.2em line height. Its clipped 3×3 periodic glyph tile
-moves one whole cell per period: horizontal 2400ms, vertical 3100ms, diagonal
-3700ms. Negative stagger offsets give each character a different position.
-Copies use CSS generated content in an aria-hidden plane; the source character
-remains once in DOM text. Words remain fixed selectable targets. Focus, pause and
-hidden state stop movement; reduced motion presents stationary letters.
+The current implementation builds on the character renderer already added at
+`4f586a5`; the earlier `c5add03` inspection describes a superseded renderer.
+Only generative loops receive this movement. Protected scored artwork is unchanged.
 
-Assessment: the split fragments make recurrence visible at the scale of a letter.
-This is an implementation assessment, awaiting artist review. No reader testing
-or physical Safari verification is claimed. Browser checks verify clipping,
-opposite tiles, midpoint movement and periodic endpoint continuity on desktop
-and narrow mobile, alongside the existing score and timing checks.
+Each glyph has a stable transparent territory: natural glyph advance × 1.2em.
+An invisible, accessible source glyph sizes it; an aria-hidden plane paints the
+same glyph with eight neighboring shadow copies. Overflow clips the 3×3 tile.
+Both positive and negative crossings re-enter progressively, including simultaneous
+corner crossings; the image at one complete period matches the initial image.
+Words remain stationary buttons with the same route and accessible name.
+
+`HLGeneration.character(seed, glyphIndex, options)` deterministically chooses
+axis, sign and initial phase from an independent seed stream. This preserves
+existing palette/route randomness. Default axes are horizontal, vertical and
+combined (`diagonal`); their periods are 2400, 3100 and 3700ms. The renderer's
+`characterMotion` option accepts matching `axes` and positive `periods` arrays;
+a single axis constrains every glyph, or a mixed set produces independent motion.
+The encounter seed and configuration version in downloaded records reproduce
+all glyph plans. No control panel is added to the artwork.
+
+The recorded motion family now selects visible CSS keyframes: drift has constant
+velocity; wave uses a sampled cycloidal speed profile; stretch spends the first
+half-period covering one quarter-cell, then accelerates through the remaining
+three quarters. All profiles complete exactly one cell per period without
+scaling, moving or resizing the territory. `characterPosition` reproduces these
+profiles in normalized coordinates for regression tests.
+
+Pause, hidden state and focused route buttons freeze motion; reduced motion
+removes animation while keeping static glyphs, timing and routes. Reading view
+suspends exposure, and remounting reproduces the same seed's initial phases.
+Continuous animation phase across a reading-view remount is not persisted.
+Source glyphs use opacity rather than visibility hiding so non-route words remain
+available to assistive technology. Actual screen-reader behavior requires review.
+
+The early Return race is also fixed: delayed mount readiness cannot replace an
+already-running exit clock. Boundary tests check all axes, signs and families;
+Chromium tests compare visible positions against the pure model, stable cell
+bounds, pixel-identical period endpoints, deterministic DOM replay, reduced
+motion, early Return, and edge-to-edge 1440×1000, 390×844, 844×390 and 320×568
+viewports. `verification/generative/` is recaptured for this renderer;
+`verification/character-cells/` holds its separate report and viewport captures.
+
+Physical iPhone/Safari verification remains necessary for safe-area behavior,
+font fallback and rasterization, dynamic address-bar/full-screen transitions,
+touch routing, reduced-motion preferences and dense-field animation performance.
+No physical-device, external-reader or artist approval is claimed.
