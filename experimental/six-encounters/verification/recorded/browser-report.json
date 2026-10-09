@@ -1,0 +1,37 @@
+{
+  "browser": "138.0.7204.0",
+  "platform": "linux",
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "checks": [
+    "desktop: keyboard Begin and visible focus",
+    "desktop: I/you continuous exact instances and coordinates",
+    "desktop: recorded Moment geometry and resize transform",
+    "desktop: I/you gap exact instances and coordinates",
+    "desktop: complete score, reader-paced hold, entrance hold, reread, restart",
+    "desktop: color comparison fixes all prescribed properties",
+    "desktop: all study resets, independent sessions and time presentation",
+    "mobile: keyboard Begin and visible focus",
+    "mobile: I/you continuous exact instances and coordinates",
+    "mobile: recorded Moment geometry and resize transform",
+    "mobile: I/you gap exact instances and coordinates",
+    "mobile: complete score, reader-paced hold, entrance hold, reread, restart",
+    "mobile: color comparison fixes all prescribed properties",
+    "mobile: all study resets, independent sessions and time presentation",
+    "browser visibility listener excludes simulated hidden time and does not navigate on visibility event",
+    "browser timed exposure, pause/resume, reading suspension, timer return and entrance hold",
+    "browser exit cancels timer and does not fabricate a return",
+    "full timed six-encounter score and reading before initial readiness",
+    "HTTP subdirectory and file:// run without build"
+  ]
+}

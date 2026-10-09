@@ -1,0 +1,34 @@
+# Verification evidence
+
+`recorded/browser-report.json` lists the checks that actually passed, browser version, platform and viewports. PNG files capture the initial entrance, all six visits, final entrance, and three color conditions at desktop and narrow mobile widths. They are evidence of this new edition only.
+
+State/timing suite: 11 Node tests, including exactly-once return in both event orders; restart generation invalidation; independent study sessions; layout memory preserved when visible traces are bounded; and the exact 3,000 + hidden interval + 1,999 millisecond boundary example. The final millisecond permits a return only on an eligible clock tick.
+
+Browser suite: actual DOM count, ordering, placement, fixed color-study properties, remembered outline coordinates, resize, keyboard activation/focus, fit/detail, reset, six-entry completion in both modes, reread invariance, exit cancellation, pause/resume and reading suspension. Browser time is controlled by Playwright. Document visibility is simulated for wiring verification; actual browser-background throttling was not tested. The monotonic accumulator's hidden-time boundary is independently tested with an injected clock.
+
+Environment: Linux, Chromium 138.0.7204.0, Playwright 1.62.1; desktop 1440×1000 and narrow mobile viewport 390×844, including a resize on revisit. Chromium was obtained from the verification-only `@sparticuz/chromium` 138.0.2 package because the normal browser CDN download in this environment returned HTML instead of a browser archive. The binary is not included in the repository or runtime. No managed preview or cloud-browser skill was used for the recorded run.
+
+Limitations: no Safari/Firefox run, physical device test, assistive-technology audit, external reader observations, artist approval, or production routing verification. The separate owner-private experimental deployment succeeded; live phone rendering remains for artist review. Passing checks establish the stated mechanics in this environment; they do not establish a universal interpretation or attention measurement.
+
+Rerun using the experimental README's instructions. New evidence goes to ignored `verification/rerun/` by default, preserving this recorded set.
+
+## Full-screen revision 1.1.0
+
+`fullscreen/` retains a separate current evidence set: desktop 1440×1000, narrow mobile 390×844, small phone 320×568, and landscape 844×390. Automated checks establish edge-to-edge viewport bounds, all six source field colors, white type, preferred Futura stack, source capitalization, eleven entrance rows, and unobstructed 44px controls including Pause on small/landscape screens. The full state/timing and browser suites remain required. The entrance controls were visually corrected to paint above the repeated field after screenshot inspection. These are Linux Chromium viewport tests, not physical iOS tests.
+
+## Word-routed generative edition
+
+`generative/` contains generated entrances, chamber entry/active/exit frames, color-coupled fields, routed Moment and 378-instance I/you layouts. Nineteen total pure tests pass (eleven protected-score plus eight new generative tests); seven new browser groups plus the existing 23 groups pass. Pause/reading/visibility wiring, no-selection return, direct word routes, score isolation, early Exit cancellation, native keyboard operation and reduced motion are checked. The 320×568 reduced-motion control check supplements desktop/mobile runs; the gen report records those environments. See `docs/GENERATIVE.md` for method and limitations.
+
+## Character-cell revision 1.2.0 (2026-10-09)
+
+The refreshed `generative/` captures represent the current glyph renderer.
+`character-cells/browser-report.json` records 39 additional checks: all three
+axes × all three motion families × four full-screen viewport sizes, then
+seed replay, reduced motion/source accessibility and the early Return race.
+Each axis/family run checks both motion signs, fixed cell bounds, CSS/model
+agreement and pixel-identical endpoints across a complete wrap period.
+Twenty-one pure tests pass. Protected-score/previous generative checks remain
+required. Chromium viewport emulation does not establish physical iOS behavior;
+Safari, dynamic browser chrome, safe areas, assistive technology, touch and
+dense-field frame rate still require physical-device verification.

@@ -1,0 +1,30 @@
+name: Verify experimental six encounters
+on:
+  pull_request:
+    paths: ['experimental/six-encounters/**', '.github/workflows/experimental-six-encounters.yml']
+  push:
+    branches: ['experiment/six-encounters']
+    paths: ['experimental/six-encounters/**', '.github/workflows/experimental-six-encounters.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: experimental/six-encounters
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: experimental/six-encounters/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - run: npm run test:browser

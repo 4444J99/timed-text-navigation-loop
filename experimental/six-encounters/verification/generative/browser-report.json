@@ -1,0 +1,30 @@
+{
+  "browser": "138.0.7204.0",
+  "platform": "linux",
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "small-mobile-reduced-motion",
+      "width": 320,
+      "height": 568
+    }
+  ],
+  "checks": [
+    "desktop: one gap per row, row-color entry, animated text, direct word route, score isolation",
+    "desktop: pause/reading/hidden exclusion, foreground expiry, animated return, new generation and entrance hold",
+    "desktop: all 378 phrases and 44px route equivalents; Exit cancels pending next loop",
+    "mobile: one gap per row, row-color entry, animated text, direct word route, score isolation",
+    "mobile: pause/reading/hidden exclusion, foreground expiry, animated return, new generation and entrance hold",
+    "mobile: all 378 phrases and 44px route equivalents; Exit cancels pending next loop",
+    "small mobile: keyboard row/word routes, unobstructed 44px controls and reduced-motion equivalent"
+  ]
+}

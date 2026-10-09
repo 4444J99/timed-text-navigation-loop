@@ -1,0 +1,14 @@
+[
+  {
+    "path": "provenance/original-2017/loophole.html.txt",
+    "revision": "9fc3c006f2764e1887b79293e32eb9a3a1875344",
+    "sha256": "caab9f652dbc9046db726b4ba1304c16e452db8bcdd8c69705836fb94e1f19b2",
+    "role": "Read-only visual reference for experimental entrance"
+  },
+  {
+    "path": "provenance/original-2017/css/styles_old.css.txt",
+    "revision": "9fc3c006f2764e1887b79293e32eb9a3a1875344",
+    "sha256": "f09c991c33300af7028768fe77980f9c174821ae0f6ee3a8c449a36f6807ae1a",
+    "role": "Read-only visual reference for experimental entrance"
+  }
+]
