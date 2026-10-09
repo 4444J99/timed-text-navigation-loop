@@ -68,7 +68,7 @@
     const advances=new Map();
     canvas.querySelectorAll('.character-cell').forEach(cell=>{
       const char=cell.textContent;
-      if(!advances.has(char))advances.set(char,cell.offsetWidth);
+      if(!advances.has(char))advances.set(char,parseFloat(getComputedStyle(cell).width));
       cell.style.setProperty('--glyph-width',`${advances.get(char)}px`);
     });
     const cellWidth = id === '041015' ? canvas.querySelector('.phrase').getBoundingClientRect().width : null;

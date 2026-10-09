@@ -34,6 +34,7 @@ The current implementation builds on the character renderer already added at
 Only generative loops receive this movement. Protected scored artwork is unchanged.
 
 Each glyph has a stable transparent territory: natural glyph advance × 1.2em.
+Fractional, untransformed CSS glyph widths are retained to prevent rounding seams.
 An invisible, accessible source glyph sizes it; an aria-hidden plane paints the
 same glyph with eight neighboring shadow copies. Overflow clips the 3×3 tile.
 Both positive and negative crossings re-enter progressively, including simultaneous

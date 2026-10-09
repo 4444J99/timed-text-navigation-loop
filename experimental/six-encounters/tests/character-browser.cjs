@@ -1,5 +1,5 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'verification/character-cells');fs.mkdirSync(out,{recursive:true});
+const root=path.resolve(__dirname,'..'),out=path.resolve(process.env.HL_CHARACTER_EVIDENCE_DIR||path.join(root,'verification/rerun/character-cells'));fs.mkdirSync(out,{recursive:true});
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.HL_CHROMIUM_PATH?{executablePath:process.env.HL_CHROMIUM_PATH,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--single-process','--no-zygote']}: {})});
  const checks=[],context=await browser.newContext();
@@ -15,6 +15,7 @@ const root=path.resolve(__dirname,'..'),out=path.join(root,'verification/charact
      fixtureArt=HLRender.mount(fixture,'042115',{immersive:true,seed:31415,motion:family,routes:{links:HLGeneration.config.routes['042115'],choose:()=>{}},characterMotion:{axes:[axis],periods:[2400]}});
      const cells=[...fixture.querySelectorAll('.character-cell')],planes=cells.map(c=>c.querySelector('.character-plane'));
      planes.forEach(el=>{el.style.setProperty('--character-delay','0ms');el.getAnimations().forEach(a=>{a.pause();a.currentTime=0;});});
+     cells.forEach(c=>{if(Math.abs(parseFloat(c.style.getPropertyValue('--glyph-width'))-parseFloat(getComputedStyle(c).width))>.0001)throw Error('Periodic tile must use fractional, untransformed glyph width');});
      const before=cells.map(c=>{const b=c.getBoundingClientRect();return [b.x,b.y,b.width,b.height];});
      const samples=[0,600,1200,2399.999,2400.001,4800].map(time=>{
       planes.forEach(el=>el.getAnimations().forEach(a=>a.currentTime=time));

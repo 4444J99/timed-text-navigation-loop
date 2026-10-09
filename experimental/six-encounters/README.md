@@ -68,3 +68,19 @@ Original artwork and language: Anthony James Padavano / ETCETER4. This edition a
 Scored chambers fill the browser viewport with their source cyan/black/pink fields and white type. Moment and I/you are rendered uppercase through CSS without changing the source strings. Futura is preferred where installed; Century Gothic, Trebuchet MS, Arial, and generic sans-serif are local fallbacks. Compact controls overlay the field, and the entrance’s eleven colored LOOPHOLE rows retain a small history/control overlay. Study explanations and configuration records stay on their independent pages. Full-screen here means the browser content area; Safari’s address/status bars remain under Safari’s control. `verification/fullscreen/` contains evidence of this revision.
 
 Generative verification: `tests/generation.test.cjs` and `tests/generation-browser.cjs` run with the main npm scripts; `verification/generative/` records this edition’s evidence. Runtime now includes `generation.js` (no added runtime dependency).
+
+
+## Character movement 1.2.0
+
+Generative glyphs move inside stable transparent cells with continuous signed
+horizontal, vertical or combined wraparound. The encounter seed reproduces every
+glyph's axis, phase, sign and period. Wave/drift/stretch now select distinct speed
+profiles. Word targets, route semantics and protected scored artwork remain fixed.
+See `docs/GENERATIVE.md` for renderer configuration and known limits.
+
+`tests/character-browser.cjs` runs with `npm run test:browser` and checks all
+axes/families at four viewport sizes, signed positions, fractional tile dimensions,
+pixel wrap endpoints, seeded replay, reduced motion and early Return.
+`HL_CHARACTER_EVIDENCE_DIR` selects its capture destination; default output is
+ignored `verification/rerun/character-cells/`. Committed evidence is in
+`verification/character-cells/`. Physical iPhone/Safari testing remains outstanding.
