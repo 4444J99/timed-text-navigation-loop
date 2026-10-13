@@ -8,6 +8,8 @@
   let screen = 'entrance', study = null, studySession = null, studyVariant = 'baseline';
   let studyMemory = null, studyRecords = [], observation = '', art = null, clock = null, frame = null;
   let paused = false, readingBack = null, renderGeneration = 0;
+  let clockTick = null, freeTick = null;
+  const studyStates = new Map();
   const studies = {
     color: { title:'Color as a relationship', subtitle:'A stable figure, three fields.', question:'Does a different surrounding field change figure–ground, emphasis, depth, legibility, or your reading?', reference:'Josef Albers', source:'042115' },
     space: { title:'Space as syntax', subtitle:'An interval in an uninterrupted field.', question:'Does one empty phrase cell become a boundary, interruption, separation, or possible passage?', reference:'Concrete poetry', source:'041015' },
@@ -30,13 +32,27 @@
   function focusHeading() { const el = app.querySelector('h1'); if (el) { el.tabIndex=-1; el.focus({preventScroll:true}); } }
   function cancelClock() {
     if (clock) { clock.cancel(); const s = studySession?.active || session.active; if (s) s.elapsed = clock.elapsed; }
-    clock = null; cancelAnimationFrame(frame); frame = null; paused = false;
+    clock = null; clockTick=null; cancelAnimationFrame(frame); frame = null; paused = false;
+  }
+  function syncClockFrames() {
+    if(clock?.eligible && clockTick){if(frame===null)frame=requestAnimationFrame(clockTick);}
+    else {cancelAnimationFrame(frame);frame=null;}
+    if(freeClock?.eligible && freeTick){if(freeFrame===null)freeFrame=requestAnimationFrame(freeTick);}
+    else {cancelAnimationFrame(freeFrame);freeFrame=null;}
   }
   function cycles(s) {
     return `<div class="cycles" aria-label="${s.completedCycles} completed cycles"><span class="marker ${s.completedCycles >= 1 ? 'complete' : ''}"></span><span class="marker ${s.completedCycles >= 2 ? 'complete' : ''}"></span><span>${s.completedCycles} / 2 cycles completed</span></div>`;
   }
   function traces(s) {
     return `<div class="trace-strip" aria-label="Most recent returned encounters">${s.traces.map(e => `<div class="trace">${HLRender.symbol(e.chamber)}<small>ENCOUNTER ${e.id.split(':')[1]} · ${e.chamber}</small></div>`).join('')}</div>`;
+  }
+  function refreshEntranceTraces() {
+    const strip=app.querySelector('.trace-strip');if(!strip)return;
+    const recent=exploration.snapshot().traces;
+    strip.innerHTML=menuOpen||!recent.length
+      ? session.traces.map(e=>`<div class="trace">${HLRender.symbol(e.chamber)}<small>ENCOUNTER ${e.id.split(':')[1]} · ${e.chamber}</small></div>`).join('')
+      : recent.map(e=>`<div class="trace">${HLRender.symbol(e.chamber)}<small>LOOP ${e.id.split(':').at(-1)} · ${e.reason==='word'?'WORD SELECTED':'RETURN'}</small></div>`).join('');
+    document.body.dataset.hasTraces=String(strip.childElementCount>0);
   }
   function entrance(showMenu=session.entries.length>0) {
     stopFreeClock();menuOpen=showMenu;
@@ -54,9 +70,7 @@
       r.groups.forEach((group,i)=>{if(i)b.append(' ');const span=document.createElement('span');span.textContent=group;b.append(span);});row.append(b);field.append(row);
     });app.prepend(field);
     const hint=document.createElement('p');hint.className='landing-hint';hint.textContent='Select a row; underlined words continue. No choice: return after 5 visible, unpaused seconds.';app.append(hint);
-    const recent=exploration.snapshot().traces;
-    if(!showMenu&&recent.length){app.querySelector('.trace-strip').innerHTML=recent.map(e=>`<div class="trace">${HLRender.symbol(e.chamber)}<small>LOOP ${e.id.split(':').at(-1)} · ${e.reason==='word'?'WORD SELECTED':'RETURN'}</small></div>`).join('');}
-    document.body.dataset.hasTraces=String(app.querySelector('.trace-strip').childElementCount>0);
+    refreshEntranceTraces();
     if (!session.entries.length) {
       const label = document.createElement('label'); label.className='mode'; label.textContent='Choose the duration rule';
       const select = document.createElement('select'); select.id='mode'; select.setAttribute('aria-label','Duration rule');
@@ -71,7 +85,7 @@
   }
   function restart() { cancelClock();stopFreeClock();exploration.exit();session.restart();studySession=null;study=null;entrance(true); }
   function enter() { studySession=null; if (session.enter()) chamber(session); }
-  function stopFreeClock(){freeClock?.cancel();freeClock=null;cancelAnimationFrame(freeFrame);freeFrame=null;}
+  function stopFreeClock(){freeClock?.cancel();freeClock=null;freeTick=null;cancelAnimationFrame(freeFrame);freeFrame=null;}
   function downloadGeneration(){
     const record={contentVersion:HLContent.version,configuration:HLGeneration.config,entrance:entranceRecord,...exploration.snapshot()};
     const url=URL.createObjectURL(new Blob([JSON.stringify(record,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='hole-loop-variation-record.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -82,10 +96,10 @@
   function freeTime(duration,onExpire,reuse=null){
     const id=exploration.active.id;const c=reuse||new ExposureClock({now:()=>performance.now(),duration,onExpire});
     freeClock=c;c.set({ready:true,visible:document.visibilityState==='visible',paused:freePaused});
-    function tick(){if(freeClock!==c||exploration.active?.id!==id)return;
+    function tick(){freeFrame=null;if(freeClock!==c||exploration.active?.id!==id||!c.eligible)return;
       const elapsed=c.tick();if(freeClock!==c||!exploration.active)return;
-      if(exploration.active.phase==='active')exploration.active.elapsed=elapsed;freeStatus();if(c.active)freeFrame=requestAnimationFrame(tick);
-    }freeFrame=requestAnimationFrame(tick);
+      if(exploration.active.phase==='active')exploration.active.elapsed=elapsed;freeStatus();syncClockFrames();
+    }freeTick=tick;syncClockFrames();
   }
   function beginFree(chamber,background,entrySeed){
     if(exploration.active)return;
@@ -115,7 +129,7 @@
     document.body.style.setProperty('--enter-x',`${[100,-100,0,0][e.direction]}vw`);document.body.style.setProperty('--enter-y',`${[0,0,100,-100][e.direction]}vh`);
     app.innerHTML=`<h1 class="sr-only">${HLContent.chambers[e.chamber].name} · generative loop ${exploration.count}</h1><p class="free-status"></p><div id="free-controls"></div><div id="artwork"></div><details class="word-routes"><summary>Words / routes</summary><div></div></details>`;
     const controls=app.querySelector('#free-controls');controls.append(button('Return',()=>freeDepart('manual'),'primary'));
-    const pause=button(freePaused?'Resume':'Pause',()=>{freePaused=!freePaused;freeClock?.set({paused:freePaused});document.body.dataset.paused=String(freePaused);pause.textContent=freePaused?'Resume':'Pause';pause.setAttribute('aria-pressed',String(freePaused));freeStatus();});pause.setAttribute('aria-pressed',String(freePaused));controls.append(pause);
+    const pause=button(freePaused?'Resume':'Pause',()=>{freePaused=!freePaused;freeClock?.set({paused:freePaused});syncClockFrames();document.body.dataset.paused=String(freePaused);pause.textContent=freePaused?'Resume':'Pause';pause.setAttribute('aria-pressed',String(freePaused));freeStatus();});pause.setAttribute('aria-pressed',String(freePaused));controls.append(pause);
     e.links.forEach((r,i)=>{const b=button(`${r.word} → ${HLContent.chambers[r.target].name}`,()=>freeChoose(i));b.disabled=e.phase!=='active';app.querySelector('.word-routes>div').append(b);});
     app.querySelector('.word-routes>div').append(button('Download variation record',downloadGeneration));
     mountArt(app.querySelector('#artwork'),e.chamber,{immersive:true,color:e.background,colors:e.colors,seed:e.seed,motion:e.motion,routes:{links:e.links,choose:freeChoose}},()=>{
@@ -133,22 +147,23 @@
     clock = previous || new ExposureClock({now:()=>performance.now(),duration:HLScore.duration,onExpire:()=>returnFrom(s,id,'timer')});
     clock.set({visible:document.visibilityState === 'visible',ready:true,paused});
     function tick() {
-      if (!clock || s.active?.id !== id) return;
+      frame=null;if (!clock || s.active?.id !== id || !clock.eligible) return;
       const elapsed=clock.tick(); if (s.active) s.active.elapsed=elapsed;
-      updateStatus(s); if (clock?.active) frame=requestAnimationFrame(tick);
+      updateStatus(s); syncClockFrames();
     }
-    frame=requestAnimationFrame(tick);
+    clockTick=tick;syncClockFrames();
   }
   function updateStatus(s) {
     const status=app.querySelector('.chamber-status'); if (!status) return;
     status.textContent=s.mode==='reader' ? 'Reader-paced · return when you choose' : `${paused ? 'Paused' : 'Timed return'} · ${(Math.min(5000,clock?.elapsed || s.active?.elapsed || 0)/1000).toFixed(1)} / 5.0 eligible seconds`;
   }
   function togglePause(s, b) {
-    paused=!paused; clock?.set({paused}); if(s.active && clock) s.active.elapsed=clock.elapsed;
+    paused=!paused; clock?.set({paused});syncClockFrames(); if(s.active && clock) s.active.elapsed=clock.elapsed;
     b.textContent=paused?'Resume':'Pause'; b.setAttribute('aria-pressed',String(paused)); updateStatus(s);
   }
   function returnFrom(s,id,reason='manual') {
     if (s.active?.id !== id) return;
+    if(art)s.recordLayout(id,art.measure());
     cancelClock(); if (!s.returnEncounter(id,reason)) return;
     if (s===session) entrance(); else { studyRecords.push(s.snapshot()); timeEntrance(); }
   }
@@ -180,11 +195,11 @@
   }
   function exit() {
     stopFreeClock();exploration.exit();
-    cancelClock(); session.exit(); studySession?.exit();studySession=null;study=null;readingBack=null;
+    cancelClock(); session.exit(); studySession?.exit();preserveStudy();studySession=null;study=null;readingBack=null;
     screen='index'; index(true);
   }
   function index(ended=false) {
-    cancelClock(); screen='index';study=null;clear();
+    cancelClock();preserveStudy(); screen='index';study=null;clear();
     app.innerHTML=`<p class="eyebrow">Independent formal studies</p><h1>${ended?'Session ended.':'Four ways<br>to encounter again.'}</h1><p class="study-question">${ended?'An early exit is a valid partial session. No return or cycle was added.':'Change one rule. Compare a baseline with its variant. Study visits remain separate from the six-encounter score.'}</p><div class="study-grid"></div>`;
     const grid=app.querySelector('.study-grid');
     Object.entries(studies).forEach(([id,s],i)=>{
@@ -194,7 +209,15 @@
     });
     actions(app,[['Begin a new composition',restart]]);focusHeading();
   }
-  function openStudy(id) { cancelClock(); study=id;studySession=null;studyVariant='baseline';studyMemory=null;studyRecords=[];observation=''; showStudy(); }
+  function preserveStudy(){
+    if(study)studyStates.set(study,{studySession,studyVariant,studyMemory,studyRecords,observation});
+  }
+  function openStudy(id,reset=false) {
+    cancelClock();preserveStudy();const saved=reset?null:studyStates.get(id);study=id;
+    studySession=saved?.studySession||null;studyVariant=saved?.studyVariant||'baseline';
+    studyMemory=saved?.studyMemory||null;studyRecords=saved?.studyRecords||[];observation=saved?.observation||'';
+    showStudy(!saved);
+  }
   function configuration() {
     return { contentVersion:HLContent.version, compositionVersion:HLScore.version, study,
       condition:studyVariant, source:studies[study]?.source, configuration:HLScore,
@@ -204,13 +227,13 @@
   function recordPanel() {
     const d=document.createElement('details');d.innerHTML='<summary>Configuration and session record</summary><pre></pre><label for="observation">Optional reader observation (kept only in this study session)</label><textarea id="observation" placeholder="What changed in your reading?"></textarea>';
     const pre=d.querySelector('pre');pre.textContent=JSON.stringify(configuration(),null,2);
-    const ta=d.querySelector('textarea');ta.value=observation;ta.oninput=()=>{observation=ta.value;};
+    const ta=d.querySelector('textarea');ta.value=observation;ta.oninput=()=>{observation=ta.value;pre.textContent=JSON.stringify(configuration(),null,2);};
     d.append(button('Download study record',()=>{
       const url=URL.createObjectURL(new Blob([JSON.stringify(configuration(),null,2)],{type:'application/json'}));
       const a=document.createElement('a');a.href=url;a.download=`hole-loop-${study}-${studyVariant}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     }));app.append(d);
   }
-  function showStudy() {
+  function showStudy(record=true) {
     if (study==='time') {timeEntrance();return;}
     cancelClock();screen='study';clear();const s=studies[study];
     app.innerHTML=`<p class="eyebrow">Study · ${s.reference}</p><h1>${s.title}</h1><p class="study-question">${s.question}</p><div class="variants"></div><div id="study-art"></div>`;
@@ -226,10 +249,10 @@
       if(study==='memory' && studyVariant==='baseline' && !studyMemory) {
         studyMemory=layout;const second=variants.querySelectorAll('button')[1];second.disabled=false;
       }
-      studyRecords.push({condition:studyVariant,layout});
+      if(record)studyRecords.push({condition:studyVariant,layout});
       const pre=app.querySelector('pre');if(pre)pre.textContent=JSON.stringify(configuration(),null,2);
     });
-    actions(app,[['Reset study',()=>openStudy(study)],['Study index',()=>index()]]);recordPanel();focusHeading();
+    actions(app,[['Reset study',()=>openStudy(study,true)],['Study index',()=>index()]]);recordPanel();focusHeading();
   }
   function timeEntrance() {
     cancelClock();screen='study';clear();const s=studies.time;
@@ -239,11 +262,11 @@
     actions(app,[['Enter condition',()=>{
       studySession=new Session({...HLScore,sequence:['042115'],cycleLength:null},studyVariant==='timed'?'timed':'reader');
       studySession.enter();chamber(studySession);
-    },'primary'],['Reset study',()=>openStudy('time')],['Study index',()=>index()]]);recordPanel();focusHeading();
+    },'primary'],['Reset study',()=>openStudy('time',true)],['Study index',()=>index()]]);recordPanel();focusHeading();
   }
   function openReading() {
     if(screen==='reading')return;
-    readingBack={screen,study};clock?.set({ready:false});freeClock?.set({ready:false});screen='reading';clear();
+    readingBack={screen,study};clock?.set({ready:false});freeClock?.set({ready:false});syncClockFrames();screen='reading';clear();
     app.innerHTML='<section class="reading"><p class="eyebrow">Unscored reading view</p><h1>The selected texts</h1><p>This view leaves visits, traces, and cycles unchanged. Timed exposure is suspended here.</p><h2>040915 · Moment</h2><p class="clause">this moment has never come before<br>this moment will never come again</p><h2>041015 · I/you</h2><p>42 logical rows, nine occurrences per row. Scroll horizontally to read each complete row.</p><div class="reading-rows" tabindex="0" aria-label="42 rows of nine occurrences"><ol></ol></div><h2>042115 · Forced progress</h2><p class="clause">forced progress</p></section>';
     const ol=app.querySelector('ol');for(let i=0;i<42;i++){const li=document.createElement('li');li.textContent=Array(9).fill(HLContent.chambers['041015'].phrase).join(' ');ol.append(li);}
     actions(app.querySelector('section'),[['Back to experience',closeReading,'primary']]);focusHeading();
@@ -256,13 +279,13 @@
       // Preserve the clock object and its accumulated time while remounting the artwork.
       const savedClock=clock,savedPaused=paused,s=back.screen==='chamber'?session:studySession;
       clock=null;cancelAnimationFrame(frame);chamber(s,savedClock,savedPaused);
-    } else if(back.screen==='entrance') entrance();else if(back.study){study=back.study;showStudy();}else index();
+    } else if(back.screen==='entrance') entrance();else if(back.study){study=back.study;showStudy(false);}else index();
   }
   document.querySelector('#reading').onclick=openReading;
-  document.querySelector('#score-menu').onclick=()=>{menuOpen=!menuOpen;document.body.dataset.menu=menuOpen?'open':'closed';document.querySelector('#score-menu').setAttribute('aria-expanded',String(menuOpen));};
+  document.querySelector('#score-menu').onclick=()=>{menuOpen=!menuOpen;document.body.dataset.menu=menuOpen?'open':'closed';document.querySelector('#score-menu').setAttribute('aria-expanded',String(menuOpen));refreshEntranceTraces();};
   document.querySelector('#exit').onclick=exit;
-  document.addEventListener('visibilitychange',()=>{const visible=document.visibilityState==='visible';clock?.set({visible});freeClock?.set({visible});document.body.dataset.hidden=String(!visible);});
+  document.addEventListener('visibilitychange',()=>{const visible=document.visibilityState==='visible';clock?.set({visible});freeClock?.set({visible});syncClockFrames();document.body.dataset.hidden=String(!visible);});
   // Read-only diagnostics for reproducible evidence; no state mutation API.
-  window.HLDiagnostics={snapshot:()=>session.snapshot(),studyRecord:()=>configuration(),generation:()=>({entrance:structuredClone(entranceRecord),...exploration.snapshot(),clock:freeClock?{elapsed:freeClock.elapsed,duration:freeClock.duration,active:freeClock.active,ready:freeClock.ready,paused:freeClock.paused}:null}),get clock(){return clock?{elapsed:clock.elapsed,active:clock.active,paused:clock.paused,ready:clock.ready}:null;}};
+  window.HLDiagnostics={snapshot:()=>session.snapshot(),studyRecord:()=>structuredClone(configuration()),generation:()=>({entrance:structuredClone(entranceRecord),...exploration.snapshot(),clock:freeClock?{elapsed:freeClock.elapsed,duration:freeClock.duration,active:freeClock.active,ready:freeClock.ready,paused:freeClock.paused}:null}),get clock(){return clock?{elapsed:clock.elapsed,active:clock.active,paused:clock.paused,ready:clock.ready}:null;}};
   entrance();
 })();

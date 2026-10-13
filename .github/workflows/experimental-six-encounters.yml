@@ -26,5 +26,6 @@ jobs:
           cache-dependency-path: experimental/six-encounters/package-lock.json
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
+      - run: npm run test:review
       - run: npm test
       - run: npm run test:browser

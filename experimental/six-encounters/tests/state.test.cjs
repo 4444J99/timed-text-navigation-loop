@@ -19,6 +19,12 @@ test('exit is partial, cancels the active encounter without inventing a return',
   const s=new Session(score);const e=s.enter();s.exit();
   assert.equal(s.returnEncounter(e.id),false);assert.equal(s.history.length,0);assert.equal(s.completedCycles,0);assert.equal(s.enter(),null);
 });
+test('early exit retains interrupted exposure without adding a return',()=>{
+  const s=new Session(score,'timed');const e=s.enter();e.elapsed=1234;s.exit();
+  assert.equal(s.snapshot().entries[0].elapsed,1234);
+  assert.equal(s.snapshot().active,null);assert.equal(s.history.length,0);
+  assert.equal(s.traces.length,0);assert.equal(s.completedCycles,0);
+});
 test('restart clears every session consequence and invalidates stale return identities',()=>{
   const s=new Session(score,'timed');const old=s.enter();s.recordLayout(old.id,{bounds:[]});s.returnEncounter(old.id);s.restart();
   assert.deepEqual(s.snapshot(),{mode:'reader',active:null,visits:{},layouts:{},entries:[],history:[],traces:[],completedCycles:0,exited:false});
@@ -27,6 +33,9 @@ test('restart clears every session consequence and invalidates stale return iden
 test('layout capture is bounded to first visit and snapshots cannot mutate state',()=>{
   const s=new Session(score);const e=s.enter();s.recordLayout(e.id,{bounds:[{x:1}]});s.recordLayout(e.id,{bounds:[{x:2}]});
   const snapshot=s.snapshot();snapshot.layouts['040915'].bounds[0].x=999;assert.equal(s.layouts['040915'].bounds[0].x,1);
+  s.returnEncounter(e.id);s.enter();s.returnEncounter(s.active.id);s.enter();s.returnEncounter(s.active.id);
+  const revisit=s.enter();assert.equal(revisit.visit,2);s.recordLayout(revisit.id,{bounds:[{x:3}]});
+  assert.equal(s.snapshot().layouts['040915'].bounds[0].x,1);
 });
 test('studies are independent sessions; immutable content defines 378 phrase instances',()=>{
   const composed=new Session(score),study=new Session({...score,sequence:['042115'],cycleLength:null});
