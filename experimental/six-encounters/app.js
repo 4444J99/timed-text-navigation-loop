@@ -11,6 +11,7 @@
   let paused = false, readingBack = null, renderGeneration = 0;
   let clockTick = null, freeTick = null;
   const studyStates = new Map();
+  let studyTrialPending = false;
   const studies = {
     color: { title:'Color as a relationship', subtitle:'A stable figure, three fields.', question:'Does a different surrounding field change figure–ground, emphasis, depth, legibility, or your reading?', reference:'Josef Albers', source:'042115' },
     space: { title:'Space as syntax', subtitle:'An interval in an uninterrupted field.', question:'Does one empty phrase cell become a boundary, interruption, separation, or possible passage?', reference:'Concrete poetry', source:'041015' },
@@ -214,13 +215,13 @@
     actions(app,[['Begin a new composition',restart]]);focusHeading();
   }
   function preserveStudy(){
-    if(study)studyStates.set(study,{studySession,studyVariant,studyMemory,studyRecords,observation});
+    if(study)studyStates.set(study,{studySession,studyVariant,studyMemory,studyRecords,observation,studyTrialPending});
   }
   function openStudy(id,reset=false) {
     cancelClock();preserveStudy();const saved=reset?null:studyStates.get(id);study=id;
     studySession=saved?.studySession||null;studyVariant=saved?.studyVariant||'baseline';
-    studyMemory=saved?.studyMemory||null;studyRecords=saved?.studyRecords||[];observation=saved?.observation||'';
-    showStudy(!saved);
+    studyMemory=saved?.studyMemory||null;studyRecords=saved?.studyRecords||[];observation=saved?.observation||'';studyTrialPending=saved?.studyTrialPending||false;
+    showStudy(!saved || studyTrialPending);
   }
   function configuration() {
     return { contentVersion:HLContent.version, compositionVersion:HLScore.version, study,
@@ -239,7 +240,7 @@
   }
   function showStudy(record=true) {
     if (study==='time') {timeEntrance();return;}
-    cancelClock();screen='study';clear();const s=studies[study];
+    cancelClock();screen='study';clear();const s=studies[study];studyTrialPending=record;
     app.innerHTML=`<p class="eyebrow">Study · ${s.reference}</p><h1>${s.title}</h1><p class="study-question">${s.question}</p><div class="variants"></div><div id="study-art"></div>`;
     const variants=app.querySelector('.variants');
     const choices=study==='color'?[['baseline','Baseline · pink'],['green','Variant · green'],['violet','Variant · violet']]:study==='space'?[['baseline','Baseline · continuous'],['gap','Variant · interval']]:[['baseline','First encounter'],['trace','Second encounter · trace']];
@@ -253,7 +254,7 @@
       if(study==='memory' && studyVariant==='baseline' && !studyMemory) {
         studyMemory=layout;const second=variants.querySelectorAll('button')[1];second.disabled=false;
       }
-      if(record)studyRecords.push({condition:studyVariant,layout});
+      if(record){studyRecords.push({condition:studyVariant,layout});studyTrialPending=false;}
       const pre=app.querySelector('pre');if(pre)pre.textContent=JSON.stringify(configuration(),null,2);
     });
     actions(app,[['Reset study',()=>openStudy(study,true)],['Study index',()=>index()]]);recordPanel();focusHeading();
@@ -283,7 +284,7 @@
       // Preserve the clock object and its accumulated time while remounting the artwork.
       const savedClock=clock,savedPaused=paused,s=back.screen==='chamber'?session:studySession;
       clock=null;cancelAnimationFrame(frame);chamber(s,savedClock,savedPaused);
-    } else if(back.screen==='entrance') entrance();else if(back.study){study=back.study;showStudy(false);}else index();
+    } else if(back.screen==='entrance') entrance();else if(back.study){study=back.study;showStudy(studyTrialPending);}else index();
   }
   document.querySelector('#reading').onclick=openReading;
   document.querySelector('#score-menu').onclick=()=>{menuOpen=!menuOpen;document.body.dataset.menu=menuOpen?'open':'closed';document.querySelector('#score-menu').setAttribute('aria-expanded',String(menuOpen));refreshEntranceTraces();};
