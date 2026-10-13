@@ -108,3 +108,7 @@ The same words acquire another meaning because something has happened between en
 The six-encounter composition and four formal studies are implemented on [PR #59](https://github.com/4444J99/timed-text-navigation-loop/pull/59), with passing CI and a separate [owner-review preview](https://hole-loop-experimental.ajpadavano.chatgpt.site). The preview requires the owner's ChatGPT account. Merge, artist review and physical iPhone/Safari verification are separate, pending states.
 
 Development follows the [canonical C0–C6 GitHub roadmap](https://github.com/4444J99/timed-text-navigation-loop/issues/2) and [architecture / composition map](docs/ROADMAP.md). Product capabilities, company processes and repository boundaries are planned separately. Historical restoration is an independent track and does not gate experimental delivery.
+
+## Audiovisual Composition System identities
+
+The [typed ACE descriptor](ace-manifest.json) records functional software and module identities separately from artistic titles and compositions. See [responsibilities, compatibility and rollback](docs/ace-boundaries.md). Existing source identities, runtime paths and artwork titles are preserved.

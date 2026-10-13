@@ -60,6 +60,8 @@
     }
     cancel() { this.accrue(); this.active = false; }
   }
-  root.HLEngine = { Session, ExposureClock };
-  if (typeof module !== 'undefined') module.exports = root.HLEngine;
+  root.ACETimedNavigation = { Session, ExposureClock };
+  // Preserve the existing browser API as an alias to the same implementation.
+  root.HLEngine = root.ACETimedNavigation;
+  if (typeof module !== 'undefined') module.exports = root.ACETimedNavigation;
 })(typeof window === 'undefined' ? globalThis : window);

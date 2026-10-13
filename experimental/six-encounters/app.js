@@ -1,5 +1,5 @@
 (function () {
-  const { Session, ExposureClock } = HLEngine;
+  const { Session, ExposureClock } = ACETimedNavigation;
   const app = document.querySelector('#app');
   const session = new Session(HLScore);
   const exploration = new HLGeneration.RouteSession();
