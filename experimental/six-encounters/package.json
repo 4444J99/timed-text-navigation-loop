@@ -5,6 +5,7 @@
   "description": "No-build browser artwork; dependencies are verification-only",
   "scripts": {
     "test": "node --test tests/state.test.cjs tests/generation.test.cjs",
+    "test:review": "node tests/review-browser.cjs",
     "test:browser": "node tests/browser.cjs && node tests/generation-browser.cjs && node tests/character-browser.cjs"
   },
   "devDependencies": {
