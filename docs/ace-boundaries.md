@@ -19,7 +19,7 @@ No new footage identity, source location, edition or publication claim is create
 
 ## Migration and rollback
 
-This change is stacked on `experiment/six-encounters` at `8af68e829d166189cce833d858921386fe1af149` (PR #59). It preserves that implementation and does not alter or import the separate historical restoration. Integrating it after PR #59 should retain the existing restoration files on `main` and resolve only any normal documentation overlap. It does not replace the active character-cell studies.
+The six-encounter implementation merged in PR #59 (`b1eeb913d0bf2678f54204cb5b49d014027ed6e8`), followed by the ACE functional identity integration in PR #61 (`dedb87e586f4dc62913d353f58177ffb12a00b19`). Both preserve the historical restoration and the active character-cell studies. The experimental experience remains separate from the restored historical runtime.
 
 | Before | After | Compatibility |
 | --- | --- | --- |
