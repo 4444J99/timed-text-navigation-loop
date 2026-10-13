@@ -104,6 +104,21 @@ const url='file://'+path.resolve(__dirname,'../index.html');
       await page.getByRole('button',{name:'Return',exact:true}).click();await page.clock.runFor(400);
       assert.ok(await page.evaluate(()=>document.activeElement.matches('.entrance-route') && document.activeElement.getClientRects().length>0 && document.activeElement.tabIndex===0));
     });
+    await run('Reading before study readiness retains the first memory trial once',async page=>{
+      await page.getByRole('button',{name:'Score & studies',exact:true}).click();
+      await page.getByRole('button',{name:'Explore four studies',exact:true}).click();
+      await page.evaluate(()=>{
+        document.querySelectorAll('.study-card button')[3].click();
+        document.querySelector('#reading').click();
+      });
+      assert.equal((await page.evaluate(()=>HLDiagnostics.studyRecord())).layouts.length,0);
+      await page.getByRole('button',{name:'Back to experience',exact:true}).click();await page.clock.runFor(100);
+      const record=await page.evaluate(()=>HLDiagnostics.studyRecord());
+      assert.equal(record.layouts.length,1);assert.ok(record.memory);
+      await page.getByRole('button',{name:'Reading view',exact:true}).click();
+      await page.getByRole('button',{name:'Back to experience',exact:true}).click();await page.clock.runFor(100);
+      assert.deepEqual(await page.evaluate(()=>HLDiagnostics.studyRecord()),record);
+    });
   }finally{await browser.close();}
   assert.deepEqual(failures,[]);
 })().catch(error=>{console.error(error);process.exitCode=1;});
