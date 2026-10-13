@@ -48,3 +48,23 @@ test('another score controls encounter identities, duration and return without a
   assert.equal(context.window.HLContent, undefined);
   assert.equal(context.window.HLScore, undefined);
 });
+
+
+test('prototype-named encounter IDs retain visits and first layouts', () => {
+  const { Session } = require(enginePath);
+  for (const id of ['constructor', 'toString', '__proto__']) {
+    const session = new Session({ sequence: [id, id], cycleLength: null, traceLimit: 2 });
+    const first = session.enter();
+    assert.equal(first.visit, 1);
+    session.recordLayout(first.id, { x: 1 });
+    session.returnEncounter(first.id);
+    const second = session.enter();
+    assert.equal(second.visit, 2);
+    session.recordLayout(second.id, { x: 2 });
+    const record = session.snapshot();
+    assert.equal(record.visits[id], 2);
+    assert.deepEqual(record.layouts[id], { x: 1 });
+    assert.equal(Object.getPrototypeOf(session.visits), Object.prototype);
+    assert.equal(Object.getPrototypeOf(session.layouts), Object.prototype);
+  }
+});

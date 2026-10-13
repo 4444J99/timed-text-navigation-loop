@@ -88,6 +88,22 @@ const url='file://'+path.resolve(__dirname,'../index.html');
       await page.getByRole('button',{name:'Score & studies',exact:true}).click();
       assert.equal(await page.locator('.trace').count(),0);
     });
+    await run('time study records its actual single-encounter configuration',async page=>{
+      await page.getByRole('button',{name:'Score & studies',exact:true}).click();
+      await page.getByRole('button',{name:'Explore four studies',exact:true}).click();
+      await page.locator('.study-card').nth(2).click();await page.clock.runFor(100);
+      const record=await page.evaluate(()=>HLDiagnostics.studyRecord());
+      assert.deepEqual(record.configuration.sequence,['042115']);
+      assert.equal(record.configuration.cycleLength,null);
+      await page.getByRole('button',{name:'Enter condition',exact:true}).click();await page.clock.runFor(100);
+      await page.getByRole('button',{name:'Return',exact:true}).click();await page.clock.runFor(100);
+      assert.deepEqual((await page.evaluate(()=>HLDiagnostics.studyRecord())).configuration,record.configuration);
+    });
+    await run('generative return focuses a visible native entrance route',async page=>{
+      await page.locator('.entrance-route').first().click();await page.clock.runFor(600);
+      await page.getByRole('button',{name:'Return',exact:true}).click();await page.clock.runFor(400);
+      assert.ok(await page.evaluate(()=>document.activeElement.matches('.entrance-route') && document.activeElement.getClientRects().length>0 && document.activeElement.tabIndex===0));
+    });
   }finally{await browser.close();}
   assert.deepEqual(failures,[]);
 })().catch(error=>{console.error(error);process.exitCode=1;});
