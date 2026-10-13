@@ -1,0 +1,651 @@
+--- 2017/loophole.html
++++ public/loophole.html
+@@ -16,19 +16,17 @@
+ 
+   <!-- FONT
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+ 
+   <!-- CSS
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+   <link rel="stylesheet" href="css/normalize.css">
+-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
++  <link rel="stylesheet" href="vendor/bootstrap-3.3.5/css/bootstrap.min.css">
++  <link rel="stylesheet" href="vendor/bootstrap-3.3.5/css/bootstrap-theme.min.css">
+   <link rel="stylesheet" href="css/styles_old.css">
+ 
+ 
+   <!-- Favicon
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link rel="icon" type="image/png" href="images/favicon.ico">
+ 
+ </head>
+ 
+@@ -100,12 +98,6 @@
+ 
+ <!-- JS Requests
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+-<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.min.js"></script>
+-<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.ui.min.js"></script>
+-<script src="js/main.js"></script>
+-<script src="js/analytics.js"></script>
+ <script language="javascript" type="text/javascript" src="js/loophole.js"></script>
+ 
+ </html>--- 2017/labyrinth/040615.html
++++ public/labyrinth/040615.html
+@@ -15,19 +15,15 @@
+ 
+   <!-- FONT
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+ 
+    <!-- CSS
+    –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-   <link rel="stylesheet" href="css/normalize.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+-   <link rel="stylesheet" href="css/styles.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap.min.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap-theme.min.css">
+ 
+ 
+      <!-- Favicon
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-     <link rel="icon" type="image/png" href="images/favicon.ico">
+ 
+      <style>
+      html {
+@@ -105,18 +101,6 @@
+ 
+ </style>
+ 
+-
+-<script type="text/javascript">
+-var _gaq = _gaq || [];
+-_gaq.push(['_setAccount', 'UA-21187502-1']);
+-_gaq.push(['_trackPageview']);
+-(function() {
+-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+-})();
+-</script>
+-
+ </head>
+ 
+ 
+@@ -136,9 +120,4 @@
+ 
+ <!-- JS Requests
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+-  <script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.min.js"></script>
+-  <script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.ui.min.js"></script>
+-  <script src="js/main.js"></script>
+   </html>--- 2017/labyrinth/040715.html
++++ public/labyrinth/040715.html
+@@ -15,19 +15,15 @@
+ 
+   <!-- FONT
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+ 
+    <!-- CSS
+    –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-   <link rel="stylesheet" href="css/normalize.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+-   <link rel="stylesheet" href="css/styles.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap.min.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap-theme.min.css">
+ 
+ 
+      <!-- Favicon
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-     <link rel="icon" type="image/png" href="images/favicon.ico">
+ 
+      <style>
+      html {
+@@ -97,17 +93,6 @@
+ 
+      </style>
+ 
+-     <script type="text/javascript">
+-     var _gaq = _gaq || [];
+-     _gaq.push(['_setAccount', 'UA-21187502-1']);
+-     _gaq.push(['_trackPageview']);
+-     (function() {
+-     	var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+-     	ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+-     	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+-     })();
+-     </script>
+-
+  </head>
+ 
+ 
+@@ -131,9 +116,4 @@
+ 
+ <!-- JS Requests
+ 	–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+-	<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.min.js"></script>
+-	<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.ui.min.js"></script>
+-	<script src="js/main.js"></script>
+ 	</html>--- 2017/labyrinth/040815.html
++++ public/labyrinth/040815.html
+@@ -15,19 +15,15 @@
+ 
+   <!-- FONT
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+ 
+    <!-- CSS
+    –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-   <link rel="stylesheet" href="css/normalize.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+-   <link rel="stylesheet" href="css/styles.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap.min.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap-theme.min.css">
+ 
+ 
+      <!-- Favicon
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-     <link rel="icon" type="image/png" href="images/favicon.ico">
+ 
+      <style>
+      html {
+@@ -108,17 +104,6 @@
+ 
+      </style>
+ 
+-     <script type="text/javascript">
+-     var _gaq = _gaq || [];
+-     _gaq.push(['_setAccount', 'UA-21187502-1']);
+-     _gaq.push(['_trackPageview']);
+-     (function() {
+-     	var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+-     	ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+-     	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+-     })();
+-     </script>
+-
+  </head>
+ 
+ 
+@@ -142,10 +127,5 @@
+ 
+ <!-- JS Requests
+ 	–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+-	<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.min.js"></script>
+-	<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.ui.min.js"></script>
+-	<script src="js/main.js"></script>
+ 
+ 	</html>--- 2017/labyrinth/040915.html
++++ public/labyrinth/040915.html
+@@ -15,19 +15,15 @@
+ 
+   <!-- FONT
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+ 
+    <!-- CSS
+    –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-   <link rel="stylesheet" href="css/normalize.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+-   <link rel="stylesheet" href="css/styles.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap.min.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap-theme.min.css">
+ 
+ 
+      <!-- Favicon
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-     <link rel="icon" type="image/png" href="images/favicon.ico">
+ 
+      <style>
+      html {
+@@ -99,17 +95,6 @@
+ 
+      </style>
+ 
+-     <script type="text/javascript">
+-     var _gaq = _gaq || [];
+-     _gaq.push(['_setAccount', 'UA-21187502-1']);
+-     _gaq.push(['_trackPageview']);
+-     (function() {
+-     	var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+-     	ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+-     	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+-     })();
+-     </script>
+-
+  </head>
+ 
+ 
+@@ -129,9 +114,4 @@
+ 
+ <!-- JS Requests
+ 	–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+-	<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.min.js"></script>
+-	<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.ui.min.js"></script>
+-	<script src="js/main.js"></script>
+ 	</html>--- 2017/labyrinth/041015.html
++++ public/labyrinth/041015.html
+@@ -15,19 +15,15 @@
+ 
+   <!-- FONT
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+ 
+    <!-- CSS
+    –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-   <link rel="stylesheet" href="css/normalize.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+-   <link rel="stylesheet" href="css/styles.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap.min.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap-theme.min.css">
+ 
+ 
+      <!-- Favicon
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-     <link rel="icon" type="image/png" href="images/favicon.ico">
+ 
+      <style>
+      html {
+@@ -100,17 +96,6 @@
+ 
+      </style>
+ 
+-     <script type="text/javascript">
+-     var _gaq = _gaq || [];
+-     _gaq.push(['_setAccount', 'UA-21187502-1']);
+-     _gaq.push(['_trackPageview']);
+-     (function() {
+-     	var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+-     	ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+-     	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+-     })();
+-     </script>
+-
+  </head>
+ 
+ 
+@@ -130,9 +115,4 @@
+ 
+ <!-- JS Requests
+ 	–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+-	<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.min.js"></script>
+-	<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.ui.min.js"></script>
+-	<script src="js/main.js"></script>
+ 	</html>--- 2017/labyrinth/041315.html
++++ public/labyrinth/041315.html
+@@ -15,19 +15,15 @@
+ 
+   <!-- FONT
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+ 
+    <!-- CSS
+    –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-   <link rel="stylesheet" href="css/normalize.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+-   <link rel="stylesheet" href="css/styles.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap.min.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap-theme.min.css">
+ 
+ 
+      <!-- Favicon
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-     <link rel="icon" type="image/png" href="images/favicon.ico">
+ 
+      <style>
+      html {
+@@ -98,17 +94,6 @@
+ 
+      </style>
+ 
+-     <script type="text/javascript">
+-     var _gaq = _gaq || [];
+-     _gaq.push(['_setAccount', 'UA-21187502-1']);
+-     _gaq.push(['_trackPageview']);
+-     (function() {
+-     	var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+-     	ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+-     	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+-     })();
+-     </script>
+-
+  </head>
+ 
+ 
+@@ -135,9 +120,4 @@
+ 
+ <!-- JS Requests
+ 	–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+-	<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.min.js"></script>
+-	<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.ui.min.js"></script>
+-	<script src="js/main.js"></script>
+ 	</html>--- 2017/labyrinth/041415.html
++++ public/labyrinth/041415.html
+@@ -15,19 +15,15 @@
+ 
+   <!-- FONT
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+ 
+    <!-- CSS
+    –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-   <link rel="stylesheet" href="css/normalize.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+-   <link rel="stylesheet" href="css/styles.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap.min.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap-theme.min.css">
+ 
+ 
+      <!-- Favicon
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-     <link rel="icon" type="image/png" href="images/favicon.ico">
+ 
+      <style>
+      html {
+@@ -106,17 +102,6 @@
+ 
+ </style>
+ 
+-<script type="text/javascript">
+-var _gaq = _gaq || [];
+-_gaq.push(['_setAccount', 'UA-21187502-1']);
+-_gaq.push(['_trackPageview']);
+-(function() {
+-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+-})();
+-</script>
+-
+ </head>
+ 
+ 
+@@ -142,9 +127,4 @@
+ 
+ <!-- JS Requests
+     –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+-    <script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.min.js"></script>
+-    <script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.ui.min.js"></script>
+-    <script src="js/main.js"></script>
+     </html>--- 2017/labyrinth/041715.html
++++ public/labyrinth/041715.html
+@@ -15,19 +15,15 @@
+ 
+   <!-- FONT
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+ 
+    <!-- CSS
+    –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-   <link rel="stylesheet" href="css/normalize.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+-   <link rel="stylesheet" href="css/styles.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap.min.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap-theme.min.css">
+ 
+ 
+      <!-- Favicon
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-     <link rel="icon" type="image/png" href="images/favicon.ico">
+ 
+      <style>
+      html {
+@@ -103,17 +99,6 @@
+ 
+ </style>
+ 
+-<script type="text/javascript">
+-var _gaq = _gaq || [];
+-_gaq.push(['_setAccount', 'UA-21187502-1']);
+-_gaq.push(['_trackPageview']);
+-(function() {
+-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+-})();
+-</script>
+-
+ </head>
+ 
+ 
+@@ -145,9 +130,4 @@
+ 
+ <!-- JS Requests
+     –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+-    <script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.min.js"></script>
+-    <script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.ui.min.js"></script>
+-    <script src="js/main.js"></script>
+     </html>--- 2017/labyrinth/042115.html
++++ public/labyrinth/042115.html
+@@ -15,19 +15,15 @@
+ 
+   <!-- FONT
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+ 
+    <!-- CSS
+    –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-   <link rel="stylesheet" href="css/normalize.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+-   <link rel="stylesheet" href="css/styles.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap.min.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap-theme.min.css">
+ 
+ 
+      <!-- Favicon
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-     <link rel="icon" type="image/png" href="images/favicon.ico">
+ 
+      <style>
+      html {
+@@ -103,17 +99,6 @@
+ 
+      </style>
+ 
+-     <script type="text/javascript">
+-     var _gaq = _gaq || [];
+-     _gaq.push(['_setAccount', 'UA-21187502-1']);
+-     _gaq.push(['_trackPageview']);
+-     (function() {
+-     	var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+-     	ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+-     	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+-     })();
+-     </script>
+-
+  </head>
+ 
+ 
+@@ -137,9 +122,4 @@
+ 
+ <!-- JS Requests
+ 	–––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+-	<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.min.js"></script>
+-	<script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.ui.min.js"></script>
+-	<script src="js/main.js"></script>
+ 	</html>--- 2017/labyrinth/042215.html
++++ public/labyrinth/042215.html
+@@ -15,19 +15,15 @@
+ 
+   <!-- FONT
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+ 
+    <!-- CSS
+    –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-   <link rel="stylesheet" href="css/normalize.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+-   <link rel="stylesheet" href="css/styles.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap.min.css">
++   <link rel="stylesheet" href="../vendor/bootstrap-3.3.5/css/bootstrap-theme.min.css">
+ 
+ 
+      <!-- Favicon
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-     <link rel="icon" type="image/png" href="images/favicon.ico">
+ 
+ <style>
+ html {
+@@ -103,17 +99,6 @@
+ 
+ </style>
+ 
+-<script type="text/javascript">
+-  var _gaq = _gaq || [];
+-  _gaq.push(['_setAccount', 'UA-21187502-1']);
+-  _gaq.push(['_trackPageview']);
+-  (function() {
+-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+-  })();
+-</script>
+-
+ </head>
+ 
+ 
+@@ -141,9 +126,4 @@
+ 
+ <!-- JS Requests
+     –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+-    <script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.min.js"></script>
+-    <script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.ui.min.js"></script>
+-    <script src="js/main.js"></script>
+ </html>--- 2017/labyrinth/051815.html
++++ public/labyrinth/051815.html
+@@ -15,13 +15,9 @@
+ 
+   <!-- FONT
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+ 
+   <!-- CSS
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link rel="stylesheet" href="css/normalize.css">
+-  <link rel="stylesheet" href="css/skeleton.css">
+-  <link rel="stylesheet" href="css/style.css">
+ 
+   <!-- Favicon
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+@@ -50,9 +46,4 @@
+ 
+ <!-- JS Requests
+     –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+-    <script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.min.js"></script>
+-    <script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.ui.min.js"></script>
+-    <script src="js/main.js"></script>
+ </html>
+--- 2017/labyrinth/072716.html
++++ public/labyrinth/072716.html
+@@ -15,13 +15,9 @@
+ 
+   <!-- FONT
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+ 
+   <!-- CSS
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link rel="stylesheet" href="css/normalize.css">
+-  <link rel="stylesheet" href="css/skeleton.css">
+-  <link rel="stylesheet" href="css/style.css">
+ 
+   <!-- Favicon
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+@@ -50,9 +46,4 @@
+ 
+ <!-- JS Requests
+     –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+-    <script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.min.js"></script>
+-    <script src="https://cdn.jsdelivr.net/velocity/1.2.3/velocity.ui.min.js"></script>
+-    <script src="js/main.js"></script>
+ </html>
+--- 2017/js/loophole.js
++++ public/js/loophole.js
+@@ -1,31 +1,19 @@
+-// LOOPHOLE RANDOMIZER
++// Twelve historical destinations. Selection is uniformly random and always valid.
++// The original off-by-one selector could navigate to an undefined thirteenth URL.
+ function randomlinks() {
+-    var myrandom = Math.round(Math.random() * 12)
+-    var links = new Array()
+-    links[0] = "labyrinth/040615.html"
+-    links[1] = "labyrinth/040715.html"
+-    links[2] = "labyrinth/040815.html"
+-    links[3] = "labyrinth/040915.html"
+-    links[4] = "labyrinth/041015.html"
+-    links[5] = "labyrinth/041315.html"
+-    links[6] = "labyrinth/041415.html"
+-    links[7] = "labyrinth/041715.html"
+-    links[8] = "labyrinth/042115.html"
+-    links[9] = "labyrinth/042215.html"
+-    links[10] = "labyrinth/051815.html"
+-    links[11] = "labyrinth/072716.html"
+-    window.location = links[myrandom]
++    var links = [
++        "labyrinth/040615.html",
++        "labyrinth/040715.html",
++        "labyrinth/040815.html",
++        "labyrinth/040915.html",
++        "labyrinth/041015.html",
++        "labyrinth/041315.html",
++        "labyrinth/041415.html",
++        "labyrinth/041715.html",
++        "labyrinth/042115.html",
++        "labyrinth/042215.html",
++        "labyrinth/051815.html",
++        "labyrinth/072716.html"
++    ];
++    window.location = links[Math.floor(Math.random() * links.length)];
+ }
+-
+-
+-
+-var totalCount = 99;
+-function ChangeIt() 
+-{
+-var num = Math.ceil( Math.random() * totalCount );
+-document.body.background = 'bgimages/'+num+'.jpg';
+-document.body.style.backgroundRepeat = "repeat";// Background repeat
+-}
+-
+-
+-ChangeIt();
