@@ -1,0 +1,964 @@
+{
+  "schema": "hole-loop-browser-verification-v1",
+  "historicalCommit": "7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0",
+  "startedAt": "2026-10-07T21:20:47.061Z",
+  "environment": {
+    "node": "v24.19.0",
+    "platform": "linux",
+    "devices": [
+      {
+        "name": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "isMobile": false,
+        "hasTouch": false
+      },
+      {
+        "name": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "isMobile": true,
+        "hasTouch": true
+      }
+    ],
+    "dependencies": {
+      "playwright": "1.62.1",
+      "pngjs": "7.0.0"
+    },
+    "browser": "153.0.8010.0"
+  },
+  "methodology": [
+    "Untouched historical HTML is rendered beside the extracted HTML in the same browser, font environment and viewport.",
+    "Only the two Bootstrap 3.3.5 CDN CSS URLs are fulfilled with the bundled CSS. Missing original local assets return 404. Other external requests are blocked.",
+    "JavaScript is disabled for static fidelity captures to prevent historical timers and inactive services interrupting comparison. Behavior is tested separately with JavaScript enabled.",
+    "Screenshots compare exact decoded RGBA pixels. DOM comparisons retain empty elements, attributes, and exact text-node content, including whitespace inside text elements. Formatting-only whitespace between block elements, comments and inactive scripts are omitted.",
+    "Computed styles, element rectangles and scroll dimensions are compared for every artwork element, including pseudo-elements.",
+    "Timer tests use the browser clock to check the original delay boundary: chamber remains before the deadline and returns at the deadline."
+  ],
+  "limits": [
+    "These are comparisons of the preserved source and extraction rendered now, not comparisons against a recovered 2017 screenshot or a 2017 browser.",
+    "System font availability affects the historical Futura request. Both sides use the same installed fonts; no replacement font is added.",
+    "The mobile viewport is a Chromium emulation, not a physical iPhone or Safari test.",
+    "Known missing original resources are intentionally not reconstructed."
+  ],
+  "visual": [
+    {
+      "id": "desktop-loophole",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "5d679fb1d8161a8993c78a10ceec1de5b91227ea0278f36232920664a54bcfa1",
+      "restoredSHA256": "5d679fb1d8161a8993c78a10ceec1de5b91227ea0278f36232920664a54bcfa1",
+      "paragraphCount": 22,
+      "emptyParagraphs": 11
+    },
+    {
+      "id": "desktop-labyrinth-040615",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "da7a685a4a45f14b12956a6cfb2f9f1ac24f4a44022787da5e3a0d6b5106eab7",
+      "restoredSHA256": "da7a685a4a45f14b12956a6cfb2f9f1ac24f4a44022787da5e3a0d6b5106eab7",
+      "paragraphCount": 1,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "desktop-labyrinth-040715",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "0600d7ce0c7f807a012a87b02df46f4b26baed9f194039a11ea704b4c2708f34",
+      "restoredSHA256": "0600d7ce0c7f807a012a87b02df46f4b26baed9f194039a11ea704b4c2708f34",
+      "paragraphCount": 0,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "desktop-labyrinth-040815",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "e657a4d4a45e759c092d684189040a0eb5815d94ea7045ed1827b53c1f57c1bd",
+      "restoredSHA256": "e657a4d4a45e759c092d684189040a0eb5815d94ea7045ed1827b53c1f57c1bd",
+      "paragraphCount": 0,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "desktop-labyrinth-040915",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "360833a3e3b994651526b8dd3be2993ee26a4ba2282944f9aaaf6d05a549ee22",
+      "restoredSHA256": "360833a3e3b994651526b8dd3be2993ee26a4ba2282944f9aaaf6d05a549ee22",
+      "paragraphCount": 0,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "desktop-labyrinth-041015",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "765707499911d693489fe28edc3e22fd4c7d394f44fbae34ef9e47f47c62d25c",
+      "restoredSHA256": "765707499911d693489fe28edc3e22fd4c7d394f44fbae34ef9e47f47c62d25c",
+      "paragraphCount": 0,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "desktop-labyrinth-041315",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "9c16ce0a1623f6cb2f3cb458d73c1c7dcd869072627ca9493cd4e11d5a6a6059",
+      "restoredSHA256": "9c16ce0a1623f6cb2f3cb458d73c1c7dcd869072627ca9493cd4e11d5a6a6059",
+      "paragraphCount": 0,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "desktop-labyrinth-041415",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "1a1c2029bd63a05a8ef4c230aff3bc5acb7f4184546834474e05adac11d50263",
+      "restoredSHA256": "1a1c2029bd63a05a8ef4c230aff3bc5acb7f4184546834474e05adac11d50263",
+      "paragraphCount": 4,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "desktop-labyrinth-041715",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "94dc630f6168060ce0b31e693348449b8064c8c9dcca94160bd931ac2c8d417c",
+      "restoredSHA256": "94dc630f6168060ce0b31e693348449b8064c8c9dcca94160bd931ac2c8d417c",
+      "paragraphCount": 7,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "desktop-labyrinth-042115",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "80782fbbadc6cda7c36e9f5cf97b9902770f5d7223050a13ae89077b8749a1f0",
+      "restoredSHA256": "80782fbbadc6cda7c36e9f5cf97b9902770f5d7223050a13ae89077b8749a1f0",
+      "paragraphCount": 1,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "desktop-labyrinth-042215",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "46b0f266505edcd4793ed94b1c5474fe2def46890c6fce316f33e98b2f3b1225",
+      "restoredSHA256": "46b0f266505edcd4793ed94b1c5474fe2def46890c6fce316f33e98b2f3b1225",
+      "paragraphCount": 5,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "desktop-labyrinth-051815",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "0a96be37dba1cc806725b183ea335b138e7a22d72c135545b75c00f6fdcdf4dd",
+      "restoredSHA256": "0a96be37dba1cc806725b183ea335b138e7a22d72c135545b75c00f6fdcdf4dd",
+      "paragraphCount": 3,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "desktop-labyrinth-072716",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "43a2da5e174df5e597cf7bc4287fabbcc9d5438b6082908bbb4326b104fd097b",
+      "restoredSHA256": "43a2da5e174df5e597cf7bc4287fabbcc9d5438b6082908bbb4326b104fd097b",
+      "paragraphCount": 2,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "desktop-loophole-hover-class1b",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "b211d34854c3198ef780e1ee7ac8e03de9df0e95cb0481e74d5c59bca2dd7c0c",
+      "restoredSHA256": "b211d34854c3198ef780e1ee7ac8e03de9df0e95cb0481e74d5c59bca2dd7c0c",
+      "paragraphCount": 22,
+      "emptyParagraphs": 11
+    },
+    {
+      "id": "desktop-loophole-hover-class2a",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "aa9260b00115bed6887f60d53e6db81ef3844d8c39e7d00d5425894ba8be4d28",
+      "restoredSHA256": "aa9260b00115bed6887f60d53e6db81ef3844d8c39e7d00d5425894ba8be4d28",
+      "paragraphCount": 22,
+      "emptyParagraphs": 11
+    },
+    {
+      "id": "desktop-loophole-hover-class3a",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "d38a5754708191c4a705296453c96aeb01b8cff9df401b7f8a623065db3d586d",
+      "restoredSHA256": "d38a5754708191c4a705296453c96aeb01b8cff9df401b7f8a623065db3d586d",
+      "paragraphCount": 22,
+      "emptyParagraphs": 11
+    },
+    {
+      "id": "desktop-loophole-hover-class4a",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 1440000
+      },
+      "originalSHA256": "7466f13ae28cfbb0f8fb7868f12796172423061598e8d6ee6a5302fb1efc7418",
+      "restoredSHA256": "7466f13ae28cfbb0f8fb7868f12796172423061598e8d6ee6a5302fb1efc7418",
+      "paragraphCount": 22,
+      "emptyParagraphs": 11
+    },
+    {
+      "id": "mobile-loophole",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "d9cf25dc8e941511f87d37a2dbeb0785853eb7077135870284444925f03927a9",
+      "restoredSHA256": "d9cf25dc8e941511f87d37a2dbeb0785853eb7077135870284444925f03927a9",
+      "paragraphCount": 22,
+      "emptyParagraphs": 11
+    },
+    {
+      "id": "mobile-labyrinth-040615",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "e747cb0a844c5e93f4d9c39298f25463f13c9a7976b8d6504cd14a6a1e0ff22b",
+      "restoredSHA256": "e747cb0a844c5e93f4d9c39298f25463f13c9a7976b8d6504cd14a6a1e0ff22b",
+      "paragraphCount": 1,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "mobile-labyrinth-040715",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "620d1a3098940e27e87dee2308aff3ae4a443b9b67652fa1d086a29abd87db15",
+      "restoredSHA256": "620d1a3098940e27e87dee2308aff3ae4a443b9b67652fa1d086a29abd87db15",
+      "paragraphCount": 0,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "mobile-labyrinth-040815",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "9b77726e13d4905e1167fcff932f1cec021606430b3b9148514de3c2d982e3cd",
+      "restoredSHA256": "9b77726e13d4905e1167fcff932f1cec021606430b3b9148514de3c2d982e3cd",
+      "paragraphCount": 0,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "mobile-labyrinth-040915",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "6050df181bec64096c7a7c76023c484d6060e8f3de7389b8712dad17ffa3a1ef",
+      "restoredSHA256": "6050df181bec64096c7a7c76023c484d6060e8f3de7389b8712dad17ffa3a1ef",
+      "paragraphCount": 0,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "mobile-labyrinth-041015",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "33d41a9c2d54f3fbde92a76e9930858956a35d7f890fffe7cea09ecb89385ecf",
+      "restoredSHA256": "33d41a9c2d54f3fbde92a76e9930858956a35d7f890fffe7cea09ecb89385ecf",
+      "paragraphCount": 0,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "mobile-labyrinth-041315",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "ceb6123e910a2a28344e01ecc3489fd2a01eb1f3bb4bf4669cd48434f6e4bdc2",
+      "restoredSHA256": "ceb6123e910a2a28344e01ecc3489fd2a01eb1f3bb4bf4669cd48434f6e4bdc2",
+      "paragraphCount": 0,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "mobile-labyrinth-041415",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "6c05f8bdad784169c23e272fa4e998cb1564a43ebee069b4451a10dae220b211",
+      "restoredSHA256": "6c05f8bdad784169c23e272fa4e998cb1564a43ebee069b4451a10dae220b211",
+      "paragraphCount": 4,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "mobile-labyrinth-041715",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "e0de0e427046f85b666d5be17a2e1c0161aa2e3ca30b394a5c40c0ca2389191b",
+      "restoredSHA256": "e0de0e427046f85b666d5be17a2e1c0161aa2e3ca30b394a5c40c0ca2389191b",
+      "paragraphCount": 7,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "mobile-labyrinth-042115",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "b97461e0f23b3b07d090c426d8ab3d25e1a9e5753b6c12a1ce6f1192b70522a4",
+      "restoredSHA256": "b97461e0f23b3b07d090c426d8ab3d25e1a9e5753b6c12a1ce6f1192b70522a4",
+      "paragraphCount": 1,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "mobile-labyrinth-042215",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "91d711e267ac277a925964f34daf30f069ab7b195844cf510563d0cadde77002",
+      "restoredSHA256": "91d711e267ac277a925964f34daf30f069ab7b195844cf510563d0cadde77002",
+      "paragraphCount": 5,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "mobile-labyrinth-051815",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "c9823bdbd1349d559e4eabe1ef460e8adbc0b2dbc36571c76ec0126f65cb4f7e",
+      "restoredSHA256": "c9823bdbd1349d559e4eabe1ef460e8adbc0b2dbc36571c76ec0126f65cb4f7e",
+      "paragraphCount": 3,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "mobile-labyrinth-072716",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "cecac8d6f43c0d9e6ab96be5be10f19192be2ebf0a0cce98b6698e858195d394",
+      "restoredSHA256": "cecac8d6f43c0d9e6ab96be5be10f19192be2ebf0a0cce98b6698e858195d394",
+      "paragraphCount": 2,
+      "emptyParagraphs": 0
+    },
+    {
+      "id": "mobile-loophole-hover-class1b",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "2794d858445eea9d0ab2d467e52ceaeb1f48ebf912ce3adfd99c5a1006f7a1dd",
+      "restoredSHA256": "2794d858445eea9d0ab2d467e52ceaeb1f48ebf912ce3adfd99c5a1006f7a1dd",
+      "paragraphCount": 22,
+      "emptyParagraphs": 11
+    },
+    {
+      "id": "mobile-loophole-hover-class2a",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "39a5a2c2d32cd482c983b5fb60f5d03a5991296d79e71c82f71f2b30d91a1dd9",
+      "restoredSHA256": "39a5a2c2d32cd482c983b5fb60f5d03a5991296d79e71c82f71f2b30d91a1dd9",
+      "paragraphCount": 22,
+      "emptyParagraphs": 11
+    },
+    {
+      "id": "mobile-loophole-hover-class3a",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "5a0f289dcc33a64612fad1ab807d7e767873641b34113f23ae0c0f6f20cc0732",
+      "restoredSHA256": "5a0f289dcc33a64612fad1ab807d7e767873641b34113f23ae0c0f6f20cc0732",
+      "paragraphCount": 22,
+      "emptyParagraphs": 11
+    },
+    {
+      "id": "mobile-loophole-hover-class4a",
+      "domEqual": true,
+      "pixels": {
+        "equal": true,
+        "differentPixels": 0,
+        "totalPixels": 329160
+      },
+      "originalSHA256": "ade653d9923ae84c07f2b502a9ea1689fbde8cbcc9214b7099e320c3b32b06c7",
+      "restoredSHA256": "ade653d9923ae84c07f2b502a9ea1689fbde8cbcc9214b7099e320c3b32b06c7",
+      "paragraphCount": 22,
+      "emptyParagraphs": 11
+    }
+  ],
+  "behavior": [
+    {
+      "name": "http-root: entrance directory root",
+      "passed": true
+    },
+    {
+      "name": "http-root: entrance index.html",
+      "passed": true
+    },
+    {
+      "name": "http-root: entrance loophole.html",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 1 random 0.041666666666666664",
+      "destination": "040615",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 2 random 0.125",
+      "destination": "040715",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 3 random 0.20833333333333334",
+      "destination": "040815",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 4 random 0.2916666666666667",
+      "destination": "040915",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 5 random 0.375",
+      "destination": "041015",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 6 random 0.4583333333333333",
+      "destination": "041315",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 7 random 0.5416666666666666",
+      "destination": "041415",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 8 random 0.625",
+      "destination": "041715",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 9 random 0.7083333333333334",
+      "destination": "042115",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 10 random 0.7916666666666666",
+      "destination": "042215",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 11 random 0.875",
+      "destination": "051815",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 1 random 0.9583333333333334",
+      "destination": "072716",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 2 random 0",
+      "destination": "040615",
+      "passed": true
+    },
+    {
+      "name": "http-root: link 3 random 0.9999999999999998",
+      "destination": "072716",
+      "passed": true
+    },
+    {
+      "name": "http-root: 040615 timer",
+      "duration": 10000,
+      "passed": true
+    },
+    {
+      "name": "http-root: 040715 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-root: 040815 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-root: 040915 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-root: 041015 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-root: 041315 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-root: 041415 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-root: 041715 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-root: 042115 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-root: 042215 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-root: 051815 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-root: 072716 timer",
+      "duration": 2000,
+      "passed": true
+    },
+    {
+      "name": "http-root: same chamber repeat 1",
+      "passed": true
+    },
+    {
+      "name": "http-root: same chamber repeat 2",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: entrance directory root",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: entrance index.html",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: entrance loophole.html",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 1 random 0.041666666666666664",
+      "destination": "040615",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 2 random 0.125",
+      "destination": "040715",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 3 random 0.20833333333333334",
+      "destination": "040815",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 4 random 0.2916666666666667",
+      "destination": "040915",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 5 random 0.375",
+      "destination": "041015",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 6 random 0.4583333333333333",
+      "destination": "041315",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 7 random 0.5416666666666666",
+      "destination": "041415",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 8 random 0.625",
+      "destination": "041715",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 9 random 0.7083333333333334",
+      "destination": "042115",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 10 random 0.7916666666666666",
+      "destination": "042215",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 11 random 0.875",
+      "destination": "051815",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 1 random 0.9583333333333334",
+      "destination": "072716",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 2 random 0",
+      "destination": "040615",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: link 3 random 0.9999999999999998",
+      "destination": "072716",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: 040615 timer",
+      "duration": 10000,
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: 040715 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: 040815 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: 040915 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: 041015 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: 041315 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: 041415 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: 041715 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: 042115 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: 042215 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: 051815 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: 072716 timer",
+      "duration": 2000,
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: same chamber repeat 1",
+      "passed": true
+    },
+    {
+      "name": "http-subdirectory: same chamber repeat 2",
+      "passed": true
+    },
+    {
+      "name": "file: entrance index.html",
+      "passed": true
+    },
+    {
+      "name": "file: entrance loophole.html",
+      "passed": true
+    },
+    {
+      "name": "file: link 1 random 0.041666666666666664",
+      "destination": "040615",
+      "passed": true
+    },
+    {
+      "name": "file: link 2 random 0.125",
+      "destination": "040715",
+      "passed": true
+    },
+    {
+      "name": "file: link 3 random 0.20833333333333334",
+      "destination": "040815",
+      "passed": true
+    },
+    {
+      "name": "file: link 4 random 0.2916666666666667",
+      "destination": "040915",
+      "passed": true
+    },
+    {
+      "name": "file: link 5 random 0.375",
+      "destination": "041015",
+      "passed": true
+    },
+    {
+      "name": "file: link 6 random 0.4583333333333333",
+      "destination": "041315",
+      "passed": true
+    },
+    {
+      "name": "file: link 7 random 0.5416666666666666",
+      "destination": "041415",
+      "passed": true
+    },
+    {
+      "name": "file: link 8 random 0.625",
+      "destination": "041715",
+      "passed": true
+    },
+    {
+      "name": "file: link 9 random 0.7083333333333334",
+      "destination": "042115",
+      "passed": true
+    },
+    {
+      "name": "file: link 10 random 0.7916666666666666",
+      "destination": "042215",
+      "passed": true
+    },
+    {
+      "name": "file: link 11 random 0.875",
+      "destination": "051815",
+      "passed": true
+    },
+    {
+      "name": "file: link 1 random 0.9583333333333334",
+      "destination": "072716",
+      "passed": true
+    },
+    {
+      "name": "file: link 2 random 0",
+      "destination": "040615",
+      "passed": true
+    },
+    {
+      "name": "file: link 3 random 0.9999999999999998",
+      "destination": "072716",
+      "passed": true
+    },
+    {
+      "name": "file: 040615 timer",
+      "duration": 10000,
+      "passed": true
+    },
+    {
+      "name": "file: 040715 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "file: 040815 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "file: 040915 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "file: 041015 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "file: 041315 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "file: 041415 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "file: 041715 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "file: 042115 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "file: 042215 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "file: 051815 timer",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "name": "file: 072716 timer",
+      "duration": 2000,
+      "passed": true
+    },
+    {
+      "name": "file: same chamber repeat 1",
+      "passed": true
+    },
+    {
+      "name": "file: same chamber repeat 2",
+      "passed": true
+    }
+  ],
+  "failures": [],
+  "originalBlockedExternal": [
+    "http://fonts.googleapis.com/css?family=Raleway:400,300,600"
+  ],
+  "originalMissingLocal": [
+    "http://127.0.0.1:35201/__historical__/labyrinth/css/normalize.css",
+    "http://127.0.0.1:35201/__historical__/labyrinth/css/skeleton.css",
+    "http://127.0.0.1:35201/__historical__/labyrinth/css/style.css",
+    "http://127.0.0.1:35201/__historical__/labyrinth/css/styles.css"
+  ],
+  "restoredExternalRequests": [],
+  "restoredRequestFailures": [],
+  "restoredHttpErrors": [],
+  "restoredJavaScriptErrors": [],
+  "restoredConsoleErrors": [],
+  "browserFaviconProbes": [],
+  "finishedAt": "2026-10-07T21:21:05.255Z",
+  "passed": true,
+  "summary": {
+    "visualCases": 34,
+    "visualPasses": 34,
+    "behaviorChecks": 92,
+    "failures": 0
+  }
+}
