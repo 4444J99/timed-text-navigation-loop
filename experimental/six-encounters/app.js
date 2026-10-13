@@ -2,6 +2,7 @@
   const { Session, ExposureClock } = ACETimedNavigation;
   const app = document.querySelector('#app');
   const session = new Session(HLScore);
+  const timeScore = {...HLScore, sequence:['042115'], cycleLength:null};
   const exploration = new HLGeneration.RouteSession();
   let freeClock=null,freeFrame=null,freePaused=false,menuOpen=false,entranceRecord=null;
   function seed(){return crypto.getRandomValues(new Uint32Array(1))[0];}
@@ -29,7 +30,10 @@
     document.querySelector('#score-menu').hidden=screen!=='entrance';
     if(screen!=='generative'){delete document.body.dataset.phase;delete document.body.dataset.paused;}
   }
-  function focusHeading() { const el = app.querySelector('h1'); if (el) { el.tabIndex=-1; el.focus({preventScroll:true}); } }
+  function focusHeading() {
+    const el = app.querySelector(screen==='entrance' && !menuOpen ? '.entrance-route' : 'h1');
+    if (el) { if (el.tagName==='H1') el.tabIndex=-1; el.focus({preventScroll:true}); }
+  }
   function cancelClock() {
     if (clock) { clock.cancel(); const s = studySession?.active || session.active; if (s) s.elapsed = clock.elapsed; }
     clock = null; clockTick=null; cancelAnimationFrame(frame); frame = null; paused = false;
@@ -220,7 +224,7 @@
   }
   function configuration() {
     return { contentVersion:HLContent.version, compositionVersion:HLScore.version, study,
-      condition:studyVariant, source:studies[study]?.source, configuration:HLScore,
+      condition:studyVariant, source:studies[study]?.source, configuration:study==='time'?timeScore:HLScore,
       layouts:studyRecords, memory:studyMemory,
       readerObservation:observation || null, observationStatus:observation?'Reader-entered, unverified':'No reader observations collected' };
   }
@@ -260,7 +264,7 @@
     const variants=app.querySelector('.variants');
     [['baseline','Reader-paced'],['timed','Timed · five seconds']].forEach(([v,label])=>{const b=button(label,()=>{studyVariant=v;timeEntrance();});b.setAttribute('aria-pressed',String(v===studyVariant));variants.append(b);});
     actions(app,[['Enter condition',()=>{
-      studySession=new Session({...HLScore,sequence:['042115'],cycleLength:null},studyVariant==='timed'?'timed':'reader');
+      studySession=new Session(timeScore,studyVariant==='timed'?'timed':'reader');
       studySession.enter();chamber(studySession);
     },'primary'],['Reset study',()=>openStudy('time',true)],['Study index',()=>index()]]);recordPanel();focusHeading();
   }

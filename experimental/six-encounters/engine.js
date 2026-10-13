@@ -12,13 +12,16 @@
     enter() {
       if (this.active || this.exited || this.entries.length >= this.config.sequence.length) return null;
       const chamber = this.config.sequence[this.entries.length];
-      const visit = this.visits[chamber] = (this.visits[chamber] || 0) + 1;
+      const visit = (Object.hasOwn(this.visits, chamber) ? this.visits[chamber] : 0) + 1;
+      Object.defineProperty(this.visits, chamber, { value: visit, writable: true, enumerable: true, configurable: true });
       this.active = { id: `${this.generation}:${this.entries.length + 1}`, chamber, visit, elapsed: 0 };
       this.entries.push({ ...this.active }); return this.active;
     }
     recordLayout(id, layout) {
-      if (this.active?.id !== id || this.active.visit !== 1 || this.layouts[this.active.chamber]) return;
-      this.layouts[this.active.chamber] = structuredClone(layout);
+      if (this.active?.id !== id || this.active.visit !== 1 || Object.hasOwn(this.layouts, this.active.chamber)) return;
+      Object.defineProperty(this.layouts, this.active.chamber, {
+        value: structuredClone(layout), writable: true, enumerable: true, configurable: true
+      });
     }
     returnEncounter(id, reason = 'manual') {
       if (!this.active || this.active.id !== id || this.exited) return false;
