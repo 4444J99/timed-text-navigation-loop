@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0.0",
+  "system_id": "audiovisual-composition-system",
+  "repository": {
+    "github_id": 1409411055
+  },
+  "software": {
+    "id": "timed-text-navigation-loop",
+    "name": "Timed Text Navigation Loop",
+    "responsibility": "Schedule configured text encounters and count visible, ready, unpaused exposure; compose this capability with separately authored browser scores."
+  },
+  "capabilities": [
+    {
+      "id": "timed-navigation",
+      "description": "Configurable encounter transitions, session memory and monotonic eligible-exposure timing without artwork content or DOM dependencies."
+    }
+  ],
+  "modules": [
+    {
+      "id": "timed-navigation",
+      "path": "experimental/six-encounters/engine.js",
+      "capability_ids": [
+        "timed-navigation"
+      ],
+      "interfaces": [
+        "ACETimedNavigation.Session",
+        "ACETimedNavigation.ExposureClock",
+        "HLEngine (compatibility alias)",
+        "CommonJS require(engine.js)"
+      ]
+    }
+  ],
+  "source_media": [],
+  "compositions": [
+    {
+      "id": "six-encounter-text-score",
+      "path": "experimental/six-encounters",
+      "artwork_id": "g-p-6ab7e5f7ede88191903fcf8149f1b11e"
+    }
+  ],
+  "artworks": [
+    {
+      "id": "g-p-6ab7e5f7ede88191903fcf8149f1b11e",
+      "title": "hole-loop",
+      "aliases": [
+        "LOOPHOLE",
+        "labyrinth"
+      ],
+      "publication_status": "unverified"
+    }
+  ],
+  "editions": [],
+  "archives": []
+}
