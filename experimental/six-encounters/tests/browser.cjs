@@ -57,7 +57,7 @@ function check(name){reports.push(name);console.log('PASS',name);}
         if(i===1||i===4){
           const field=await page.locator('.phrase').evaluateAll(es=>es.map(e=>({text:e.textContent,row:+e.dataset.row,col:+e.dataset.column,instance:+e.dataset.instance,x:parseFloat(e.style.left),y:parseFloat(e.style.top)})));
           assert.equal(field.length,378);field.forEach((e,j)=>{assert.equal(e.text,'whereiendandubegin');assert.equal(e.instance,j);assert.equal(e.row,Math.floor(j/9));assert.equal(e.col,j%9);});
-          if(i===1)firstField=field;else field.forEach((e,j)=>{assert.ok(Math.abs(e.x-(firstField[j].x+(e.col>=4?s.layouts['041015'].cellWidth:0)))<0.02);assert.equal(e.y,firstField[j].y);});
+          if(i===1){field.forEach(e=>assert.ok(Math.abs(e.x-e.col*s.layouts['041015'].cellWidth)<.02));firstField=field;}else field.forEach((e,j)=>{assert.ok(Math.abs(e.x-(firstField[j].x+(e.col>=4?s.layouts['041015'].cellWidth:0)))<0.02);assert.equal(e.y,firstField[j].y);});
           await page.getByRole('button',{name:'Scroll detail',exact:true}).click();assert.equal(await page.locator('.canvas').evaluate(e=>getComputedStyle(e).transform),'matrix(1, 0, 0, 1, 0, 0)');
           await page.getByRole('button',{name:'Fit whole field',exact:true}).click();check(`${name}: I/you ${i===1?'continuous':'gap'} exact instances and coordinates`);
         }

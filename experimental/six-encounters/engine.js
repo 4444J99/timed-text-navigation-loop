@@ -28,7 +28,10 @@
       this.completedCycles = this.config.cycleLength ? Math.floor(this.history.length / this.config.cycleLength) : 0;
       this.active = null; return true;
     }
-    exit() { this.active = null; this.exited = true; }
+    exit() {
+      if (this.active) Object.assign(this.entries[this.entries.length - 1], this.active);
+      this.active = null; this.exited = true;
+    }
     snapshot() {
       return structuredClone({ mode: this.mode, active: this.active, visits: this.visits,
         layouts: this.layouts, entries: this.entries, history: this.history, traces: this.traces,

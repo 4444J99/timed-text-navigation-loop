@@ -47,7 +47,7 @@ const root=path.resolve(__dirname,'..'),out=path.resolve(process.env.HL_CHARACTE
   await p.close();
   const race=await context.newPage();await race.clock.install();await race.clock.pauseAt(new Date());await race.goto('file://'+path.join(root,'index.html'));await race.clock.runFor(100);
   await race.evaluate(()=>{document.querySelector('.entrance-route').click();[...document.querySelectorAll('button')].find(b=>b.textContent==='Return').click();});
-  await race.clock.runFor(1000);assert.equal(await race.evaluate(()=>HLDiagnostics.generation().active),null);checks.push('Return before mount readiness completes exits once without entry-clock replacement');await race.close();
+  await race.clock.runFor(1000);assert.equal(await race.evaluate(()=>HLDiagnostics.generation().active),null);checks.push('Return before mount readiness completes leaves no active generation');await race.close();
   fs.writeFileSync(path.join(out,'browser-report.json'),JSON.stringify({browser:browser.version(),checks},null,2));checks.forEach(c=>console.log('PASS',c));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

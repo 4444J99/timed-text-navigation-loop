@@ -39,6 +39,6 @@
     "320x568 diagonal/stretch: fixed bounds, applied family, signed position, seamless pixel wrap",
     "same seed/configuration replays every glyph axis, sign, period and phase",
     "reduced motion stays static and source text remains accessible",
-    "Return before mount readiness completes exits once without entry-clock replacement"
+    "Return before mount readiness completes leaves no active generation"
   ]
 }
