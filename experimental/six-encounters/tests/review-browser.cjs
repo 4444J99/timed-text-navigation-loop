@@ -7,13 +7,13 @@ const url='file://'+path.resolve(__dirname,'../index.html');
   const browser=await chromium.launch({headless:true,...(process.env.HL_CHROMIUM_PATH?{executablePath:process.env.HL_CHROMIUM_PATH}: {})});
   const failures=[];
   async function run(name,check){
-    const page=await browser.newPage();
+    const page=await browser.newPage();page.setDefaultTimeout(5000);
     try{
-      await page.addInitScript(()=>{
+      await page.clock.install();await page.goto(url);await page.clock.runFor(100);
+      await page.evaluate(()=>{
         const native=requestAnimationFrame;window.frameCalls=0;
         window.requestAnimationFrame=fn=>native(t=>{window.frameCalls++;fn(t);});
       });
-      await page.clock.install();await page.goto(url);await page.clock.runFor(100);
       await check(page);console.log('PASS',name);
     }catch(error){failures.push(name);console.error('FAIL',name,error.message);}
     finally{await page.close();}
@@ -41,6 +41,7 @@ const url='file://'+path.resolve(__dirname,'../index.html');
     });
     await run('reopening a study preserves its condition records and note',async page=>{
       await study(page);await page.getByRole('button',{name:'Variant · green',exact:true}).click();await page.clock.runFor(100);
+      await page.locator('details:has(#observation) summary').click();
       await page.locator('#observation').fill('A retained observation');
       const before=await page.evaluate(()=>HLDiagnostics.studyRecord());
       await page.getByRole('button',{name:'Study index',exact:true}).click();
@@ -50,7 +51,7 @@ const url='file://'+path.resolve(__dirname,'../index.html');
       assert.equal((await page.evaluate(()=>HLDiagnostics.studyRecord())).readerObservation,null);
     });
     await run('visible study serialization follows observation input',async page=>{
-      await study(page);await page.locator('#observation').fill('The new note');
+      await study(page);await page.locator('details:has(#observation) summary').click();await page.locator('#observation').fill('The new note');
       assert.equal(JSON.parse(await page.locator('pre').textContent()).readerObservation,'The new note');
     });
     await run('study diagnostics cannot mutate retained records',async page=>{
