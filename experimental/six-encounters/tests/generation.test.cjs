@@ -56,3 +56,150 @@ test('all axes and families repeat on the torus continuously at positive/negativ
   assert.notDeepEqual(G.characterPosition(plan,600,'drift'),G.characterPosition(plan,600,'wave'));
   assert.notDeepEqual(G.characterPosition(plan,600,'drift'),G.characterPosition(plan,600,'stretch'));
 });
+
+test('validatePatchGrammar checks canonical 7-tuple and fails closed on missing dimensions (Issue #24)', () => {
+  const validPatch = {
+    source: '040915',
+    topology: 'torus',
+    geometry: { columns: 42, rows: 9 },
+    typography: { family: 'monospace', size: 14 },
+    palette: ['#000000', '#00ffff', '#ff00ff'],
+    temporalScore: { duration: 5000, entry: 450, exit: 350 },
+    interactionRules: {
+      executableActions: [{ type: 'navigate', target: '041015' }],
+      poeticInstructions: ['pause and observe']
+    }
+  };
+  const res = G.validatePatchGrammar(validPatch);
+  assert.equal(res.valid, true);
+  assert.equal(res.errors.length, 0);
+
+  // Missing dimension
+  const missing = { ...validPatch };
+  delete missing.temporalScore;
+  const resMissing = G.validatePatchGrammar(missing);
+  assert.equal(resMissing.valid, false);
+  assert.ok(resMissing.errors.some(e => e.includes('temporalScore')));
+
+  // Non-object
+  assert.equal(G.validatePatchGrammar(null).valid, false);
+  assert.equal(G.validatePatchGrammar('invalid').valid, false);
+});
+
+test('validatePatchGrammar fails closed when poetic instructions appear in executableActions without action type (Issue #24)', () => {
+  const base = {
+    source: '040915',
+    topology: 'torus',
+    geometry: { columns: 42, rows: 9 },
+    typography: { family: 'monospace' },
+    palette: ['#000000'],
+    temporalScore: { duration: 5000 },
+    interactionRules: {
+      executableActions: [
+        'linger in the doorway' // poetic string without action type
+      ],
+      poeticInstructions: []
+    }
+  };
+  const r1 = G.validatePatchGrammar(base);
+  assert.equal(r1.valid, false);
+  assert.ok(r1.errors.some(e => e.includes('without an action type')));
+
+  const objectPoetic = {
+    ...base,
+    interactionRules: {
+      executableActions: [
+        { instruction: 'breathe slowly' } // object missing type
+      ]
+    }
+  };
+  const r2 = G.validatePatchGrammar(objectPoetic);
+  assert.equal(r2.valid, false);
+  assert.ok(r2.errors.some(e => e.includes('without an action type')));
+});
+
+test('compilePatchRecord separates executableActions from poeticInstructions and applies only machine actions (Issue #24)', () => {
+  const patch = {
+    source: '040915',
+    topology: 'plane',
+    geometry: { columns: 42, rows: 9 },
+    typography: { family: 'monospace' },
+    palette: ['#000000', '#ffffff'],
+    temporalScore: { duration: 5000 },
+    interactionRules: {
+      executableActions: [
+        { type: 'navigate', target: '042115' },
+        { type: 'set_property', key: 'visitedOnce', value: true }
+      ],
+      poeticInstructions: [
+        'a breath before leaving',
+        'the letters will not return'
+      ]
+    }
+  };
+
+  const compiled = G.compilePatchRecord(patch);
+  assert.ok(Object.isFrozen(compiled));
+  assert.equal(compiled.source, '040915');
+  assert.equal(compiled.executableActions.length, 2);
+  assert.equal(compiled.poeticInstructions.length, 2);
+  assert.equal(compiled.executableActions[0].type, 'navigate');
+  assert.equal(compiled.poeticInstructions[0], 'a breath before leaving');
+
+  // .apply(state) updates machine state from executableActions only
+  const state = { chamber: '040915' };
+  const updated = compiled.apply(state);
+  assert.equal(updated.chamber, '042115');
+  assert.equal(updated.visitedOnce, true);
+  // original state unmutated
+  assert.equal(state.chamber, '040915');
+
+  // Invalid patch throws on compile
+  assert.throws(() => G.compilePatchRecord({}), /Patch grammar validation failed/);
+});
+
+test('buildRouteGraph produces deterministic seeded graphs and distinct seeds vary (Issue #28)', () => {
+  const g1 = G.buildRouteGraph('1.2.0', 777);
+  const g2 = G.buildRouteGraph('1.2.0', 777);
+  const g3 = G.buildRouteGraph('1.2.0', 778);
+
+  assert.deepEqual(g1, g2);
+  assert.notDeepEqual(g1, g3);
+
+  assert.equal(g1.edition, '1.2.0');
+  assert.equal(g1.seed, 777);
+  assert.ok(g1.nodes['040915']);
+  assert.ok(g1.nodes['041015']);
+  assert.ok(g1.nodes['042115']);
+  assert.ok(g1.edges.length > 0);
+  assert.deepEqual(Object.keys(g1.adjacency), ['040915', '041015', '042115']);
+  assert.ok(Object.isFrozen(g1));
+});
+
+test('replayRouteHistory returns visitedNodes, finalEncounterIndex, stateSnapshots, and deterministic SHA-256 trajectoryDigest (Issue #28)', () => {
+  const history = [
+    { target: '041015' },
+    { target: '042115' },
+    { target: '040915' }
+  ];
+
+  const r1 = G.replayRouteHistory('1.2.0', 101, history);
+  const r2 = G.replayRouteHistory('1.2.0', 101, history);
+  const r3 = G.replayRouteHistory('1.2.0', 102, history);
+
+  assert.deepEqual(r1.visitedNodes, ['040915', '041015', '042115', '040915']);
+  assert.equal(r1.finalEncounterIndex, 3);
+  assert.equal(r1.stateSnapshots.length, 4);
+  assert.match(r1.trajectoryDigest, /^[a-f0-9]{64}$/);
+
+  // Determinism
+  assert.equal(r1.trajectoryDigest, r2.trajectoryDigest);
+  assert.notEqual(r1.trajectoryDigest, r3.trajectoryDigest);
+
+  // chooseIndex selection
+  const choiceReplay = G.replayRouteHistory('1.2.0', 101, [{ chooseIndex: 0 }, { chooseIndex: 1 }]);
+  assert.equal(choiceReplay.visitedNodes.length, 3);
+  assert.equal(choiceReplay.finalEncounterIndex, 2);
+  assert.equal(choiceReplay.stateSnapshots.length, 3);
+  assert.match(choiceReplay.trajectoryDigest, /^[a-f0-9]{64}$/);
+});

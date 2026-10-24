@@ -49,6 +49,289 @@
     exit(){this.active=null;}
     snapshot(){return structuredClone({configVersion:config.version,count:this.count,visits:this.visits,active:this.active,history:this.history,traces:this.history.slice(-config.traceLimit)});}
   }
-  root.HLGeneration={config,random,spaces,entrance,palette,contrast,character,characterPosition,RouteSession};
+
+  // Canonical 7-tuple patch dimensions (Issue #24)
+  const CANONICAL_PATCH_DIMENSIONS = Object.freeze([
+    'source',
+    'topology',
+    'geometry',
+    'typography',
+    'palette',
+    'temporalScore',
+    'interactionRules'
+  ]);
+
+  function validatePatchGrammar(patch) {
+    const errors = [];
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+      return { valid: false, errors: ['Patch must be a non-null object'] };
+    }
+    for (const dim of CANONICAL_PATCH_DIMENSIONS) {
+      if (!(dim in patch) || patch[dim] === undefined || patch[dim] === null) {
+        errors.push(`Missing required dimension: ${dim}`);
+      }
+    }
+
+    const actionsToCheck = [];
+    if (patch.interactionRules && typeof patch.interactionRules === 'object') {
+      if (Array.isArray(patch.interactionRules.executableActions)) {
+        actionsToCheck.push(...patch.interactionRules.executableActions);
+      }
+    }
+    if (Array.isArray(patch.executableActions)) {
+      actionsToCheck.push(...patch.executableActions);
+    }
+
+    for (const [idx, act] of actionsToCheck.entries()) {
+      if (!act || typeof act !== 'object' || Array.isArray(act)) {
+        errors.push(`Poetic instruction '${act}' appears in executableActions without an action type`);
+      } else if (typeof act.type !== 'string' || !act.type.trim()) {
+        errors.push(`Poetic instruction '${act.text || act.instruction || JSON.stringify(act)}' appears in executableActions without an action type`);
+      } else if (act.poetic === true && !act.handler && !act.apply) {
+        errors.push(`Poetic instruction marked in executableActions without an executable handler or type`);
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
+  function compilePatchRecord(patch) {
+    const check = validatePatchGrammar(patch);
+    if (!check.valid) {
+      const err = new Error(`Patch grammar validation failed: ${check.errors.join('; ')}`);
+      err.errors = check.errors;
+      throw err;
+    }
+    const ir = patch.interactionRules;
+    const rawActions = [];
+    const rawPoetics = [];
+
+    if (ir && typeof ir === 'object') {
+      if (Array.isArray(ir.executableActions)) rawActions.push(...ir.executableActions);
+      if (Array.isArray(ir.poeticInstructions)) rawPoetics.push(...ir.poeticInstructions);
+    }
+    if (Array.isArray(patch.executableActions)) rawActions.push(...patch.executableActions);
+    if (Array.isArray(patch.poeticInstructions)) rawPoetics.push(...patch.poeticInstructions);
+
+    const compiled = {
+      source: patch.source,
+      topology: patch.topology,
+      geometry: structuredClone(patch.geometry),
+      typography: structuredClone(patch.typography),
+      palette: structuredClone(patch.palette),
+      temporalScore: structuredClone(patch.temporalScore),
+      interactionRules: structuredClone(patch.interactionRules),
+      executableActions: Object.freeze(structuredClone(rawActions)),
+      poeticInstructions: Object.freeze(structuredClone(rawPoetics)),
+      apply(state) {
+        if (!state || typeof state !== 'object') return state;
+        const next = structuredClone(state);
+        for (const action of this.executableActions) {
+          if (typeof action.apply === 'function') {
+            action.apply(next);
+          } else if (action.type === 'navigate' || action.type === 'transition') {
+            if (action.target) next.chamber = action.target;
+          } else if (action.type === 'set_property') {
+            if (action.key) next[action.key] = action.value;
+          } else if (action.type === 'mutate_state' && action.mutation && typeof action.mutation === 'object') {
+            Object.assign(next, action.mutation);
+          }
+        }
+        return next;
+      }
+    };
+    return Object.freeze(compiled);
+  }
+
+  function sha256Hex(ascii) {
+    if (typeof module !== 'undefined' && typeof require !== 'undefined') {
+      try {
+        const crypto = require('node:crypto');
+        return crypto.createHash('sha256').update(ascii, 'utf8').digest('hex');
+      } catch (_) {}
+    }
+    function rightRotate(value, amount) {
+      return (value >>> amount) | (value << (32 - amount));
+    }
+    let i, j;
+    let result = '';
+    const words = [];
+    const asciiBitLength = ascii.length * 8;
+    const hash = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+    const k = [
+      0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+      0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+      0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+      0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+      0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+      0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+      0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+      0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    ];
+    for (i = 0; i < ascii.length; i++) {
+      const code = ascii.charCodeAt(i);
+      words[i >> 2] |= (code & 0xff) << (24 - (i % 4) * 8);
+    }
+    words[asciiBitLength >> 5] |= 0x80 << (24 - (asciiBitLength % 32));
+    words[(((asciiBitLength + 64) >> 9) << 4) + 15] = asciiBitLength;
+
+    for (i = 0; i < words.length; i += 16) {
+      const w = words.slice(i, i + 16);
+      let a = hash[0], b = hash[1], c = hash[2], d = hash[3], e = hash[4], f = hash[5], g = hash[6], h = hash[7];
+      for (j = 0; j < 64; j++) {
+        if (j >= 16) {
+          const s0 = rightRotate(w[j - 15], 7) ^ rightRotate(w[j - 15], 18) ^ (w[j - 15] >>> 3);
+          const s1 = rightRotate(w[j - 2], 17) ^ rightRotate(w[j - 2], 19) ^ (w[j - 2] >>> 10);
+          w[j] = (w[j - 16] + s0 + w[j - 7] + s1) | 0;
+        }
+        const ch = (e & f) ^ (~e & g);
+        const temp1 = (h + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) + ch + k[j] + (w[j] | 0)) | 0;
+        const maj = (a & b) ^ (a & c) ^ (b & c);
+        const temp2 = ((rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) + maj) | 0;
+        h = g; g = f; f = e; e = (d + temp1) | 0; d = c; c = b; b = a; a = (temp1 + temp2) | 0;
+      }
+      hash[0] = (hash[0] + a) | 0; hash[1] = (hash[1] + b) | 0; hash[2] = (hash[2] + c) | 0; hash[3] = (hash[3] + d) | 0;
+      hash[4] = (hash[4] + e) | 0; hash[5] = (hash[5] + f) | 0; hash[6] = (hash[6] + g) | 0; hash[7] = (hash[7] + h) | 0;
+    }
+    for (i = 0; i < 8; i++) {
+      result += (hash[i] >>> 0).toString(16).padStart(8, '0');
+    }
+    return result;
+  }
+
+  // Deterministic Route Graph Builder & Traversal Replay Engine (Issue #28)
+  function buildRouteGraph(edition, seed) {
+    const editionVer = typeof edition === 'string' ? edition : (edition?.version || config.version);
+    const rng = random(seed >>> 0);
+    const chambers = ['040915', '041015', '042115'];
+    const nodes = {};
+    const edges = [];
+    const adjacency = {};
+
+    for (const chamber of chambers) {
+      const bg = config.backgrounds[Math.floor(rng() * config.backgrounds.length)];
+      const nodeSeed = Math.floor(rng() * 0x100000000);
+      const nodePalette = palette(bg, nodeSeed);
+      const baseRoutes = config.routes[chamber] || [];
+      const links = baseRoutes.map((r, linkIdx) => {
+        const edgeSeed = Math.floor(rng() * 0x100000000);
+        const edgeBg = config.backgrounds[Math.floor(rng() * config.backgrounds.length)];
+        const edge = {
+          source: chamber,
+          target: r.target,
+          word: r.word,
+          index: linkIdx,
+          background: edgeBg,
+          seed: edgeSeed
+        };
+        edges.push(edge);
+        return edge;
+      });
+
+      nodes[chamber] = Object.freeze({
+        id: chamber,
+        background: bg,
+        seed: nodeSeed,
+        palette: nodePalette,
+        links: Object.freeze(links)
+      });
+      adjacency[chamber] = Object.freeze(links.map(l => l.target));
+    }
+
+    return freeze({
+      edition: editionVer,
+      seed: seed >>> 0,
+      chambers: Object.freeze([...chambers]),
+      nodes: Object.freeze(nodes),
+      edges: Object.freeze(edges),
+      adjacency: Object.freeze(adjacency)
+    });
+  }
+
+  function replayRouteHistory(edition, seed, eventHistory, options = {}) {
+    const graph = buildRouteGraph(edition, seed);
+    const events = Array.isArray(eventHistory) ? [...eventHistory] : [];
+    let current = options.startNode || (events[0]?.initialChamber ? events[0].initialChamber : '040915');
+    if (events[0]?.initialChamber) {
+      events.shift();
+    }
+
+    const visitedNodes = [current];
+    const stateSnapshots = [{
+      step: 0,
+      node: current,
+      encounterIndex: 0,
+      activeChamber: current,
+      timestamp: 0
+    }];
+
+    for (let i = 0; i < events.length; i++) {
+      const ev = events[i];
+      let nextNode = current;
+      if (typeof ev === 'string' && graph.nodes[ev]) {
+        nextNode = ev;
+      } else if (ev && typeof ev === 'object') {
+        if (ev.target && graph.nodes[ev.target]) {
+          nextNode = ev.target;
+        } else if (ev.pending?.target && graph.nodes[ev.pending.target]) {
+          nextNode = ev.pending.target;
+        } else if (ev.chamber && graph.nodes[ev.chamber]) {
+          nextNode = ev.chamber;
+        } else if (typeof ev.chooseIndex === 'number') {
+          const links = graph.nodes[current]?.links || [];
+          if (links.length > 0) {
+            nextNode = links[ev.chooseIndex % links.length].target;
+          }
+        }
+      }
+      current = nextNode;
+      visitedNodes.push(current);
+      stateSnapshots.push({
+        step: i + 1,
+        node: current,
+        encounterIndex: visitedNodes.length - 1,
+        event: typeof ev === 'object' ? structuredClone(ev) : ev,
+        activeChamber: current
+      });
+    }
+
+    const finalEncounterIndex = visitedNodes.length - 1;
+    const digestPayload = JSON.stringify({
+      edition: graph.edition,
+      seed: graph.seed,
+      visitedNodes,
+      finalEncounterIndex
+    });
+    const trajectoryDigest = sha256Hex(digestPayload);
+
+    return freeze({
+      edition: graph.edition,
+      seed: graph.seed,
+      visitedNodes: Object.freeze([...visitedNodes]),
+      finalEncounterIndex,
+      stateSnapshots: Object.freeze(stateSnapshots),
+      trajectoryDigest
+    });
+  }
+
+  root.HLGeneration={
+    config,
+    random,
+    spaces,
+    entrance,
+    palette,
+    contrast,
+    character,
+    characterPosition,
+    RouteSession,
+    CANONICAL_PATCH_DIMENSIONS,
+    validatePatchGrammar,
+    compilePatchRecord,
+    buildRouteGraph,
+    replayRouteHistory
+  };
   if(typeof module!=='undefined')module.exports=root.HLGeneration;
 })(typeof window==='undefined'?globalThis:window);

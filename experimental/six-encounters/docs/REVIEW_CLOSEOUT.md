@@ -30,4 +30,14 @@ Reader observations are serialized through `textContent` and never interpolated
 into HTML. Those duplicate alerts do not establish a reader-controlled HTML sink.
 
 Passing software checks do not establish artist, physical-device or release
-acceptance. Exact final check and merge evidence belongs to PRs 59 and 61.
+acceptance. PRs #59, #61, #62, #63, and #64 are merged into `main`.
+
+## Preview Recovery & Rollback Rehearsal (Issue #20)
+
+Deterministic static verification and rollback checks confirm clean deployment recovery:
+1. **Static Surface Determinism:** Verify that all HTML, script modules, and style sheets are self-contained without remote runtime dependencies or dynamic network fetches.
+2. **Deterministic Test Verification:** Verify test contracts across core engine and generation modules using `node --test tests/generation.test.cjs tests/state.test.cjs`.
+3. **Rollback Rehearsal:**
+   - In case of preview degradation or regressions, the preview deployment can be deterministically rolled back to the prior known-good commit on `main` (e.g. `068ef11` or specific release tags).
+   - Asset integrity is verified via `source-census.json` checksums, ensuring no mutated or unverified media blobs contaminate the preview environment.
+   - Preserves state machine immutability: session state and local playback history are stored strictly in session memory and can be cleanly re-initialized on reload.

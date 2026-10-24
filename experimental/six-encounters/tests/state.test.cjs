@@ -75,3 +75,60 @@ test('manual return competing with timer expiry appends only once in either orde
 test('canceled clocks stay canceled after exit and restart despite later ticks',()=>{
   const r=rig();r.clock.set({ready:true,visible:true});r.advance(2000);r.clock.cancel();r.advance(99999);r.clock.tick();assert.equal(r.calls,0);
 });
+
+test('session state integrates with compiled patch records without poetic side-effects (Issue #24)', () => {
+  const G = require('../generation.js');
+  const s = new Session(score);
+  const entry = s.enter();
+  assert.equal(entry.chamber, '040915');
+
+  const patch = {
+    source: entry.chamber,
+    topology: 'torus',
+    geometry: { bounds: [{ x: 10, y: 20 }] },
+    typography: { font: 'monospace' },
+    palette: ['#000000', '#ffffff'],
+    temporalScore: { duration: 5000 },
+    interactionRules: {
+      executableActions: [
+        { type: 'set_property', key: 'customField', value: 'applied' }
+      ],
+      poeticInstructions: [
+        'remain still within the margin'
+      ]
+    }
+  };
+
+  const compiled = G.compilePatchRecord(patch);
+  const stateSnapshot = s.snapshot();
+  const modified = compiled.apply(stateSnapshot);
+
+  assert.equal(modified.customField, 'applied');
+  // poetic instructions are isolated on the compiled record
+  assert.equal(compiled.poeticInstructions.length, 1);
+  assert.equal(compiled.poeticInstructions[0], 'remain still within the margin');
+  // session remains clean
+  assert.equal(s.snapshot().customField, undefined);
+});
+
+test('session sequence can be mirrored and digested via deterministic route replay (Issue #28)', () => {
+  const G = require('../generation.js');
+  const s = new Session(score);
+  const sequenceChambers = [];
+  while (true) {
+    const e = s.enter();
+    if (!e) break;
+    sequenceChambers.push(e.chamber);
+    s.returnEncounter(e.id);
+  }
+  assert.equal(sequenceChambers.length, 6);
+
+  // Replay the sequence of transitions
+  const historyEvents = sequenceChambers.slice(1).map(target => ({ target }));
+  const replay = G.replayRouteHistory('1.2.0', 42, historyEvents, { startNode: sequenceChambers[0] });
+
+  assert.deepEqual(replay.visitedNodes, sequenceChambers);
+  assert.equal(replay.finalEncounterIndex, 5);
+  assert.equal(replay.stateSnapshots.length, 6);
+  assert.match(replay.trajectoryDigest, /^[a-f0-9]{64}$/);
+});

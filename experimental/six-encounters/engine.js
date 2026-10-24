@@ -63,7 +63,17 @@
     }
     cancel() { this.accrue(); this.active = false; }
   }
-  root.ACETimedNavigation = { Session, ExposureClock };
+  const G = typeof require !== 'undefined' ? (() => { try { return require('./generation.js'); } catch (_) { return null; } })() : root.HLGeneration;
+  root.ACETimedNavigation = {
+    Session,
+    ExposureClock,
+    ...(G ? {
+      validatePatchGrammar: G.validatePatchGrammar,
+      compilePatchRecord: G.compilePatchRecord,
+      buildRouteGraph: G.buildRouteGraph,
+      replayRouteHistory: G.replayRouteHistory
+    } : {})
+  };
   // Preserve the existing browser API as an alias to the same implementation.
   root.HLEngine = root.ACETimedNavigation;
   if (typeof module !== 'undefined') module.exports = root.ACETimedNavigation;
