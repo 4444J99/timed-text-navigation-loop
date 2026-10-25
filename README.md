@@ -97,7 +97,7 @@ git -C hole-loop-repository show --stat source/2017-07-20
 
 The site is published by the Pages workflow from `public/` on `main`, only after the full source and browser verification succeeds on that commit. No hosted deployment is needed to run the artwork locally.
 
-**Latest successful verify receipt (2026-10-25):** Workflow "Verify historical edition" completed successfully on Waves 6-8 seal tip `a3c88db16ed868415e09d4293b7938557e76ae08` (see [run](https://github.com/4444J99/timed-text-navigation-loop/actions/runs/40193158138)); merged to main via #69.
+**Latest successful publish receipt (2026-10-25):** Workflow "Publish historical edition" completed successfully on Waves 6-8 seal tip `96e2e0a3d0e5dd9e9c3a4a397162bd8dee07aa25` (see [run](https://github.com/4444J99/timed-text-navigation-loop/actions/runs/40193264234)). The live historical edition at <https://4444j99.github.io/timed-text-navigation-loop/> reflects that commit (docs-only follow-up on main does not alter `public/`).
 
 ## Credits and rights
 
@@ -107,7 +107,7 @@ Original artwork and source: **ET CETER4 / Anthony James Padavano**, as retained
 
 The same words acquire another meaning because something has happened between encounters.
 
-The six-encounter composition and four formal studies are implemented on [PR #59](https://github.com/4444J99/timed-text-navigation-loop/pull/59), with passing CI and a separate [owner-review preview](https://hole-loop-experimental.ajpadavano.chatgpt.site). The preview requires the owner's ChatGPT account. Merge, artist review and physical iPhone/Safari verification are separate, pending states.
+The six-encounter composition and four formal studies were first implemented on [PR #59](https://github.com/4444J99/timed-text-navigation-loop/pull/59). Subsequent concentric waves through Waves 6-8 (C0–C6) have landed on `main` in `experimental/six-encounters/` (see #69 and prior). A separate [owner-review preview](https://hole-loop-experimental.ajpadavano.chatgpt.site) remains available (owner ChatGPT account required). Artist review and physical iPhone/Safari verification remain outstanding where noted in the experimental docs.
 
 Development follows the [canonical C0–C6 GitHub roadmap](https://github.com/4444J99/timed-text-navigation-loop/issues/2) and [architecture / composition map](docs/ROADMAP.md). Product capabilities, company processes and repository boundaries are planned separately. Historical restoration is an independent track and does not gate experimental delivery.
 
