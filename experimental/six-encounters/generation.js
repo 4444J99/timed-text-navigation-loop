@@ -650,6 +650,15 @@
     return new StudioReviewSession(initialState);
   }
 
+  let sensoryAccessibility = null;
+  if (typeof module !== 'undefined' && typeof require !== 'undefined') {
+    try {
+      sensoryAccessibility = require('./sensory-accessibility.js');
+    } catch (_) {}
+  } else if (root.HLSensoryAccessibility) {
+    sensoryAccessibility = root.HLSensoryAccessibility;
+  }
+
   root.HLGeneration={
     config,
     random,
@@ -670,7 +679,14 @@
     createStudioReviewSession,
     StudioReviewSession,
     canonicalJSON,
-    sha256Hex
+    sha256Hex,
+    compileCaptionTrack: sensoryAccessibility?.compileCaptionTrack,
+    projectTactileSubBassEnvelope: sensoryAccessibility?.projectTactileSubBassEnvelope,
+    verifyReducedMotionParity: sensoryAccessibility?.verifyReducedMotionParity,
+    auditSensoryEquivalence: sensoryAccessibility?.auditSensoryEquivalence
   };
+  if (sensoryAccessibility) {
+    Object.assign(root.HLGeneration, sensoryAccessibility);
+  }
   if(typeof module!=='undefined')module.exports=root.HLGeneration;
 })(typeof window==='undefined'?globalThis:window);
