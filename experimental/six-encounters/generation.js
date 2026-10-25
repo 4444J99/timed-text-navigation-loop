@@ -668,6 +668,15 @@
     releaseGates = root.HLReleaseGates;
   }
 
+  let concentricEvolution = null;
+  if (typeof module !== 'undefined' && typeof require !== 'undefined') {
+    try {
+      concentricEvolution = require('./concentric-evolution.js');
+    } catch (_) {}
+  } else if (root.HLConcentricEvolution) {
+    concentricEvolution = root.HLConcentricEvolution;
+  }
+
   root.HLGeneration={
     config,
     random,
@@ -697,13 +706,24 @@
     evaluateReleaseGates: releaseGates?.evaluateReleaseGates,
     buildReleaseManifest: releaseGates?.buildReleaseManifest,
     verifyRollbackTarget: releaseGates?.verifyRollbackTarget,
-    verifyDocumentationHealth: releaseGates?.verifyDocumentationHealth
+    verifyDocumentationHealth: releaseGates?.verifyDocumentationHealth,
+    evaluateC0ConstitutionAndCustody: concentricEvolution?.evaluateC0ConstitutionAndCustody,
+    verifyC1PlayableCycleAndStudies: concentricEvolution?.verifyC1PlayableCycleAndStudies,
+    buildC2FullAuthoredEdition: concentricEvolution?.buildC2FullAuthoredEdition,
+    evaluateC3GenerativeStudioAndEditions: concentricEvolution?.evaluateC3GenerativeStudioAndEditions,
+    composeC4PerformanceAndParticipation: concentricEvolution?.composeC4PerformanceAndParticipation,
+    verifyC5OperatedPlatformBoundary: concentricEvolution?.verifyC5OperatedPlatformBoundary,
+    verifyC6InstitutionalAndCommercialOperation: concentricEvolution?.verifyC6InstitutionalAndCommercialOperation,
+    evaluateConcentricRoadmapC0ToC6: concentricEvolution?.evaluateConcentricRoadmapC0ToC6
   };
   if (sensoryAccessibility) {
     Object.assign(root.HLGeneration, sensoryAccessibility);
   }
   if (releaseGates) {
     Object.assign(root.HLGeneration, releaseGates);
+  }
+  if (concentricEvolution) {
+    Object.assign(root.HLGeneration, concentricEvolution);
   }
   if(typeof module!=='undefined')module.exports=root.HLGeneration;
 })(typeof window==='undefined'?globalThis:window);
