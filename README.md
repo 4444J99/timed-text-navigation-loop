@@ -97,6 +97,8 @@ git -C hole-loop-repository show --stat source/2017-07-20
 
 The site is published by the Pages workflow from `public/` on `main`, only after the full source and browser verification succeeds on that commit. No hosted deployment is needed to run the artwork locally.
 
+**Latest successful verify receipt (2026-10-25):** Workflow "Verify historical edition" completed successfully on tip `997ec5c60acc0383c9c9e7b1b0d4015868e90cad` (see [run](https://github.com/4444J99/timed-text-navigation-loop/actions/runs/40188631993)).
+
 ## Credits and rights
 
 Original artwork and source: **ET CETER4 / Anthony James Padavano**, as retained from the source and its repository history. This extraction introduces no project-wide license grant. Original creative materials retain their existing rights. Bootstrap and Normalize.css retain their accompanying upstream license notices. See [COPYRIGHT.md](COPYRIGHT.md).
