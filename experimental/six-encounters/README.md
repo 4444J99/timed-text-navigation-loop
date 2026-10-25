@@ -32,6 +32,9 @@ The **Score & studies** panel offers **Explore four studies**. Each study has a 
 | `render.js` | Actual layout capture and coordinate-based rendering |
 | `app.js` | Reader actions, independent studies, ready/visibility/pause wiring |
 | `style.css` | Edge-to-edge score, control overlays, independent study pages |
+| `concentric-evolution.js` | C0–C6 deterministic validators and master roadmap evaluator |
+| `release-gates.js` | Wave 3 C2 release gates and C3 spatial poetry studio |
+| `sensory-accessibility.js` | Wave 4 C4 sensory accessibility, tactile envelope, reduced-motion parity |
 | `docs/source-census.json` | Inspected chamber paths, exact revision, SHA-256 and read-only source text nodes |
 | `docs/PROVENANCE.md` | Source authority, normalization and research reference |
 | `docs/EVALUATION.md` | Working methods and assessment, separated from reader observations |
@@ -84,3 +87,9 @@ pixel wrap endpoints, seeded replay, reduced motion and early Return.
 `HL_CHARACTER_EVIDENCE_DIR` selects its capture destination; default output is
 ignored `verification/rerun/character-cells/`. Committed evidence is in
 `verification/character-cells/`. Physical iPhone/Safari testing remains outstanding.
+
+## Waves 6-8 C0–C6 concentric evolution seal
+
+Deterministic C0–C6 validators and the master roadmap evaluator live in `concentric-evolution.js` (with supporting modules `release-gates.js` and `sensory-accessibility.js`). Workflow “Verify experimental six encounters” completed successfully on tip `a3c88db16ed868415e09d4293b7938557e76ae08` ([run](https://github.com/4444J99/timed-text-navigation-loop/actions/runs/40193158148)); merged to `main` via [#69](https://github.com/4444J99/timed-text-navigation-loop/pull/69).
+
+Green progress receipt · 2026-10-25.
