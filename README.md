@@ -99,6 +99,8 @@ The site is published by the Pages workflow from `public/` on `main`, only after
 
 **Latest successful verify receipt (2026-10-25):** Workflow "Verify historical edition" completed successfully on Waves 6-8 seal tip `a3c88db16ed868415e09d4293b7938557e76ae08` (see [run](https://github.com/4444J99/timed-text-navigation-loop/actions/runs/40193158138)); merged to main via #69.
 
+**Latest successful publish receipt (2026-10-25):** Workflow "Publish historical edition" completed successfully on tip `1d903f9d164d1ef29c0456aab5c9fe6e943802f5` (see [run](https://github.com/4444J99/timed-text-navigation-loop/actions/runs/40193729555)). The live historical edition at <https://4444j99.github.io/timed-text-navigation-loop/> reflects that commit.
+
 ## Credits and rights
 
 Original artwork and source: **ET CETER4 / Anthony James Padavano**, as retained from the source and its repository history. This extraction introduces no project-wide license grant. Original creative materials retain their existing rights. Bootstrap and Normalize.css retain their accompanying upstream license notices. See [COPYRIGHT.md](COPYRIGHT.md).
