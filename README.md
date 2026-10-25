@@ -97,7 +97,7 @@ git -C hole-loop-repository show --stat source/2017-07-20
 
 The site is published by the Pages workflow from `public/` on `main`, only after the full source and browser verification succeeds on that commit. No hosted deployment is needed to run the artwork locally.
 
-**Latest successful verify receipt (2026-10-25):** Workflow "Verify historical edition" completed successfully on tip `997ec5c60acc0383c9c9e7b1b0d4015868e90cad` (see [run](https://github.com/4444J99/timed-text-navigation-loop/actions/runs/40188631993)).
+**Latest successful verify receipt (2026-10-25):** Workflow "Verify historical edition" completed successfully on Waves 6-8 seal tip `a3c88db16ed868415e09d4293b7938557e76ae08` (see [run](https://github.com/4444J99/timed-text-navigation-loop/actions/runs/40193158138)); merged to main via #69.
 
 ## Credits and rights
 
