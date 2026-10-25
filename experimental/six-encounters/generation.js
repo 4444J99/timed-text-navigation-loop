@@ -659,6 +659,15 @@
     sensoryAccessibility = root.HLSensoryAccessibility;
   }
 
+  let releaseGates = null;
+  if (typeof module !== 'undefined' && typeof require !== 'undefined') {
+    try {
+      releaseGates = require('./release-gates.js');
+    } catch (_) {}
+  } else if (root.HLReleaseGates) {
+    releaseGates = root.HLReleaseGates;
+  }
+
   root.HLGeneration={
     config,
     random,
@@ -683,10 +692,18 @@
     compileCaptionTrack: sensoryAccessibility?.compileCaptionTrack,
     projectTactileSubBassEnvelope: sensoryAccessibility?.projectTactileSubBassEnvelope,
     verifyReducedMotionParity: sensoryAccessibility?.verifyReducedMotionParity,
-    auditSensoryEquivalence: sensoryAccessibility?.auditSensoryEquivalence
+    auditSensoryEquivalence: sensoryAccessibility?.auditSensoryEquivalence,
+    assembleSixEncountersPackage: releaseGates?.assembleSixEncountersPackage,
+    evaluateReleaseGates: releaseGates?.evaluateReleaseGates,
+    buildReleaseManifest: releaseGates?.buildReleaseManifest,
+    verifyRollbackTarget: releaseGates?.verifyRollbackTarget,
+    verifyDocumentationHealth: releaseGates?.verifyDocumentationHealth
   };
   if (sensoryAccessibility) {
     Object.assign(root.HLGeneration, sensoryAccessibility);
+  }
+  if (releaseGates) {
+    Object.assign(root.HLGeneration, releaseGates);
   }
   if(typeof module!=='undefined')module.exports=root.HLGeneration;
 })(typeof window==='undefined'?globalThis:window);
