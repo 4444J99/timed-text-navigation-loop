@@ -97,6 +97,8 @@ git -C hole-loop-repository show --stat source/2017-07-20
 
 The site is published by the Pages workflow from `public/` on `main`, only after the full source and browser verification succeeds on that commit. No hosted deployment is needed to run the artwork locally.
 
+**Latest successful publish receipt (2026-10-25):** Workflow "Publish historical edition" completed successfully on tip `997ec5c60acc0383c9c9e7b1b0d4015868e90cad` (see [run](https://github.com/4444J99/timed-text-navigation-loop/actions/runs/40188539389)). The live historical edition at <https://4444j99.github.io/timed-text-navigation-loop/> reflects that commit.
+
 ## Credits and rights
 
 Original artwork and source: **ET CETER4 / Anthony James Padavano**, as retained from the source and its repository history. This extraction introduces no project-wide license grant. Original creative materials retain their existing rights. Bootstrap and Normalize.css retain their accompanying upstream license notices. See [COPYRIGHT.md](COPYRIGHT.md).
@@ -105,7 +107,7 @@ Original artwork and source: **ET CETER4 / Anthony James Padavano**, as retained
 
 The same words acquire another meaning because something has happened between encounters.
 
-The six-encounter composition and four formal studies are implemented on [PR #59](https://github.com/4444J99/timed-text-navigation-loop/pull/59), with passing CI and a separate [owner-review preview](https://hole-loop-experimental.ajpadavano.chatgpt.site). The preview requires the owner's ChatGPT account. Merge, artist review and physical iPhone/Safari verification are separate, pending states.
+The six-encounter composition and four formal studies were first implemented on [PR #59](https://github.com/4444J99/timed-text-navigation-loop/pull/59). Subsequent work, including portable patch grammar, seeded route replay, and related updates ([#65](https://github.com/4444J99/timed-text-navigation-loop/pull/65) and others), has landed on `main` in `experimental/six-encounters/`. A separate [owner-review preview](https://hole-loop-experimental.ajpadavano.chatgpt.site) remains available (owner ChatGPT account required). Artist review and physical iPhone/Safari verification remain outstanding where noted in the experimental docs.
 
 Development follows the [canonical C0–C6 GitHub roadmap](https://github.com/4444J99/timed-text-navigation-loop/issues/2) and [architecture / composition map](docs/ROADMAP.md). Product capabilities, company processes and repository boundaries are planned separately. Historical restoration is an independent track and does not gate experimental delivery.
 
