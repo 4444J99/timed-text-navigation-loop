@@ -309,3 +309,85 @@ test('createStudioReviewSession supports annotations, preview patches, and round
   assert.equal(session.getState().background, '#000000');
   assert.equal(session.getPreviewPatches().length, 0);
 });
+
+// -------------------------------------------------------------
+// Wave 5: End-to-End Publication Package Assembly & Archival Bundle
+// -------------------------------------------------------------
+test('assembleSixEncountersPackage produces ready === true and deterministic packageDigest', () => {
+  assert.equal(typeof RG.assembleSixEncountersPackage, 'function');
+  assert.equal(G.assembleSixEncountersPackage, RG.assembleSixEncountersPackage);
+
+  const input = {
+    version: '1.2.0',
+    commit: '7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0',
+    seed: 42,
+    chamber: '040915',
+    routeHistory: ['040915', '041015', '042115', '040915'],
+    publishedAt: '2026-10-25T12:00:00.000Z'
+  };
+
+  const pkgA = RG.assembleSixEncountersPackage(input);
+  const pkgB = RG.assembleSixEncountersPackage(input);
+
+  // Schema & Readiness
+  assert.equal(pkgA.schema, 'hole-loop.six-encounters.package.v1');
+  assert.equal(pkgA.version, '1.2.0');
+  assert.equal(pkgA.commit, '7f4e5f9610701cd1cb7e398f0b66a6e26c8d35e0');
+  assert.equal(pkgA.ready, true);
+
+  // Deterministic Package Digest
+  assert.ok(/^[a-f0-9]{64}$/.test(pkgA.packageDigest));
+  assert.equal(pkgA.packageDigest, pkgB.packageDigest);
+
+  // Core Publication Artifacts
+  assert.ok(pkgA.manifest);
+  assert.equal(pkgA.manifest.schema, 'six-encounters-release-manifest-v1');
+  assert.ok(/^[a-f0-9]{64}$/.test(pkgA.manifest.manifestDigest));
+
+  assert.ok(pkgA.sensoryAudit);
+  assert.equal(pkgA.sensoryAudit.schema, 'six-encounters-sensory-equivalence-audit-v1');
+  assert.equal(pkgA.sensoryAudit.equivalent, true);
+  assert.ok(pkgA.sensoryAudit.maxDeltaMs <= 50);
+
+  assert.ok(pkgA.documentationHealth);
+  assert.equal(pkgA.documentationHealth.healthy, true);
+  assert.equal(pkgA.documentationHealth.sectionCount, 6);
+
+  assert.ok(pkgA.releaseGates);
+  assert.equal(pkgA.releaseGates.passed, true);
+
+  // Verified Subsystems
+  assert.ok(pkgA.subsystems.routeGraph);
+  assert.ok(pkgA.subsystems.routeReplay);
+  assert.equal(pkgA.subsystems.routeReplay.finalEncounterIndex, 4);
+  assert.ok(pkgA.subsystems.perceptualField);
+  assert.equal(pkgA.subsystems.perceptualField.colorContrast.compliant, true);
+  assert.ok(pkgA.subsystems.spatialPoetryLayer);
+  assert.ok(pkgA.subsystems.reducedMotionLayer);
+  assert.equal(pkgA.subsystems.reducedMotionLayer.vestibularSafe, true);
+  assert.ok(pkgA.subsystems.captionTrack);
+  assert.equal(pkgA.subsystems.captionTrack.stats.readingSpeedCompliant, true);
+  assert.ok(pkgA.subsystems.tactileEnvelope);
+  assert.equal(pkgA.subsystems.tactileEnvelope.isSafeForDeafAudiences, true);
+  assert.ok(pkgA.subsystems.reviewBundle);
+  assert.ok(/^[a-f0-9]{64}$/.test(pkgA.subsystems.reviewBundle.digest));
+});
+
+test('assembleSixEncountersPackage fails closed (ready === false) on gate or sensory violations', () => {
+  // 1. Release gate failure (frame time over budget)
+  const slowPkg = RG.assembleSixEncountersPackage({
+    metrics: { frameTimeMs: 33.0 }
+  });
+  assert.equal(slowPkg.ready, false);
+  assert.equal(slowPkg.releaseGates.passed, false);
+
+  // 2. Sensory drift failure (audio event out of sync by 100ms)
+  const driftingPkg = RG.assembleSixEncountersPackage({
+    audioEvents: [
+      { id: 'drift-p', timeMs: 120, durationMs: 100, frequency: 35, intensity: 0.8 } // Cues start at 0ms -> 120ms delta > 50ms tolerance
+    ]
+  });
+  assert.equal(driftingPkg.ready, false);
+  assert.equal(driftingPkg.sensoryAudit.equivalent, false);
+  assert.ok(driftingPkg.sensoryAudit.violations.some(v => v.type === 'sync_drift'));
+});
