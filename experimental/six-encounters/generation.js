@@ -317,6 +317,339 @@
     });
   }
 
+  function canonicalJSON(val) {
+    if (val === null || typeof val !== 'object') {
+      return JSON.stringify(val);
+    }
+    if (Array.isArray(val)) {
+      return '[' + val.map(canonicalJSON).join(',') + ']';
+    }
+    const keys = Object.keys(val).sort();
+    return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalJSON(val[k])).join(',') + '}';
+  }
+
+  function evaluatePerceptualField(encounterState, viewport = { width: 1440, height: 1000 }) {
+    const vp = (viewport && typeof viewport === 'object') ? viewport : { width: 1440, height: 1000 };
+    const vpWidth = Number(vp.width) || 1440;
+    const vpHeight = Number(vp.height) || 1000;
+
+    const dwellTime = Math.max(0, Number(encounterState?.dwellTime ?? encounterState?.elapsed ?? 0));
+    const historyCount = Array.isArray(encounterState?.history) ? encounterState.history.length : 0;
+    const visitCount = Math.max(1, Number(encounterState?.visit ?? 1));
+
+    const bg = encounterState?.background || '#000000';
+    const colors = (Array.isArray(encounterState?.colors) && encounterState.colors.length)
+      ? encounterState.colors
+      : palette(bg, encounterState?.seed || 0);
+
+    const ratios = colors.map(c => Math.round(contrast(bg, c) * 100) / 100);
+    const minContrast = ratios.length ? Math.min(...ratios) : 4.5;
+    const maxContrast = ratios.length ? Math.max(...ratios) : 4.5;
+    const meanContrast = ratios.length ? Math.round((ratios.reduce((s, v) => s + v, 0) / ratios.length) * 100) / 100 : 4.5;
+    const compliant = minContrast >= 4.5;
+
+    const dwellFactor = Math.min(1.0, dwellTime / (config.exposure || 5000));
+    const visitFactor = Math.min(1.0, (visitCount - 1) / 3);
+    const historyFactor = Math.min(1.0, historyCount / (config.historyLimit || 32));
+    const typographicTension = Math.round((0.45 * dwellFactor + 0.35 * visitFactor + 0.20 * historyFactor) * 1000) / 1000;
+
+    const rawItems = Array.isArray(encounterState?.nodes) && encounterState.nodes.length
+      ? encounterState.nodes
+      : (Array.isArray(encounterState?.links) && encounterState.links.length
+          ? encounterState.links
+          : [{ word: 'before' }, { word: 'again' }]);
+
+    const totalNodes = rawItems.length;
+    const stepX = (vpWidth - 200) / Math.max(1, totalNodes);
+    const stepY = (vpHeight - 200) / Math.max(1, totalNodes);
+
+    const nodes = rawItems.map((item, i) => {
+      const text = item.text || item.word || item.id || `node-${i}`;
+      const x = Math.round(100 + i * stepX);
+      const y = Math.round(100 + (i % 2 === 0 ? i * stepY : (totalNodes - 1 - i) * stepY));
+      const nodeContrast = ratios[i % ratios.length] || 4.5;
+      const weight = Math.round((0.5 * (1.0 - (i / Math.max(1, totalNodes))) + 0.3 * (nodeContrast / 21) + 0.2 * typographicTension) * 1000) / 1000;
+      return {
+        id: item.id || `node-${i}`,
+        text,
+        x,
+        y,
+        weight,
+        contrast: nodeContrast,
+        tension: typographicTension
+      };
+    });
+
+    const proximityVectors = [];
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i];
+        const b = nodes[j];
+        const dx = (b.x - a.x) / vpWidth;
+        const dy = (b.y - a.y) / vpHeight;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const vector = [
+          Math.round((dx / (dist || 1)) * 1000) / 1000,
+          Math.round((dy / (dist || 1)) * 1000) / 1000
+        ];
+        const tension = Math.round((1.0 / (dist + 0.1)) * 100) / 100;
+        proximityVectors.push({
+          from: a.id,
+          to: b.id,
+          distance: Math.round(dist * 1000) / 1000,
+          vector,
+          tension
+        });
+      }
+    }
+
+    const visualWeight = Math.round((0.4 * typographicTension + 0.4 * Math.min(1.0, meanContrast / 10) + 0.2 * dwellFactor) * 1000) / 1000;
+
+    return {
+      chamber: encounterState?.chamber || '040915',
+      dwellTime,
+      historyDepth: historyCount,
+      colorContrast: {
+        ratios,
+        min: minContrast,
+        max: maxContrast,
+        mean: meanContrast,
+        compliant
+      },
+      typographicTension,
+      proximityVectors,
+      visualWeight,
+      nodes
+    };
+  }
+
+  function composeSpatialPoetryLayer(routeHistory, patchRecord, options = {}) {
+    const minContrastReq = typeof options.minContrast === 'number' ? options.minContrast : 4.5;
+    const bg = options.background || '#000000';
+    const desiredColor = options.color || '#00ffff';
+
+    const instructions = [];
+    if (patchRecord && typeof patchRecord === 'object') {
+      if (Array.isArray(patchRecord.poeticInstructions) && patchRecord.poeticInstructions.length) {
+        instructions.push(...patchRecord.poeticInstructions);
+      } else if (Array.isArray(patchRecord.interactionRules?.poeticInstructions) && patchRecord.interactionRules.poeticInstructions.length) {
+        instructions.push(...patchRecord.interactionRules.poeticInstructions);
+      }
+    }
+    if (!instructions.length && Array.isArray(options.text)) {
+      instructions.push(...options.text);
+    } else if (!instructions.length && typeof options.text === 'string') {
+      instructions.push(...options.text.split(/\s+/).filter(Boolean));
+    }
+    if (!instructions.length && Array.isArray(routeHistory) && routeHistory.length) {
+      instructions.push(...routeHistory.map(h => (typeof h === 'string' ? h : h.word || h.chamber || 'encounter')));
+    }
+    if (!instructions.length) {
+      instructions.push('where', 'i', 'end', 'and', 'u', 'begin');
+    }
+
+    const rawTokens = instructions.map((ins, idx) => {
+      const text = typeof ins === 'string' ? ins : (ins.text || ins.instruction || String(ins));
+      return { orderIndex: idx, text };
+    });
+
+    const vpWidth = options.width || 1200;
+    const vpHeight = options.height || 800;
+    const margin = options.margin || 60;
+    const rowHeight = options.rowHeight || 52;
+
+    const corridor = {
+      x: margin,
+      y: margin,
+      width: vpWidth - margin * 2,
+      height: rawTokens.length * rowHeight + margin,
+      nonOverlapping: true
+    };
+
+    let effectiveColor = desiredColor;
+    if (contrast(bg, effectiveColor) < minContrastReq) {
+      effectiveColor = contrast(bg, '#ffffff') >= minContrastReq ? '#ffffff' : '#000000';
+    }
+    const finalContrast = Math.round(contrast(bg, effectiveColor) * 100) / 100;
+
+    const nodes = rawTokens.map((tok, idx) => {
+      const x = margin + (idx % 3) * 36;
+      const y = margin + idx * rowHeight;
+      const z = Math.round((idx * 10.5) * 100) / 100;
+      return {
+        id: `poetry-node-${idx}`,
+        orderIndex: tok.orderIndex,
+        text: tok.text,
+        x,
+        y,
+        z,
+        width: Math.max(64, tok.text.length * 12),
+        height: rowHeight - 8,
+        contrast: finalContrast,
+        style: {
+          color: effectiveColor,
+          fontFamily: options.fontFamily || 'monospace',
+          fontSize: options.fontSize || '18px'
+        }
+      };
+    });
+
+    return {
+      corridor,
+      nodes,
+      legibility: {
+        minContrast: minContrastReq,
+        compliant: nodes.every(n => n.contrast >= minContrastReq),
+        corridorClearance: rowHeight - 8
+      },
+      reversibleToLinearText() {
+        return [...nodes].sort((a, b) => a.orderIndex - b.orderIndex).map(n => n.text).join(' ');
+      }
+    };
+  }
+
+  class StudioReviewSession {
+    constructor(initialState = {}) {
+      this.baseState = structuredClone(initialState);
+      this.sessionState = structuredClone(initialState);
+      this.annotations = new Map();
+      this.previewPatches = [];
+      this.serial = 0;
+    }
+
+    annotateEncounter(encounterId, note, meta = {}) {
+      if (!encounterId) throw new Error('encounterId is required');
+      if (!note || typeof note !== 'string') throw new Error('note must be a non-empty string');
+      const id = `annot:${++this.serial}`;
+      const record = {
+        id,
+        encounterId: String(encounterId),
+        note: note.trim(),
+        author: meta.author || 'operator',
+        createdAt: meta.createdAt || '2026-10-25T12:00:00.000Z'
+      };
+      if (!this.annotations.has(record.encounterId)) {
+        this.annotations.set(record.encounterId, []);
+      }
+      this.annotations.get(record.encounterId).push(record);
+      return record;
+    }
+
+    applyPreviewPatch(patchTuple) {
+      const check = validatePatchGrammar(patchTuple);
+      if (!check.valid) {
+        const err = new Error(`Preview patch grammar validation failed: ${check.errors.join('; ')}`);
+        err.errors = check.errors;
+        throw err;
+      }
+      const compiled = compilePatchRecord(patchTuple);
+      const patchId = `patch:${this.previewPatches.length + 1}`;
+      const entry = {
+        id: patchId,
+        patch: patchTuple,
+        appliedAt: '2026-10-25T12:00:00.000Z'
+      };
+      this.previewPatches.push(entry);
+      this.sessionState = compiled.apply(this.sessionState);
+      return {
+        patchId,
+        compiled,
+        currentState: this.sessionState
+      };
+    }
+
+    getAnnotations(encounterId = null) {
+      if (encounterId) {
+        return structuredClone(this.annotations.get(String(encounterId)) || []);
+      }
+      const all = [];
+      for (const list of this.annotations.values()) {
+        all.push(...list);
+      }
+      return structuredClone(all);
+    }
+
+    getPreviewPatches() {
+      return structuredClone(this.previewPatches);
+    }
+
+    getState() {
+      return structuredClone(this.sessionState);
+    }
+
+    resetPreview() {
+      this.sessionState = structuredClone(this.baseState);
+      this.previewPatches = [];
+    }
+
+    exportReviewBundle() {
+      const serializedAnnotations = [];
+      for (const [encounterId, notes] of this.annotations.entries()) {
+        serializedAnnotations.push({
+          encounterId,
+          notes: structuredClone(notes)
+        });
+      }
+      serializedAnnotations.sort((a, b) => a.encounterId.localeCompare(b.encounterId));
+
+      const bundlePayload = {
+        schema: 'six-encounters-studio-review-v1',
+        version: '1.0.0',
+        baseState: this.baseState,
+        sessionState: this.sessionState,
+        annotations: serializedAnnotations,
+        previewPatches: structuredClone(this.previewPatches),
+        exportedAt: '2026-10-25T12:00:00.000Z'
+      };
+
+      const digest = sha256Hex(canonicalJSON(bundlePayload));
+      return {
+        ...bundlePayload,
+        digest
+      };
+    }
+
+    importReviewBundle(bundle) {
+      if (!bundle || typeof bundle !== 'object') {
+        throw new TypeError('Review bundle must be an object');
+      }
+      if (bundle.schema !== 'six-encounters-studio-review-v1') {
+        throw new Error(`Incompatible review bundle schema: ${bundle.schema}`);
+      }
+      if (!bundle.digest) {
+        throw new Error('Review bundle is missing digest');
+      }
+
+      const { digest, ...payload } = bundle;
+      const computedDigest = sha256Hex(canonicalJSON(payload));
+      if (computedDigest.toLowerCase() !== digest.toLowerCase()) {
+        throw new Error(`Review bundle digest mismatch: expected ${digest}, computed ${computedDigest}`);
+      }
+
+      this.baseState = structuredClone(bundle.baseState || {});
+      this.sessionState = structuredClone(bundle.sessionState || {});
+      this.previewPatches = Array.isArray(bundle.previewPatches) ? structuredClone(bundle.previewPatches) : [];
+      this.annotations = new Map();
+      if (Array.isArray(bundle.annotations)) {
+        for (const item of bundle.annotations) {
+          if (item.encounterId && Array.isArray(item.notes)) {
+            this.annotations.set(item.encounterId, structuredClone(item.notes));
+          }
+        }
+      }
+
+      return {
+        restored: true,
+        annotationCount: this.getAnnotations().length,
+        patchCount: this.previewPatches.length
+      };
+    }
+  }
+
+  function createStudioReviewSession(initialState = {}) {
+    return new StudioReviewSession(initialState);
+  }
+
   root.HLGeneration={
     config,
     random,
@@ -331,7 +664,13 @@
     validatePatchGrammar,
     compilePatchRecord,
     buildRouteGraph,
-    replayRouteHistory
+    replayRouteHistory,
+    evaluatePerceptualField,
+    composeSpatialPoetryLayer,
+    createStudioReviewSession,
+    StudioReviewSession,
+    canonicalJSON,
+    sha256Hex
   };
   if(typeof module!=='undefined')module.exports=root.HLGeneration;
 })(typeof window==='undefined'?globalThis:window);

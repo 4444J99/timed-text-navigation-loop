@@ -205,7 +205,10 @@ async function main() {
   }
   await new Promise(resolve => server.listen(0,'127.0.0.1',resolve));
   const origin = `http://127.0.0.1:${server.address().port}`;
-  const browser = await chromium.launch({headless:true, ...(args.executable ? {executablePath:path.resolve(args.executable)} : {}),args:['--no-sandbox','--disable-dev-shm-usage','--no-zygote']});
+  const defaultChrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  const executablePath = args.executable ? path.resolve(args.executable) :
+                         (process.env.PORTVS_BROWSER_EXECUTABLE || process.env.SYSTEM_CHROME || (fs.existsSync(defaultChrome) ? defaultChrome : undefined));
+  const browser = await chromium.launch({headless:true, ...(executablePath ? {executablePath} : {}),args:['--no-sandbox','--disable-dev-shm-usage','--no-zygote']});
   report.environment.browser = await browser.version();
   try {
     for (const device of devices) {
