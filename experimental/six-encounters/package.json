@@ -4,7 +4,7 @@
   "private": true,
   "description": "No-build browser artwork; dependencies are verification-only",
   "scripts": {
-    "test": "node --test tests/six-encounters.test.cjs tests/studio-release.test.cjs tests/sensory-accessibility.test.cjs",
+    "test": "node --test tests/six-encounters.test.cjs tests/studio-release.test.cjs tests/sensory-accessibility.test.cjs tests/concentric-evolution.test.cjs",
     "test:review": "node tests/review-browser.cjs",
     "test:browser": "node tests/browser.cjs && node tests/generation-browser.cjs && node tests/character-browser.cjs"
   },
