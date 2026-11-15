@@ -36,7 +36,7 @@ function regexEnd(source, i) {
   let j = i + 1, inClass = false;
   while (j < source.length && source[j] !== '\n') {
     const c = source[j];
-    if (c === '\\') { j += 2; continue; }
+    if (c === '\\') { j += source[j + 1] === '\n' ? 1 : 2; continue; }  // a backslash never carries a regex over a line break
     if (c === '[') inClass = true;
     else if (c === ']') inClass = false;
     else if (c === '/' && !inClass) { j += 1; while (j < source.length && isWord(source[j])) j += 1; return j; }
@@ -49,8 +49,10 @@ function regexEnd(source, i) {
 // so the comment markers it blanks are real ones: string literals are walked (" // " inside a string never hides the code
 // after it), regex literals are skipped whole (/\// and /"/ are not comments or strings), and template literals nest
 // (${ ok ? `a` : `b` }) with their expressions lexed as code. Text inside strings, regexes and templates stays in place on
-// purpose: the scan reports a launch that is only named in text (reword it) rather than risk hiding a real one. Where the
-// lexer misreads a slash, the misread span is still scanned, so the error is an extra report, not a hidden launch.
+// purpose: the scan reports a launch that is only named in text (reword it) rather than risk hiding a real one.
+// Regex versus division is guessed from the previous token, so this is a guard against an accidental bare launch, not a
+// parser. Known limit: a regex literal right after a closing parenthesis (if (ok) /\//.test(s)) is read as division, and a
+// // or /* inside it is then read as a comment.
 function blankComments(source) {
   const n = source.length, blank = text => text.replace(/[^\n]/g, ' ');
   const frames = [{kind: 'code', depth: 0}];
@@ -59,7 +61,7 @@ function blankComments(source) {
     const top = frames[frames.length - 1], c = source[i], pair = source.slice(i, i + 2);
     if (top.kind === 'tmpl') {
       if (c === '\\' && i + 1 < n) { out += pair; i += 2; }
-      else if (c === '`') { frames.pop(); out += c; i += 1; prev = '`'; }
+      else if (c === '`') { frames.pop(); out += c; i += 1; prev = '`'; prevWord = ''; }
       else if (pair === '${') { frames.push({kind: 'code', depth: 0}); out += pair; i += 2; prev = '{'; }
       else { out += c; i += 1; }
       continue;
@@ -70,18 +72,19 @@ function blankComments(source) {
       let j = i + 1;
       while (j < n && source[j] !== c && source[j] !== '\n') j += source[j] === '\\' ? 2 : 1;
       j = Math.min(j + 1, n);
-      out += source.slice(i, j); i = j; prev = c;
+      out += source.slice(i, j); i = j; prev = c; prevWord = '';
       continue;
     }
     if (c === '`') { frames.push({kind: 'tmpl', depth: 0}); out += c; i += 1; continue; }
-    if (c === '/' && (prev === '' || REGEX_AFTER.has(prev) || REGEX_AFTER_WORDS.has(prevWord))) {
+    const postfix = /(\+\+|--)\s*$/.test(source.slice(Math.max(0, i - 8), i));
+    if (c === '/' && !postfix && (prev === '' || REGEX_AFTER.has(prev) || REGEX_AFTER_WORDS.has(prevWord))) {
       const j = regexEnd(source, i);
       out += source.slice(i, j); i = j; prev = ')'; prevWord = '';
       continue;
     }
     if (c === '{') top.depth += 1;
     else if (c === '}') {
-      if (top.depth === 0 && frames.length > 1) { frames.pop(); out += c; i += 1; continue; }
+      if (top.depth === 0 && frames.length > 1) { frames.pop(); out += c; i += 1; prev = ')'; prevWord = ''; continue; }
       top.depth -= 1;
     }
     out += c; i += 1;
@@ -175,6 +178,11 @@ test('the lint sees a bare launch and accepts the helper', () => {
   // Template literals nest and their expressions are code.
   assert.deepEqual(bareLaunches('const s = `${ok ? `a` : `b`}`;\nfetch("http://x"); webkit.launch();'), [2]);
   assert.deepEqual(bareLaunches('x = `a ${ {b: 1}.b } c`; // webkit.launch()\nwebkit.launch();'), [2]);
+  // Division is not a regex: after a postfix operator, a string, a template and a closed expression.
+  assert.deepEqual(bareLaunches('x = `${ i++ / 2 } a ${ j / 3 }`; // webkit.launch()\nwebkit.launch();'), [2]);
+  assert.deepEqual(bareLaunches('return "a" / 2; // webkit.launch()\nwebkit.launch();'), [2]);
+  assert.deepEqual(bareLaunches('x = `x` / 2; // webkit.launch()\nwebkit.launch();'), [2]);
+  assert.deepEqual(bareLaunches('x = /a\\\n/; // webkit.launch()\nwebkit.launch();'), [3]);
   assert.deepEqual(bareLaunches('const note = `${await webkit.launch()}`;'), [1]);
   assert.deepEqual(bareLaunches('const s = "a\\" // b"; await webkit.launch();'), [1]);
   assert.deepEqual(bareLaunches('const url = "http://x"; // chromium.launch()'), []);
