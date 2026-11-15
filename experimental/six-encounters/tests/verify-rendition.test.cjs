@@ -332,3 +332,19 @@ test('captions: a v1 receipt cannot hide a sidecar, and a captions.vtt that is a
   const b=copy('capdir');fs.rmSync(path.join(b,'captions.vtt'));fs.mkdirSync(path.join(b,'captions.vtt'));
   assert.deepEqual(failed(await verifyRendition(b)),['present: captions.vtt']);
 });
+
+// Final independent review of PR 103 (head abfbb52).
+test('a receipt written on a CRLF host (version line ending in a carriage return) still verifies, and the digit lookahead is pinned',{skip},async()=>{
+  const d=copy('crlf');edit(d,r=>{r.file.ffmpeg+='\r';});
+  assert.deepEqual(failed(await verifyRendition(d)),[]);
+  const t=copy('nodigit');edit(t,r=>{r.file.ffmpeg='ffmpeg version APPROVED-BY-THE-ARTIST Copyright (c) 2000-2026 the FFmpeg developers';});
+  assert.ok(failed(await verifyRendition(t)).length>0);
+});
+
+test('receipt.json, rendition.mp4 and cue-track.wav must be regular files, not symlinks',{skip},async()=>{
+  for(const f of['receipt.json','rendition.mp4','cue-track.wav']){
+    const d=copy('link-'+f),p=path.join(d,f),real=path.join(root,'real-'+f);
+    fs.copyFileSync(p,real);fs.rmSync(p);fs.symlinkSync(real,p);
+    assert.deepEqual(failed(await verifyRendition(d)),['present: '+f],f);
+  }
+});
