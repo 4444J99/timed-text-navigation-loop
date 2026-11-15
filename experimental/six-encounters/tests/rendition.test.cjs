@@ -163,7 +163,7 @@ test('captions name every cue in words, in order, start on their cue, and are re
       assert.equal(c.id,'cue-'+(i+1));assert.equal(c.startMs,cues[i].ms);assert.ok(c.endMs>c.startMs);assert.equal(c.endMs,R.captionEnd(run,cues,i));
       const e=run.timeline[Math.floor(i/2)];
       if(cues[i].kind==='enter'){assert.equal(c.text,'Chamber '+e.chamber+', '+cues[i].hz+' Hz');assert.equal(c.endMs,cues[i+1].ms,'an entry caption runs to the exit cue');}
-      else{assert.equal(c.text,'Followed: '+e.links[e.chosen].word+(e.index===5?'; run ends':''));assert.ok(c.endMs>=(i+1<cues.length?cues[i+1].ms:0));}
+      else{assert.equal(c.text,'Exit '+cues[i].hz+' Hz: '+e.links[e.chosen].word+(e.index===5?'; run ends':''));assert.ok(c.endMs>=(i+1<cues.length?cues[i+1].ms:0));}
     });
     assert.deepEqual(R.parseCaptions(cap.vtt),cap.captions);
   }
@@ -197,6 +197,7 @@ test('parseCaptions accepts only the exact subset captions() writes',()=>{
 test('captions refuse text that WebVTT would need escaped, and an entry caption ends at the exit cue so at most two captions stack',()=>{
   const run=R.simulateRun(45,3);run.timeline[0].links[run.timeline[0].chosen]={word:'a&b',target:'041015'};
   assert.throws(()=>R.captions(run),/escaping/);
+  for(const w of['a\nb','a\rb','a\0b','a>b','a-->b']){const r2=R.simulateRun(45,2);r2.timeline[0].links[r2.timeline[0].chosen]={word:w,target:'041015'};assert.throws(()=>R.captions(r2),/escaping/,JSON.stringify(w));}
   for(const seed of[1,45,987654321]){
     const r=R.simulateRun(seed,8),cap=R.captions(r).captions;
     cap.forEach((c,i)=>{if(i%2===0)assert.equal(c.endMs,cap[i+1].startMs);});

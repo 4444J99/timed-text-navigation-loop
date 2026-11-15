@@ -167,15 +167,15 @@
   }
 
   /** The silent equivalent of the cue track: one caption per cue, starting on that cue, short enough to read at the repo's 18 characters per second
-   *  (see sensory-accessibility.js) in the time each cue allows: entry captions name the chamber and pitch, exit captions the word followed.
+   *  (see sensory-accessibility.js) in the time each cue allows: entry captions name the chamber and pitch, exit captions the exit pitch and the word followed.
    *  It is not built with compileCaptionTrack because that re-times cues to satisfy reading speed, and these must stay on the tone onsets the verifier pins.
    *  Derived only from the run, so it is exactly as reproducible as the sound it describes. Chamber ids are the work's own route identifiers. */
   function captions(run){
     const cues=cueList(run),n=run.timeline.length,out=[];
     cues.forEach((c,i)=>{
       const e=run.timeline[i>>1],word=e.links[e.chosen];
-      const text=c.kind==='enter'?'Chamber '+e.chamber+', '+c.hz+' Hz':'Followed: '+word.word+((i>>1)+1===n?'; run ends':'');
-      if(/[<>&]|-->/.test(text))throw new RangeError('caption text would need WebVTT escaping: '+text);
+      const text=c.kind==='enter'?'Chamber '+e.chamber+', '+c.hz+' Hz':'Exit '+c.hz+' Hz: '+word.word+((i>>1)+1===n?'; run ends':'');
+      if(/[<>&\r\n\0]|-->/.test(text))throw new RangeError('caption text would need WebVTT escaping: '+text);
       out.push({id:'cue-'+(i+1),startMs:c.ms,endMs:captionEnd(run,cues,i),text});
     });
     const vtt='WEBVTT\n\n'+out.map(c=>c.id+'\n'+vttTime(c.startMs)+' --> '+vttTime(c.endMs)+'\n'+c.text+'\n').join('\n');

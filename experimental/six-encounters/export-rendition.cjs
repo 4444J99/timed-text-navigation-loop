@@ -35,7 +35,7 @@ async function exportRendition(options){
   const caption=R.captions(run),vttBytes=Buffer.from(caption.vtt,'utf8');// before the output directory is touched: text that cannot be written as WebVTT must fail the export up front
   fs.mkdirSync(o.out,{recursive:true});
   // A receipt vouches for the artifacts beside it; remove any earlier one, and the sidecar it vouched for, before the first artifact is replaced.
-  fs.rmSync(path.join(o.out,'receipt.json'),{force:true});fs.rmSync(path.join(o.out,'captions.vtt'),{force:true,recursive:true});
+  fs.rmSync(path.join(o.out,'captions.vtt'),{force:true});fs.rmSync(path.join(o.out,'receipt.json'),{force:true});// no recursive: a directory at either name is an error that keeps its contents
   const wavPath=path.join(o.out,'cue-track.wav'),mp4Path=path.join(o.out,'rendition.mp4'),wavBytes=R.wav(cue.pcm,cue.sampleRate);
   fs.writeFileSync(wavPath,wavBytes);
   const version=ffmpegVersion();

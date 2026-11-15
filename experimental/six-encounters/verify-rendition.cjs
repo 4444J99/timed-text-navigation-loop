@@ -144,7 +144,8 @@ async function verifyRendition(dir,options={}){
     const vttPath=path.join(dir,'captions.vtt'),claim=receipt.captions||{};
     let fileVtt=null,readErr=vttPath;try{if(fs.lstatSync(vttPath).isFile())fileVtt=fs.readFileSync(vttPath);else readErr=vttPath+' is not a regular file (a symlink or directory does not count)';}catch(e){readErr=vttPath+': '+e.message;}
     if(check('present: captions.vtt',fileVtt!==null,readErr)){
-      const derived=R.captions(run),derivedBytes=Buffer.from(derived.vtt,'utf8');
+      let derived;try{derived=R.captions(run);}catch(e){check('captions can be written as WebVTT for this run',false,e.message);derived=null;}
+      if(derived){const derivedBytes=Buffer.from(derived.vtt,'utf8');
       check('captions.vtt on disk is byte-identical to the replayed captions',fileVtt.equals(derivedBytes),fileVtt.length+' bytes on disk, '+derivedBytes.length+' replayed');
       check('captions SHA-256 and cue count in the receipt re-derive',sha256(derivedBytes)===claim.sha256&&claim.cues===derived.captions.length,sha256(derivedBytes)+', '+derived.captions.length+' captions');
       let parsed=null,why='';
@@ -152,6 +153,7 @@ async function verifyRendition(dir,options={}){
       const ends=cue.cues.map((c,k)=>R.captionEnd(run,cue.cues,k));
       const aligned=parsed&&parsed.length===cue.cues.length&&parsed.every((c,k)=>c.startMs===cue.cues[k].ms&&c.endMs===ends[k]&&c.endMs>c.startMs);
       check('captions.vtt is strict WebVTT, one caption per cue, starting on the cue and ending by the shared caption rule',aligned,why||(parsed?parsed.length+' captions':'unparsed'));
+      }
     }
   } else check('captions: a v1 receipt predates the captions sidecar, so none is claimed or left beside it',receipt.captions===undefined&&!lexists(path.join(dir,'captions.vtt')),receipt.schema);
 
