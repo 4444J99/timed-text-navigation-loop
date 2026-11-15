@@ -84,3 +84,13 @@ pixel wrap endpoints, seeded replay, reduced motion and early Return.
 `HL_CHARACTER_EVIDENCE_DIR` selects its capture destination; default output is
 ignored `verification/rerun/character-cells/`. Committed evidence is in
 `verification/character-cells/`. Physical iPhone/Safari testing remains outstanding.
+
+## Audiovisual rendition export
+
+`rendition.js` and `export-rendition.cjs` turn a seeded word-routed run into a real file. A reader who always follows a word is driven through the actual `RouteSession` at the configured 450 ms entry, 1.0 to 4.5 s of eligible exposure and 350 ms exit; every next chamber is the followed word's target. Frames show only the route words, in the field and foreground colours, motion family, entry direction and glyph-cell wraparound the encounter seed produces, drawn with a built-in 5x7 bitmap font. The cue track marks entry (chamber pitch) and exit (octave below) with plain tones. It is a timing aid, not a composed score (sound composition stays with the artist, issue 34).
+
+```sh
+node export-rendition.cjs --seed 45 --encounters 4 --out /absolute/dir
+```
+
+Needs `ffmpeg` and `ffprobe`. It writes `rendition.mp4` (H.264/AAC), `cue-track.wav` and `receipt.json`. The receipt holds SHA-256 of the raw frame stream and the cue track, which are independent of the encoder and identical on every run for the same seed, plus what `ffprobe` reads back. This is a schematic rendition, not a capture of the browser artwork, and asserts no artist, accessibility, device or audience acceptance. `tests/rendition.test.cjs` covers legal routing, byte-reproducible frames, palette contrast, WAV structure and an end-to-end decode.

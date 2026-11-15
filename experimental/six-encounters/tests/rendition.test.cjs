@@ -1,0 +1,103 @@
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),crypto=require('node:crypto'),{spawnSync}=require('node:child_process');
+const G=require('../generation.js'),R=require('../rendition.js'),{exportRendition,parse}=require('../export-rendition.cjs');
+
+const W=480,H=270;
+function hex(rgb){return'#'+[...rgb].map(v=>v.toString(16).padStart(2,'0')).join('');}
+function tool(name){return spawnSync(name,['-version']).status===0;}
+
+test('the bitmap font covers every glyph of every route word, 5x7 each',()=>{
+  const words=new Set(Object.values(G.config.routes).flat().map(r=>r.word));
+  for(const word of words)for(const ch of word){
+    const bits=R.FONT[ch];assert.ok(bits,'missing glyph '+ch);assert.equal(bits.length,7);bits.forEach(row=>assert.match(row,/^[.#]{5}$/));
+  }
+});
+
+test('a simulated run follows the real RouteSession at the configured durations and only legal routes',()=>{
+  for(const seed of[1,45,987654321]){
+    const run=R.simulateRun(seed,8);assert.equal(run.timeline.length,8);assert.equal(run.configVersion,G.config.version);
+    let t=0;
+    run.timeline.forEach((e,i)=>{
+      assert.equal(e.enterStart,t);assert.equal(e.activeStart-e.enterStart,G.config.entry);assert.equal(e.end-e.exitStart,G.config.exit);
+      const exposure=e.exitStart-e.activeStart;assert.ok(exposure>=1000&&exposure<=G.config.exposure,'exposure '+exposure);
+      assert.equal(e.reason,'word');
+      const legal=G.config.routes[e.chamber].map(r=>r.target);assert.ok(legal.includes(e.links[e.chosen].target));
+      if(i+1<run.timeline.length)assert.equal(run.timeline[i+1].chamber,e.links[e.chosen].target);
+      t=e.end;
+    });
+    assert.equal(run.durationMs,t);
+  }
+  assert.deepEqual(R.simulateRun(45,5),R.simulateRun(45,5));
+  assert.notDeepEqual(R.simulateRun(45,5),R.simulateRun(46,5));
+  assert.throws(()=>R.simulateRun(1,0),RangeError);assert.throws(()=>R.simulateRun(1,65),RangeError);
+});
+
+test('frames are byte-reproducible; entry starts off-screen; active frames use only the seed palette with 4.5:1 contrast',()=>{
+  const run=R.simulateRun(45,4);
+  for(const e of run.timeline){
+    const start=R.renderFrame(run,e.enterStart,W,H),again=R.renderFrame(run,e.enterStart,W,H);
+    assert.deepEqual(Buffer.from(start),Buffer.from(again));
+    const field=hex(start.slice(0,3));assert.equal(field,e.background);
+    for(let i=0;i<start.length;i+=3)if(start[i]!==start[0]||start[i+1]!==start[1]||start[i+2]!==start[2]){assert.fail('entry frame 0 has a pixel on screen');}
+    const mid=R.renderFrame(run,Math.floor((e.activeStart+e.exitStart)/2),W,H),seen=new Set();let ink=0;
+    for(let i=0;i<mid.length;i+=3){const c=hex(mid.slice(i,i+3));if(c!==e.background){seen.add(c);ink++;}}
+    assert.ok(ink>500,'active frame draws the route words ('+ink+' pixels)');
+    for(const c of seen){assert.ok(e.colors.includes(c),c+' is not in the encounter palette');assert.ok(G.contrast(e.background,c)>=4.5);}
+  }
+});
+
+test('the exit slides the encounter out and marks the followed word',()=>{
+  const run=R.simulateRun(7,2),e=run.timeline[0];
+  const justExit=R.renderFrame(run,e.exitStart,W,H),late=R.renderFrame(run,e.end-1,W,H);
+  const ink=b=>{let n=0;for(let i=0;i<b.length;i+=3)if(hex(b.slice(i,i+3))!==e.background)n++;return n;};
+  assert.ok(ink(justExit)>0);assert.ok(ink(late)<ink(justExit),'less ink on screen by the end of the exit');
+});
+
+test('the cue track is a valid WAV, silent between cues, with one entry and one exit tone per encounter',()=>{
+  const run=R.simulateRun(45,3),cue=R.cueTrack(run),bytes=R.wav(cue.pcm,cue.sampleRate);
+  assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.equal(bytes.toString('ascii',8,12),'WAVE');assert.equal(bytes.readUInt32LE(24),R.SAMPLE_RATE);
+  assert.equal(bytes.readUInt32LE(40),cue.pcm.length*2);assert.equal(bytes.length,44+cue.pcm.length*2);
+  assert.equal(cue.pcm.length,Math.ceil(run.durationMs*R.SAMPLE_RATE/1000));
+  assert.equal(cue.cues.length,6);assert.deepEqual(cue.cues.map(c=>c.kind),['enter','exit','enter','exit','enter','exit']);
+  const covered=new Uint8Array(cue.pcm.length);
+  for(const c of cue.cues){const s=Math.floor(c.ms*R.SAMPLE_RATE/1000);for(let i=0;i<c.lengthMs*R.SAMPLE_RATE/1000;i++)covered[s+i]=1;}
+  let loud=0;for(let i=0;i<cue.pcm.length;i++){if(!covered[i])assert.equal(cue.pcm[i],0,'sample '+i+' outside a cue');else if(Math.abs(cue.pcm[i])>5000)loud++;}
+  assert.ok(loud>1000,'tones reach audible amplitude');
+  assert.deepEqual(R.cueTrack(run).pcm,cue.pcm);
+});
+
+test('the CLI arguments reject relative output and odd or tiny sizes',()=>{
+  assert.throws(()=>parse(['--out','relative/dir']),/absolute/);
+  assert.throws(()=>parse(['--out','/tmp/x','--width','481']),/even width/);
+  assert.throws(()=>parse(['--out','/tmp/x','--fps','0']),/fps/);
+  assert.throws(()=>parse(['--seed']),/usage/);
+  assert.throws(()=>parse(['--bogus','1','--out','/tmp/x']),/usage/);
+  assert.equal(parse(['--out','/tmp/x','--seed','9']).seed,9);
+});
+
+test('end to end: the exported file decodes to the receipt, is reproducible, and matches the field colour',{skip:!(tool('ffmpeg')&&tool('ffprobe'))&&'ffmpeg/ffprobe not installed'},async()=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'hl-rendition-')),a=path.join(dir,'a'),b=path.join(dir,'b');
+  try{
+    const opts={seed:45,encounters:2,fps:10,width:320,height:180};
+    const first=await exportRendition({...opts,out:a}),second=await exportRendition({...opts,out:b});
+    const r=first.receipt;
+    assert.equal(r.schema,'hole-loop.rendition-receipt.v1');assert.equal(r.video.frames,Math.round(r.durationMs*10/1000));
+    assert.equal(r.file.videoCodec,'h264');assert.equal(r.file.audioCodec,'aac');assert.equal(r.file.decodedVideoFrames,r.video.frames);
+    assert.equal(r.file.width,320);assert.equal(r.file.height,180);
+    // The receipt's frame digest is the digest of the frames a second renderer produces from the receipt's own timeline.
+    const run=R.simulateRun(45,2),h=crypto.createHash('sha256');
+    for(let i=0;i<r.video.frames;i++)h.update(R.renderFrame(run,R.frameTime(i,10),320,180));
+    assert.equal(h.digest('hex'),r.video.frameStreamSha256);
+    assert.equal(r.cueTrack.wavSha256,crypto.createHash('sha256').update(fs.readFileSync(first.wavPath)).digest('hex'));
+    assert.equal(second.receipt.video.frameStreamSha256,r.video.frameStreamSha256);assert.equal(second.receipt.cueTrack.wavSha256,r.cueTrack.wavSha256);
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(a,'receipt.json'),'utf8')),r);
+    // Container duration agrees with the timeline.
+    const dur=spawnSync('ffprobe',['-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',first.mp4Path],{encoding:'utf8'});
+    assert.ok(Math.abs(Number(dur.stdout)-r.durationMs/1000)<0.25,'duration '+dur.stdout);
+    // A decoded frame in the middle of the first active phase is dominated by the encounter's field colour.
+    const e=run.timeline[0],ms=Math.floor((e.activeStart+e.exitStart)/2),dec=spawnSync('ffmpeg',['-v','error','-ss',String(ms/1000),'-i',first.mp4Path,'-frames:v','1','-f','rawvideo','-pix_fmt','rgb24','-'],{maxBuffer:1<<24});
+    assert.equal(dec.status,0);const px=dec.stdout,want=[1,3,5].map(i=>parseInt(e.background.slice(i,i+2),16));let near=0;
+    for(let i=0;i<px.length;i+=3)if(Math.abs(px[i]-want[0])<10&&Math.abs(px[i+1]-want[1])<10&&Math.abs(px[i+2]-want[2])<10)near++;
+    assert.ok(near/(px.length/3)>0.6,'field colour covers most of the decoded frame ('+near+')');
+  }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
