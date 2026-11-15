@@ -94,3 +94,13 @@ node export-rendition.cjs --seed 45 --encounters 4 --out /absolute/dir
 ```
 
 Needs `ffmpeg` and `ffprobe`. It writes `rendition.mp4` (H.264/AAC), `cue-track.wav` and `receipt.json`. The receipt holds SHA-256 of the raw frame stream and the cue track, which are independent of the encoder and identical on every run for the same seed, plus what `ffprobe` reads back. This is a schematic rendition, not a capture of the browser artwork, and asserts no artist, accessibility, device or audience acceptance. `tests/rendition.test.cjs` covers legal routing, byte-reproducible frames, palette contrast, WAV structure and an end-to-end decode.
+
+### Replay verification
+
+`verify-rendition.cjs` re-derives a rendition directory's claims from the receipt's own seed, encounter count, fps and size, without trusting any digest the receipt carries:
+
+```sh
+node verify-rendition.cjs --dir /absolute/dir [--min-psnr 30]
+```
+
+It replays the route through `RouteSession` and compares the timeline, recomputes the raw frame-stream SHA-256 and the cue track (list, digest and byte-for-byte against `cue-track.wav`), reads the MP4 back with `ffprobe`, decodes every video frame and compares its luma to the frame re-rendered from the seed (PSNR, default floor 30 dB; the exact seed measured 36.7 dB worst frame and a different seed 5.5 dB), and decodes the AAC track to check tones sit in the cue windows with silence outside them. Exit 0 means every check passed, 1 means a check failed (each is named on stderr, JSON verdict on stdout), 2 means bad arguments or a tool failure. Chroma is not compared because 4:2:0 subsampling smears one-pixel coloured edges in every conforming encoder. It decodes audio and video to memory only; nothing is played. Mechanical evidence only; no acceptance is asserted. `tests/verify-rendition.test.cjs` covers a clean replay and each tamper: a changed seed, an edited word, forged frame and cue digests, a flipped WAV byte, another seed's MP4, a truncated MP4, missing files, bad JSON and out-of-range parameters.
