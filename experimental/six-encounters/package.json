@@ -5,6 +5,7 @@
   "description": "No-build browser artwork; dependencies are verification-only",
   "scripts": {
     "test": "node --test tests/six-encounters.test.cjs tests/studio-release.test.cjs tests/sensory-accessibility.test.cjs tests/concentric-evolution.test.cjs tests/rendition.test.cjs",
+    "test:silence": "node --test ../../tests/silent-launch-lint.test.cjs",
     "test:review": "node tests/review-browser.cjs",
     "test:browser": "node tests/browser.cjs && node tests/generation-browser.cjs && node tests/character-browser.cjs"
   },

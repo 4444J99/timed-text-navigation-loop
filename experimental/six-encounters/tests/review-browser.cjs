@@ -1,10 +1,11 @@
 /* Reproduce review findings through reader actions against the actual application. */
 const {chromium}=require('playwright');
+const {silentLaunch}=require('../../../tests/silent-browser.cjs');
 const assert=require('node:assert/strict');
 const path=require('node:path');
 const url='file://'+path.resolve(__dirname,'../index.html');
 (async()=>{
-  const browser=await chromium.launch({headless:true,...(process.env.HL_CHROMIUM_PATH?{executablePath:process.env.HL_CHROMIUM_PATH}: {})});
+  const browser=await silentLaunch(chromium,{headless:true,...(process.env.HL_CHROMIUM_PATH?{executablePath:process.env.HL_CHROMIUM_PATH}: {})});
   const failures=[];
   async function run(name,check){
     const page=await browser.newPage();page.setDefaultTimeout(5000);

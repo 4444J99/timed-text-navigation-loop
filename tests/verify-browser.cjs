@@ -21,6 +21,7 @@ function dependency(name) {
   }
 }
 const { chromium } = dependency('playwright');
+const { silentLaunch } = require('./silent-browser.cjs');
 const { PNG } = dependency('pngjs');
 const args = {};
 for (let i = 2; i < process.argv.length; i += 2) {
@@ -208,7 +209,7 @@ async function main() {
   const defaultChrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
   const executablePath = args.executable ? path.resolve(args.executable) :
                          (process.env.PORTVS_BROWSER_EXECUTABLE || process.env.SYSTEM_CHROME || (fs.existsSync(defaultChrome) ? defaultChrome : undefined));
-  const browser = await chromium.launch({headless:true, ...(executablePath ? {executablePath} : {}),args:['--no-sandbox','--disable-dev-shm-usage','--no-zygote']});
+  const browser = await silentLaunch(chromium, {headless:true, ...(executablePath ? {executablePath} : {}),args:['--no-sandbox','--disable-dev-shm-usage','--no-zygote']});
   report.environment.browser = await browser.version();
   try {
     for (const device of devices) {

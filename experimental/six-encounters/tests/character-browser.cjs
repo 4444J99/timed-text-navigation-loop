@@ -1,7 +1,8 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {silentLaunch}=require('../../../tests/silent-browser.cjs');
 const root=path.resolve(__dirname,'..'),out=path.resolve(process.env.HL_CHARACTER_EVIDENCE_DIR||path.join(root,'verification/rerun/character-cells'));fs.mkdirSync(out,{recursive:true});
 (async()=>{
- const browser=await chromium.launch({headless:true,...(process.env.HL_CHROMIUM_PATH?{executablePath:process.env.HL_CHROMIUM_PATH,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--single-process','--no-zygote']}: {})});
+ const browser=await silentLaunch(chromium,{headless:true,...(process.env.HL_CHROMIUM_PATH?{executablePath:process.env.HL_CHROMIUM_PATH,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--single-process','--no-zygote']}: {})});
  const checks=[],context=await browser.newContext();
  try{
   const p=await context.newPage();await p.goto('file://'+path.join(root,'index.html'));
