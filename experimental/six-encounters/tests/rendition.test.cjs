@@ -155,15 +155,15 @@ test('vttTime formats whole milliseconds as HH:MM:SS.mmm and rejects anything el
   for(const bad of[-1,1.5,NaN,'3',undefined])assert.throws(()=>R.vttTime(bad),RangeError);
 });
 
-test('captions describe every cue in words, in order, from that cue until the next, and are reproducible',()=>{
+test('captions describe every cue in words, in order, each from its cue for at least the reading minimum, and are reproducible',()=>{
   for(const seed of[1,45,987654321]){
     const run=R.simulateRun(seed,6),cap=R.captions(run),cues=R.cueList(run);
     assert.equal(cap.captions.length,cues.length);assert.deepEqual(R.captions(run),cap);
     cap.captions.forEach((c,i)=>{
-      assert.equal(c.id,'cue-'+(i+1));assert.equal(c.startMs,cues[i].ms);assert.equal(c.endMs,i+1<cues.length?cues[i+1].ms:run.durationMs);assert.ok(c.endMs>c.startMs);
+      assert.equal(c.id,'cue-'+(i+1));assert.equal(c.startMs,cues[i].ms);assert.equal(c.endMs,Math.min(run.durationMs,Math.max(i+1<cues.length?cues[i+1].ms:run.durationMs,cues[i].ms+R.CAPTION_MIN_MS)));assert.ok(c.endMs>c.startMs);assert.ok(c.endMs-c.startMs>=Math.min(R.CAPTION_MIN_MS,run.durationMs-c.startMs),'readable for the minimum time unless the run ends');
       const e=run.timeline[Math.floor(i/2)];
       assert.ok(c.text.includes(cues[i].hz+' Hz for '+cues[i].lengthMs+' ms'),c.text);
-      if(cues[i].kind==='enter'){assert.ok(c.text.startsWith('Entry tone'));assert.ok(c.text.includes('chamber '+e.chamber));assert.ok(c.text.includes('Encounter '+(e.index+1)+' of 6'));for(const l of e.links)assert.ok(c.text.includes(l.word));}
+      if(cues[i].kind==='enter'){assert.ok(c.text.startsWith('Entry tone'));assert.ok(c.text.includes('chamber '+e.chamber));assert.ok(c.text.includes('Encounter '+(e.index+1)+' of 6'));for(const l of e.links)assert.ok(c.text.includes(l.word));const dup=e.links.length>1&&e.links[0].word===e.links[1].word;assert.equal(c.text.includes('(on 2 routes)'),dup,c.text);assert.equal((c.text.match(new RegExp(e.links[0].word,'g'))||[]).length,1,'a repeated word is named once');}
       else{assert.ok(c.text.startsWith('Exit tone'));assert.ok(c.text.includes('word '+e.links[e.chosen].word+' is followed toward chamber '+e.links[e.chosen].target));assert.equal(c.text.endsWith('the run ends.'),e.index===5);}
     });
     assert.deepEqual(R.parseCaptions(cap.vtt),cap.captions);
@@ -174,11 +174,13 @@ test('captions describe every cue in words, in order, from that cue until the ne
 test('parseCaptions accepts only the exact subset captions() writes',()=>{
   const good=R.captions(R.simulateRun(45,2)).vtt;
   assert.doesNotThrow(()=>R.parseCaptions(good));
+  const[c0,c1]=R.parseCaptions(good),timing1=R.vttTime(c1.startMs)+' --> '+R.vttTime(c1.endMs)+'\n';
+  assert.ok(good.includes(c0.text)&&good.includes(timing1),'targets come from the parsed captions');
   const bad={
     'no header':good.replace('WEBVTT\n\n',''),'CRLF':good.replace(/\n/g,'\r\n'),'no trailing newline':good.slice(0,-1),'empty':'','not a string':null,
-    'markup':good.replace('Entry tone','<b>Entry tone'),'ampersand':good.replace('Entry tone','Entry & tone'),
-    'arrow in text':good.replace('Entry tone','a --> b'),'bad timestamp':good.replace('00:00:00.000','00:00:00,000'),'seconds out of range':good.replace('00:00:02.184','00:00:62.184'),
-    'two text lines':good.replace('Entry tone, 440','Entry\ntone, 440'),'bad id':good.replace('cue-2','two'),'missing timing':good.replace(/00:00:02\.184 --> 00:00:02\.534\n/,'')
+    'markup':good.replace(c0.text,'<b>'+c0.text),'ampersand':good.replace(c0.text,'x & '+c0.text),
+    'arrow in text':good.replace(c0.text,'a --> b'),'bad timestamp':good.replace(R.vttTime(c0.startMs),R.vttTime(c0.startMs).replace('.',',')),'seconds out of range':good.replace(R.vttTime(c1.startMs),'00:00:62.184'),
+    'two text lines':good.replace(c0.text,c0.text.replace(', ',',\n')),'bad id':good.replace(c1.id,'two'),'missing timing':good.replace(timing1,'')
   };
   for(const[name,v]of Object.entries(bad))assert.throws(()=>R.parseCaptions(v),Error,name);
 });

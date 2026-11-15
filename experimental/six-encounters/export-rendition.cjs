@@ -37,9 +37,7 @@ async function exportRendition(options){
   fs.rmSync(path.join(o.out,'receipt.json'),{force:true});
   const wavPath=path.join(o.out,'cue-track.wav'),mp4Path=path.join(o.out,'rendition.mp4'),wavBytes=R.wav(cue.pcm,cue.sampleRate);
   fs.writeFileSync(wavPath,wavBytes);
-  // The silent equivalent of the cue track, written beside it and vouched for by the receipt.
   const caption=R.captions(run),vttBytes=Buffer.from(caption.vtt,'utf8');
-  fs.writeFileSync(path.join(o.out,'captions.vtt'),vttBytes);
   const version=ffmpegVersion();
   const ff=spawn('ffmpeg',['-hide_banner','-loglevel','error','-y','-f','rawvideo','-pix_fmt','rgb24','-s',`${o.width}x${o.height}`,'-r',String(o.fps),'-i','-',
     '-i',wavPath,'-c:v','libx264','-preset','ultrafast','-crf','12','-pix_fmt','yuv420p','-c:a','aac','-b:a','96k','-frames:v',String(frames),mp4Path],{stdio:['pipe','inherit','pipe']});
@@ -76,6 +74,8 @@ async function exportRendition(options){
       width:video&&video.width,height:video&&video.height},
     claims:RECEIPT_CLAIMS
   };
+  // The silent equivalent of the cue track is written only once the encode has succeeded, immediately before the receipt that vouches for it.
+  fs.writeFileSync(path.join(o.out,'captions.vtt'),vttBytes);
   fs.writeFileSync(path.join(o.out,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');
   return{receipt,mp4Path,wavPath};
 }

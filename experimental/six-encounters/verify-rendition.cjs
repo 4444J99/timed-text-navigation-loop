@@ -141,17 +141,18 @@ async function verifyRendition(dir,options={}){
   // 3b. The silent equivalent of the cue track (v2 receipts), re-derived from the same run.
   if(receipt.schema===SCHEMA_V2){
     const vttPath=path.join(dir,'captions.vtt'),claim=receipt.captions||{};
-    if(check('present: captions.vtt',fs.existsSync(vttPath),vttPath)){
-      const derived=R.captions(run),derivedBytes=Buffer.from(derived.vtt,'utf8'),fileVtt=fs.readFileSync(vttPath);
+    let fileVtt=null;try{if(fs.statSync(vttPath).isFile())fileVtt=fs.readFileSync(vttPath);}catch{}
+    if(check('present: captions.vtt',fileVtt!==null,vttPath)){
+      const derived=R.captions(run),derivedBytes=Buffer.from(derived.vtt,'utf8');
       check('captions.vtt on disk is byte-identical to the replayed captions',fileVtt.equals(derivedBytes),fileVtt.length+' bytes on disk, '+derivedBytes.length+' replayed');
       check('captions SHA-256 and cue count in the receipt re-derive',sha256(derivedBytes)===claim.sha256&&claim.cues===derived.captions.length,sha256(derivedBytes)+', '+derived.captions.length+' captions');
       let parsed=null,why='';
       try{parsed=R.parseCaptions(fileVtt.toString('utf8'));}catch(e){why=e.message;}
-      const ends=cue.cues.map((c,k)=>k+1<cue.cues.length?cue.cues[k+1].ms:run.durationMs);
+      const ends=cue.cues.map((c,k)=>Math.min(run.durationMs,Math.max(k+1<cue.cues.length?cue.cues[k+1].ms:run.durationMs,c.ms+R.CAPTION_MIN_MS)));
       const aligned=parsed&&parsed.length===cue.cues.length&&parsed.every((c,k)=>c.startMs===cue.cues[k].ms&&c.endMs===ends[k]&&c.endMs>c.startMs);
-      check('captions.vtt is strict WebVTT, one caption per cue, on the cue times and contiguous to the end of the run',aligned,why||(parsed?parsed.length+' captions':'unparsed'));
+      check('captions.vtt is strict WebVTT, one caption per cue, starting on the cue and lasting to the next cue or the minimum reading time',aligned,why||(parsed?parsed.length+' captions':'unparsed'));
     }
-  } else check('captions: a v1 receipt predates the captions sidecar and claims none',receipt.captions===undefined,receipt.schema);
+  } else check('captions: a v1 receipt predates the captions sidecar, so none is claimed or left beside it',receipt.captions===undefined&&!fs.existsSync(path.join(dir,'captions.vtt')),receipt.schema);
 
   // 4. The container, as ffprobe reads it.
   const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=index,codec_name,codec_type,width,height,nb_read_frames,avg_frame_rate,r_frame_rate:format=duration','-of','json',mp4Path],{encoding:'utf8'});

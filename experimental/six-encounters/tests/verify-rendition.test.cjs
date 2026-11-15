@@ -179,7 +179,7 @@ function editVtt(dir,fn){const p=path.join(dir,'captions.vtt'),t=fn(fs.readFileS
 
 test('captions: a fresh v2 export verifies its captions.vtt byte for byte and by receipt digest',{skip},async()=>{
   const r=await verifyRendition(good),names=r.checks.map(c=>c.name);
-  for(const n of['present: captions.vtt','captions.vtt on disk is byte-identical to the replayed captions','captions SHA-256 and cue count in the receipt re-derive','captions.vtt is strict WebVTT, one caption per cue, on the cue times and contiguous to the end of the run'])assert.ok(names.includes(n),n);
+  for(const n of['present: captions.vtt','captions.vtt on disk is byte-identical to the replayed captions','captions SHA-256 and cue count in the receipt re-derive','captions.vtt is strict WebVTT, one caption per cue, starting on the cue and lasting to the next cue or the minimum reading time'])assert.ok(names.includes(n),n);
   assert.deepEqual(failed(r),[]);assert.equal(JSON.parse(fs.readFileSync(path.join(good,'receipt.json'))).schema,'hole-loop.rendition-receipt.v2');
 });
 
@@ -195,11 +195,11 @@ test('captions: reworded text with a re-forged receipt digest is still caught ag
 test('captions: retimed, markup-bearing or truncated files fail the strict WebVTT check as well as the byte comparison (the receipt still matches the replay)',{skip},async()=>{
   const want=['captions.vtt on disk is byte-identical to the replayed captions'];
   const a=copy('capretime');editVtt(a,t=>t.replace('00:00:02.184 --> ','00:00:02.000 --> '));
-  assert.deepEqual(failed(await verifyRendition(a)),[want[0],'captions.vtt is strict WebVTT, one caption per cue, on the cue times and contiguous to the end of the run']);
+  assert.deepEqual(failed(await verifyRendition(a)),[want[0],'captions.vtt is strict WebVTT, one caption per cue, starting on the cue and lasting to the next cue or the minimum reading time']);
   const b=copy('capmarkup');editVtt(b,t=>t.replace('Entry tone','<script>x</script>Entry tone'));
-  assert.deepEqual(failed(await verifyRendition(b)),[want[0],'captions.vtt is strict WebVTT, one caption per cue, on the cue times and contiguous to the end of the run']);
+  assert.deepEqual(failed(await verifyRendition(b)),[want[0],'captions.vtt is strict WebVTT, one caption per cue, starting on the cue and lasting to the next cue or the minimum reading time']);
   const c=copy('captrunc');editVtt(c,t=>t.slice(0,t.lastIndexOf('cue-3')));
-  const fc=failed(await verifyRendition(c));assert.ok(fc.includes(want[0])&&fc.includes('captions.vtt is strict WebVTT, one caption per cue, on the cue times and contiguous to the end of the run')&&!fc.includes('captions SHA-256 and cue count in the receipt re-derive'),fc.join('|'));
+  const fc=failed(await verifyRendition(c));assert.ok(fc.includes(want[0])&&fc.includes('captions.vtt is strict WebVTT, one caption per cue, starting on the cue and lasting to the next cue or the minimum reading time')&&!fc.includes('captions SHA-256 and cue count in the receipt re-derive'),fc.join('|'));
 });
 
 test('captions: a missing captions.vtt is named, and a v2 receipt may not drop or rename its captions block',{skip},async()=>{
@@ -216,4 +216,11 @@ test('captions: a v1 receipt (no captions) from before the sidecar still verifie
   const r=await verifyRendition(a);assert.deepEqual(failed(r),[]);assert.ok(r.checks.some(c=>/v1 receipt predates the captions sidecar/.test(c.name)&&c.ok));
   const b=copy('v1captions');edit(b,r=>{r.schema='hole-loop.rendition-receipt.v1';});
   const fb=failed(await verifyRendition(b));assert.ok(fb.includes("receipt carries exactly the exporter's fields and its fixed kind and claims text"),fb.join('|'));
+});
+
+test('captions: a v1 receipt cannot hide a sidecar, and a captions.vtt that is a directory is a named failure, not a crash',{skip},async()=>{
+  const a=copy('v1downgrade');edit(a,r=>{r.schema='hole-loop.rendition-receipt.v1';delete r.captions;});
+  assert.deepEqual(failed(await verifyRendition(a)),['captions: a v1 receipt predates the captions sidecar, so none is claimed or left beside it']);
+  const b=copy('capdir');fs.rmSync(path.join(b,'captions.vtt'));fs.mkdirSync(path.join(b,'captions.vtt'));
+  assert.deepEqual(failed(await verifyRendition(b)),['present: captions.vtt']);
 });
