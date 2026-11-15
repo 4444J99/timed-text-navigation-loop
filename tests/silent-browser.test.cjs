@@ -65,6 +65,9 @@ test('every context, page and persistent context gets the init script', async ()
   assert.ok(initScript().includes('__SILENT_BROWSER__'));
 });
 
+// Chromium-only flags: other engines' launchers do not take them.
+const CHROMIUM_FLAGS = ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'];
+
 function chromePath() {
   const configured = process.env.PORTVS_BROWSER_EXECUTABLE || process.env.SYSTEM_CHROME || process.env.HL_CHROMIUM_PATH;
   if (configured) return configured;
@@ -76,7 +79,7 @@ async function launchOrSkip(t, name, raw = false) {
   const playwright = dependency('playwright');
   const executablePath = name === 'chromium' ? chromePath() : undefined;
   try {
-    const options = {headless: true, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'], ...(executablePath ? {executablePath} : {})};
+    const options = {headless: true, args: name === 'chromium' ? CHROMIUM_FLAGS : [], ...(executablePath ? {executablePath} : {})};
     // raw: a browser whose contexts the test silences itself, so it can install a spy underneath the init script.
     if (raw) return await playwright[name].launch({...options, args: silentArgs(name, options.args)});
     return await silentLaunch(playwright[name], options);
@@ -127,8 +130,8 @@ for (const engineName of ['chromium', 'webkit']) {
       const audio = await tab.evaluate(() => {
         const Context = window.AudioContext || window.webkitAudioContext;
         const ctx = new Context(), level = ctx.createGain(); level.gain.value = 0;
-        const returned = level.connect(ctx.destination), sink = window.__SILENT_BROWSER__.sink(ctx);
-        const out = {chained: returned === ctx.destination, sinkGain: sink.gain.value, sinkIsGain: sink instanceof GainNode};
+        const returned = level.connect(ctx.destination), sink = window.__SILENT_BROWSER__.sinkInfo(ctx);
+        const out = {chained: returned === ctx.destination, sinkGain: sink.gain, sinkIsGain: sink.isGain};
         ctx.close();
         return out;
       });
@@ -138,7 +141,7 @@ for (const engineName of ['chromium', 'webkit']) {
         osc.connect(context.destination); osc.start();
         const data = (await context.startRendering()).getChannelData(0);
         let peak = 0; for (const value of data) peak = Math.max(peak, Math.abs(value));
-        return {sink: window.__SILENT_BROWSER__.sink(context), peak};
+        return {sink: window.__SILENT_BROWSER__.sinkInfo(context), peak};
       });
       assert.equal(offline.sink, null);
       assert.ok(offline.peak > 0.1, 'offline rendering renders to a buffer and keeps its signal');
@@ -156,7 +159,7 @@ async function persistentOrSkip(t, name) {
   const profile = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'silent-profile-'));
   const executablePath = name === 'chromium' ? chromePath() : undefined;
   try {
-    const context = await silentLaunchPersistentContext(playwright[name], profile, {headless: true, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'],
+    const context = await silentLaunchPersistentContext(playwright[name], profile, {headless: true, args: name === 'chromium' ? CHROMIUM_FLAGS : [],
       ...(executablePath ? {executablePath} : {})});
     return {context, cleanup: async () => { await context.close(); fs.rmSync(profile, {recursive: true, force: true}); }};
   } catch (error) {
@@ -202,9 +205,9 @@ for (const engineName of ['chromium', 'webkit']) {
         const Context = window.AudioContext || window.webkitAudioContext;
         const ctx = new Context(), osc = ctx.createOscillator(), gain = ctx.createGain();
         osc.connect(gain); gain.connect(ctx.destination);
-        const calls = window.__connectCalls.slice(), sink = window.__SILENT_BROWSER__.sink(ctx);
+        const calls = window.__connectCalls.slice(), sink = window.__SILENT_BROWSER__.sinkInfo(ctx);
         ctx.close();
-        return {calls, sinkGain: sink.gain.value};
+        return {calls, sinkGain: sink.gain};
       });
       const toDestination = seen.calls.filter(call => call.to === 'AudioDestinationNode');
       assert.deepEqual(toDestination, [{from: 'GainNode', to: 'AudioDestinationNode'}], 'only the sink itself reaches the device node');
