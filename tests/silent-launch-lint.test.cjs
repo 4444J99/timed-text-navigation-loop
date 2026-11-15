@@ -51,8 +51,8 @@ function regexEnd(source, i) {
 // (${ ok ? `a` : `b` }) with their expressions lexed as code. Text inside strings, regexes and templates stays in place on
 // purpose: the scan reports a launch that is only named in text (reword it) rather than risk hiding a real one.
 // Regex versus division is guessed from the previous token, so this is a guard against an accidental bare launch, not a
-// parser. Known limit: a regex literal right after a closing parenthesis (if (ok) /\//.test(s)) is read as division, and a
-// // or /* inside it is then read as a comment.
+// parser. Known limit: a regex literal right after a closing parenthesis or brace (if (ok) /\//.test(s)) is read as division, and a
+// // or /* inside it is then read as a comment, which can hide a launch later on that line.
 function blankComments(source) {
   const n = source.length, blank = text => text.replace(/[^\n]/g, ' ');
   const frames = [{kind: 'code', depth: 0}];
@@ -76,7 +76,7 @@ function blankComments(source) {
       continue;
     }
     if (c === '`') { frames.push({kind: 'tmpl', depth: 0}); out += c; i += 1; continue; }
-    if (c === '/' && !/(\+\+|--)\s*$/.test(source.slice(Math.max(0, i - 64), i)) && (prev === '' || REGEX_AFTER.has(prev) || REGEX_AFTER_WORDS.has(prevWord))) {
+    if (c === '/' && (prev === '' || REGEX_AFTER.has(prev) || REGEX_AFTER_WORDS.has(prevWord)) && !/(\+\+|--)\s*$/.test(source.slice(Math.max(0, i - 64), i))) {
       const j = regexEnd(source, i);
       out += source.slice(i, j); i = j; prev = ')'; prevWord = '';
       continue;
@@ -179,6 +179,8 @@ test('the lint sees a bare launch and accepts the helper', () => {
   // Template literals nest and their expressions are code.
   assert.deepEqual(bareLaunches('const s = `${ok ? `a` : `b`}`;\nfetch("http://x"); webkit.launch();'), [2]);
   assert.deepEqual(bareLaunches('x = `a ${ {b: 1}.b } c`; // webkit.launch()\nwebkit.launch();'), [2]);
+  // Known limit (see blankComments): a regex right after a closing parenthesis is read as division.
+  assert.deepEqual(bareLaunches('if (ok) /\\//.test(s); await webkit.launch();'), []);
   // Division is not a regex: after a postfix operator, a string, a template and a closed expression.
   assert.deepEqual(bareLaunches('x = `${ i++ / 2 } a ${ j / 3 }`; // webkit.launch()\nwebkit.launch();'), [2]);
   assert.deepEqual(bareLaunches('return "a" / 2; // webkit.launch()\nwebkit.launch();'), [2]);
