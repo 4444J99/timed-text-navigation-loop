@@ -163,3 +163,13 @@ test('absurd frame sizes in a receipt fail a named check instead of throwing; th
   assert.deepEqual(failed(await verifyRendition(d)),['receipt parameters are within the exporter limits']);
   assert.throws(()=>exportParse(['--out','/x','--width','8000']),/even width/);
 });
+
+test('the per-block check also covers the partial tiles along the bottom and right edges',{skip},async()=>{
+  // 320x180: 180 is not a multiple of 16, so rows 176-179 only exist in a partial tile.
+  const d=remux('edge-bottom',['-vf','drawbox=x=100:y=176:w=4:h=4:color=white:t=fill','-c:v','libx264','-crf','12','-pix_fmt','yuv420p','-c:a','copy']);
+  const f=failed(await verifyRendition(d));assert.ok(f.some(n=>/16x16 luma block/.test(n)),f.join('|'));
+  const {worstBlockPsnr}=require('../verify-rendition.cjs'),w=170,h=90,a=new Float64Array(w*h),b=new Float64Array(w*h);
+  for(let y=86;y<90;y++)for(let x=166;x<170;x++)b[y*w+x]=255;// corner pixels beyond the last full 16x16 tile in both axes
+  assert.ok(worstBlockPsnr(a,b,w,h)<20,'a 4x4 edit in the bottom-right partial tile must score below the floor');
+  assert.equal(worstBlockPsnr(a,a,w,h),Infinity);
+});

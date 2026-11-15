@@ -65,13 +65,15 @@ function psnr(a,b){
   return se===0?Infinity:10*Math.log10(255*255*a.length/se);
 }
 
-/** Worst PSNR over the non-overlapping BLOCKxBLOCK tiles of two luma planes: a localised edit that the whole-frame
+/** Worst PSNR over the non-overlapping BLOCKxBLOCK tiles (edge tiles smaller) of two luma planes: a localised edit that the whole-frame
  *  PSNR averages away still shows up in the tile it touches. */
 function worstBlockPsnr(a,b,width,height){
   let worst=Infinity;
-  for(let by=0;by+BLOCK<=height;by+=BLOCK)for(let bx=0;bx+BLOCK<=width;bx+=BLOCK){
-    let se=0;for(let y=0;y<BLOCK;y++){const o=(by+y)*width+bx;for(let x=0;x<BLOCK;x++){const d=a[o+x]-b[o+x];se+=d*d;}}
-    const p=se===0?Infinity:10*Math.log10(255*255*BLOCK*BLOCK/se);if(p<worst)worst=p;
+  // Tiles at the right and bottom edge are clamped to the frame, so no pixel escapes the check.
+  for(let by=0;by<height;by+=BLOCK)for(let bx=0;bx<width;bx+=BLOCK){
+    const bh=Math.min(BLOCK,height-by),bw=Math.min(BLOCK,width-bx);
+    let se=0;for(let y=0;y<bh;y++){const o=(by+y)*width+bx;for(let x=0;x<bw;x++){const d=a[o+x]-b[o+x];se+=d*d;}}
+    const p=se===0?Infinity:10*Math.log10(255*255*bw*bh/se);if(p<worst)worst=p;
   }
   return worst;
 }
