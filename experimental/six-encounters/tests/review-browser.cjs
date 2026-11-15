@@ -6,6 +6,7 @@ const path=require('node:path');
 const url='file://'+path.resolve(__dirname,'../index.html');
 (async()=>{
   const browser=await silentLaunch(chromium,{headless:true,...(process.env.HL_CHROMIUM_PATH?{executablePath:process.env.HL_CHROMIUM_PATH}: {})});
+  let completedChecks=0;
   const failures=[];
   async function run(name,check){
     const page=await browser.newPage();page.setDefaultTimeout(5000);
@@ -15,7 +16,7 @@ const url='file://'+path.resolve(__dirname,'../index.html');
         const native=requestAnimationFrame;window.frameCalls=0;
         window.requestAnimationFrame=fn=>native(t=>{window.frameCalls++;fn(t);});
       });
-      await check(page);console.log('PASS',name);
+      await check(page);completedChecks++;console.log('PASS',name);
     }catch(error){failures.push(name);console.error('FAIL',name,error.message);}
     finally{await page.close();}
   }
@@ -121,5 +122,6 @@ const url='file://'+path.resolve(__dirname,'../index.html');
       assert.deepEqual(await page.evaluate(()=>HLDiagnostics.studyRecord()),record);
     });
   }finally{await browser.close();}
+  assert.equal(completedChecks, 11, 'every review check must run to completion (silent skips are failures)');
   assert.deepEqual(failures,[]);
 })().catch(error=>{console.error(error);process.exitCode=1;});
