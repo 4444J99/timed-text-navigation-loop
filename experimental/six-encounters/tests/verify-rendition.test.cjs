@@ -2,7 +2,7 @@ const {test,before,after}=require('node:test'),assert=require('node:assert/stric
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawnSync}=require('node:child_process');
 const {exportRendition}=require('../export-rendition.cjs'),{verifyRendition,parse,psnr,DEFAULT_MIN_PSNR}=require('../verify-rendition.cjs');
 
-const tool=n=>spawnSync(n,['-version']).status===0,have=tool('ffmpeg')&&tool('ffprobe'),skip=!have&&'ffmpeg/ffprobe not installed';
+const tool=n=>spawnSync(n,['-version']).status===0,have=tool('ffmpeg')&&tool('ffprobe'),skip=!process.env.CI&&!have&&'ffmpeg/ffprobe not installed';// on CI a missing ffmpeg must fail the run, never skip it silently
 const OPTS={seed:45,encounters:2,fps:10,width:320,height:180};
 let root,good,other;
 
@@ -88,7 +88,7 @@ function remux(name,args){
 
 test('a silent cue window is caught even when the other windows still carry enough tone overall',{skip},async()=>{
   const d=remux('mute',['-c:v','copy','-af',"volume=0:enable='between(t,0,0.2)'",'-c:a','aac','-b:a','96k']);
-  const r=await verifyRendition(d);assert.deepEqual(failed(r),['decoded audio carries the tone inside every cue window']);
+  const r=await verifyRendition(d);assert.deepEqual(failed(r),['decoded audio carries the tone inside every cue window',"decoded audio in every cue window is the cue's own pitch"]);
 });
 
 test('sound appended after the cue track ends is caught as sound outside the cue windows',{skip},async()=>{
@@ -109,4 +109,67 @@ test('the command line exits 0 on a good directory and 1 on a tampered one, prin
   const bad=spawnSync('node',[cli,'--dir',d],{encoding:'utf8'});assert.equal(bad.status,1);
   const v=JSON.parse(bad.stdout);assert.equal(v.ok,false);assert.ok(v.failed.length>=2);assert.match(bad.stderr,/FAIL route timeline/);
   const usage=spawnSync('node',[cli,'--dir','relative'],{encoding:'utf8'});assert.equal(usage.status,2);
+});
+
+// Cold-review findings (PR 75): each probe below passed the original verifier.
+const R=require('../rendition.js'),{parse:exportParse}=require('../export-rendition.cjs');
+function remuxAudio(name,makePcm){
+  const d=copy(name),receipt=JSON.parse(fs.readFileSync(path.join(d,'receipt.json'))),run=R.simulateRun(receipt.seed,receipt.encounters),cue=R.cueTrack(run);
+  fs.writeFileSync(path.join(d,'alt.wav'),R.wav(makePcm(cue),cue.sampleRate));
+  const r=spawnSync('ffmpeg',['-v','error','-y','-i',path.join(d,'rendition.mp4'),'-i',path.join(d,'alt.wav'),'-map','0:v','-map','1:a','-c:v','copy','-c:a','aac','-b:a','96k',path.join(d,'t.mp4')],{encoding:'utf8'});
+  assert.equal(r.status,0,r.stderr);fs.renameSync(path.join(d,'t.mp4'),path.join(d,'rendition.mp4'));fs.rmSync(path.join(d,'alt.wav'));return d;
+}
+function inWindows(cue,fn){const pcm=new Int16Array(cue.pcm.length);for(const c of cue.cues){const s0=Math.floor(c.ms*cue.sampleRate/1000),len=Math.floor(c.lengthMs*cue.sampleRate/1000);
+  for(let i=0;i<len&&s0+i<pcm.length;i++)pcm[s0+i]=Math.round(fn(i,cue.sampleRate)*Math.min(1,i/220,(len-i)/220)*0.3*32767);}return pcm;}
+
+test('loud sound of the wrong pitch inside every cue window is rejected, not just silence',{skip},async()=>{
+  const d=remuxAudio('wrongpitch',cue=>inWindows(cue,(i,sr)=>Math.sin(2*Math.PI*3000*i/sr)));
+  assert.deepEqual(failed(await verifyRendition(d)),["decoded audio in every cue window is the cue's own pitch"]);
+  const n=remuxAudio('noise',cue=>inWindows(cue,(i)=>(Math.sin(i*0.0123)>0?1:-1)*((i*2654435761>>>0)%7<4?1:0.6)));
+  assert.deepEqual(failed(await verifyRendition(n)),["decoded audio in every cue window is the cue's own pitch"]);
+});
+
+test('a quiet tone mixed under the whole track (below the old 1500 floor) is caught outside the cue windows',{skip},async()=>{
+  const d=remuxAudio('hidden',cue=>Int16Array.from(cue.pcm,(v,i)=>Math.round(v+800*Math.sin(2*Math.PI*1000*i/cue.sampleRate))));
+  assert.deepEqual(failed(await verifyRendition(d)),['decoded audio is silent outside the cue windows']);
+});
+
+test('extra audio, subtitle or data streams smuggled into the container are rejected',{skip},async()=>{
+  const a=copy('extra-a'),pa=path.join(a,'rendition.mp4');
+  let r=spawnSync('ffmpeg',['-v','error','-y','-i',pa,'-f','lavfi','-t','1','-i','sine=frequency=800:sample_rate=22050','-map','0','-map','1:a','-c','copy','-c:a:1','aac',path.join(a,'t.mp4')],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);
+  fs.renameSync(path.join(a,'t.mp4'),pa);assert.deepEqual(failed(await verifyRendition(a)),['the file holds exactly one video and one audio stream and nothing else']);
+  const s=copy('extra-s'),ps=path.join(s,'rendition.mp4');fs.writeFileSync(path.join(s,'s.srt'),'1\n00:00:00,000 --> 00:00:01,000\nHIDDEN\n');
+  r=spawnSync('ffmpeg',['-v','error','-y','-i',ps,'-i',path.join(s,'s.srt'),'-map','0','-map','1','-c','copy','-c:s','mov_text',path.join(s,'t.mp4')],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);
+  fs.renameSync(path.join(s,'t.mp4'),ps);assert.deepEqual(failed(await verifyRendition(s)),['the file holds exactly one video and one audio stream and nothing else']);
+});
+
+test('a small localised edit that keeps whole-frame PSNR above 30 dB is caught by the per-block check',{skip},async()=>{
+  const d=remux('patch',['-vf','drawbox=x=100:y=60:w=4:h=4:color=white:t=fill','-c:v','libx264','-crf','12','-pix_fmt','yuv420p','-c:a','copy']);
+  const r=await verifyRendition(d),f=failed(r);
+  assert.ok(r.metrics.minPsnrDb>=DEFAULT_MIN_PSNR,'whole-frame PSNR alone would pass: '+r.metrics.minPsnrDb);
+  assert.deepEqual(f,[f.find(n=>/16x16 luma block/.test(n))]);
+});
+
+test('receipt free text and extra fields are pinned, so a receipt cannot be edited to claim more',{skip},async()=>{
+  const names=['receipt carries exactly the exporter\'s fields and its fixed kind and claims text'];
+  const a=copy('claims');edit(a,r=>{r.claims='Approved by the artist';});assert.deepEqual(failed(await verifyRendition(a)),names);
+  const b=copy('kind');edit(b,r=>{r.kind='captured from the browser artwork';});assert.deepEqual(failed(await verifyRendition(b)),names);
+  const c=copy('extra');edit(c,r=>{r.extra={approved:true};});assert.deepEqual(failed(await verifyRendition(c)),names);
+  const e=copy('filename');edit(e,r=>{r.file.name='other.mp4';});assert.deepEqual(failed(await verifyRendition(e)),names);
+});
+
+test('absurd frame sizes in a receipt fail a named check instead of throwing; the exporter shares the ceiling',{skip},async()=>{
+  const d=copy('huge');edit(d,r=>{r.video.width=40000;r.video.height=40000;});
+  assert.deepEqual(failed(await verifyRendition(d)),['receipt parameters are within the exporter limits']);
+  assert.throws(()=>exportParse(['--out','/x','--width','8000']),/even width/);
+});
+
+test('the per-block check also covers the partial tiles along the bottom and right edges',{skip},async()=>{
+  // 320x180: 180 is not a multiple of 16, so rows 176-179 only exist in a partial tile.
+  const d=remux('edge-bottom',['-vf','drawbox=x=100:y=176:w=4:h=4:color=white:t=fill','-c:v','libx264','-crf','12','-pix_fmt','yuv420p','-c:a','copy']);
+  const f=failed(await verifyRendition(d));assert.ok(f.some(n=>/16x16 luma block/.test(n)),f.join('|'));
+  const {worstBlockPsnr}=require('../verify-rendition.cjs'),w=170,h=90,a=new Float64Array(w*h),b=new Float64Array(w*h);
+  for(let y=86;y<90;y++)for(let x=166;x<170;x++)b[y*w+x]=255;// corner pixels beyond the last full 16x16 tile in both axes
+  assert.ok(worstBlockPsnr(a,b,w,h)<20,'a 4x4 edit in the bottom-right partial tile must score below the floor');
+  assert.equal(worstBlockPsnr(a,a,w,h),Infinity);
 });

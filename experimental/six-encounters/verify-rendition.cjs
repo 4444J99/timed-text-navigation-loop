@@ -13,10 +13,14 @@
  * or audience acceptance. */
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{spawn,spawnSync}=require('node:child_process');
-const R=require('./rendition.js'),G=require('./generation.js');
+const R=require('./rendition.js'),G=require('./generation.js'),X=require('./export-rendition.cjs');
 
 const SCHEMA='hole-loop.rendition-receipt.v1';
-const DEFAULT_MIN_PSNR=30;// measured: replayed seed 36.7 dB worst frame, a different seed 5.5 dB
+const DEFAULT_MIN_PSNR=30;
+const BLOCK=16,MIN_BLOCK_PSNR=20;// measured legitimate worst 16x16 luma block: 27.4 dB over seeds 7, 45, 1234; a 3x3 pixel edit scores about 14 dB
+const MIN_TONE_RATIO=0.5,MAX_QUIET_PEAK=100;// see the audio checks
+const TOP_KEYS=['schema','kind','configVersion','seed','encounters','durationMs','timings','video','cueTrack','timeline','file','claims'];
+const sameKeys=(o,keys)=>o!==null&&typeof o==='object'&&JSON.stringify(Object.keys(o).sort())===JSON.stringify([...keys].sort());// measured: replayed seed 36.7 dB worst frame, a different seed 5.5 dB
 
 function parse(argv){
   const o={dir:null,'min-psnr':DEFAULT_MIN_PSNR};
@@ -61,6 +65,29 @@ function psnr(a,b){
   return se===0?Infinity:10*Math.log10(255*255*a.length/se);
 }
 
+/** Worst PSNR over the non-overlapping BLOCKxBLOCK tiles (edge tiles smaller) of two luma planes: a localised edit that the whole-frame
+ *  PSNR averages away still shows up in the tile it touches. */
+function worstBlockPsnr(a,b,width,height){
+  let worst=Infinity;
+  // Tiles at the right and bottom edge are clamped to the frame, so no pixel escapes the check.
+  for(let by=0;by<height;by+=BLOCK)for(let bx=0;bx<width;bx+=BLOCK){
+    const bh=Math.min(BLOCK,height-by),bw=Math.min(BLOCK,width-bx);
+    let se=0;for(let y=0;y<bh;y++){const o=(by+y)*width+bx;for(let x=0;x<bw;x++){const d=a[o+x]-b[o+x];se+=d*d;}}
+    const p=se===0?Infinity:10*Math.log10(255*255*bw*bh/se);if(p<worst)worst=p;
+  }
+  return worst;
+}
+
+/** Share of a window's energy that sits at one frequency (Goertzel): about 1 for a pure tone, near 0 for any other sound. */
+function toneRatio(pcm,a,b,hz,sampleRate){
+  const end=Math.min(b,pcm.length),n=end-a;if(n<=0)return 0;
+  const w=2*Math.PI*hz/sampleRate,k=2*Math.cos(w);let s1=0,s2=0,energy=0;
+  for(let i=a;i<end;i++){const x=pcm[i],s0=x+k*s1-s2;s2=s1;s1=s0;energy+=x*x;}
+  if(energy===0)return 0;
+  const power=s1*s1+s2*s2-k*s1*s2;
+  return 2*power/(n*energy);
+}
+
 /** Verify one exported directory. Resolves to {ok, checks:[{name,ok,detail}], metrics}; rejects only on tool failure. */
 async function verifyRendition(dir,options={}){
   const minPsnr=options.minPsnr===undefined?DEFAULT_MIN_PSNR:options.minPsnr;
@@ -71,10 +98,15 @@ async function verifyRendition(dir,options={}){
   let receipt;
   try{receipt=JSON.parse(fs.readFileSync(receiptPath,'utf8'));}catch(e){check('receipt.json parses',false,e.message);return{ok:false,checks,metrics};}
   if(!check('receipt schema',receipt!==null&&typeof receipt==='object'&&!Array.isArray(receipt)&&receipt.schema===SCHEMA,receipt&&receipt.schema))return{ok:false,checks,metrics};
+  check('receipt carries exactly the exporter\'s fields and its fixed kind and claims text',
+    sameKeys(receipt,TOP_KEYS)&&receipt.kind===X.RECEIPT_KIND&&receipt.claims===X.RECEIPT_CLAIMS&&sameKeys(receipt.video,['width','height','fps','frames','frameStreamSha256'])
+    &&sameKeys(receipt.timings,['entryMs','exitMs','maxExposureMs'])&&sameKeys(receipt.cueTrack,['sampleRate','samples','cues','wavSha256'])
+    &&sameKeys(receipt.file,['name','ffmpeg','videoCodec','audioCodec','decodedVideoFrames','width','height'])&&receipt.file.name==='rendition.mp4'&&typeof receipt.file.ffmpeg==='string'&&receipt.file.ffmpeg.length>0,
+    Object.keys(receipt).join(','));
   const v=receipt.video||{},fps=v.fps,width=v.width,height=v.height;
   const shape=Number.isInteger(receipt.seed)&&Number.isInteger(receipt.encounters)&&[fps,width,height].every(Number.isInteger);
   if(!check('receipt carries seed, encounters, fps and frame size',shape,JSON.stringify({seed:receipt.seed,encounters:receipt.encounters,fps,width,height})))return{ok:false,checks,metrics};
-  if(!check('receipt parameters are within the exporter limits',receipt.encounters>=1&&receipt.encounters<=64&&fps>=1&&fps<=60&&width>=160&&height>=90&&width%2===0&&height%2===0,'')) return{ok:false,checks,metrics};
+  if(!check('receipt parameters are within the exporter limits',receipt.encounters>=1&&receipt.encounters<=64&&fps>=1&&fps<=60&&width>=160&&height>=90&&width<=X.MAX_WIDTH&&height<=X.MAX_HEIGHT&&width%2===0&&height%2===0,'')) return{ok:false,checks,metrics};
 
   // 1. Route timeline, re-derived from the seed through the real RouteSession.
   const run=R.simulateRun(receipt.seed,receipt.encounters);
@@ -107,9 +139,10 @@ async function verifyRendition(dir,options={}){
   check('cue-track.wav on disk is byte-identical to the replay',fileWav.equals(wavBytes),fileWav.length+' bytes on disk, '+wavBytes.length+' replayed');
 
   // 4. The container, as ffprobe reads it.
-  const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=codec_name,codec_type,width,height,nb_read_frames,avg_frame_rate,r_frame_rate:format=duration','-of','json',mp4Path],{encoding:'utf8'});
+  const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=index,codec_name,codec_type,width,height,nb_read_frames,avg_frame_rate,r_frame_rate:format=duration','-of','json',mp4Path],{encoding:'utf8'});
   if(!check('ffprobe reads the file',probe.status===0,probe.stderr))return{ok:false,checks,metrics};
   const info=JSON.parse(probe.stdout),vs=info.streams.find(s=>s.codec_type==='video'),as=info.streams.find(s=>s.codec_type==='audio');
+  check('the file holds exactly one video and one audio stream and nothing else',info.streams.length===2&&info.streams.filter(s=>s.codec_type==='video').length===1&&info.streams.filter(s=>s.codec_type==='audio').length===1,info.streams.map(s=>s.codec_type+':'+s.codec_name).join(', '));
   check('video stream is H.264 at the receipt size',vs&&vs.codec_name==='h264'&&vs.width===width&&vs.height===height,vs&&vs.codec_name+' '+vs.width+'x'+vs.height);
   check('decodable video frames equal the receipt',vs&&Number(vs.nb_read_frames)===frames,vs&&vs.nb_read_frames);
   const[rn,rd]=String(vs&&vs.avg_frame_rate).split('/').map(Number);
@@ -124,11 +157,11 @@ async function verifyRendition(dir,options={}){
   check('file facts in the receipt match ffprobe',receipt.file&&receipt.file.videoCodec==='h264'&&receipt.file.audioCodec==='aac'&&receipt.file.decodedVideoFrames===frames&&receipt.file.width===width&&receipt.file.height===height,JSON.stringify(receipt.file));
 
   // 5. Decode every video frame and compare to the frame re-rendered from the seed.
-  const psnrs=[],lumaA=new Float64Array(width*height),lumaB=new Float64Array(width*height);
+  const psnrs=[],blockWorst=[],lumaA=new Float64Array(width*height),lumaB=new Float64Array(width*height);
   const decoded=await decodeFrames(mp4Path,width,height,(i,frame)=>{
     if(i>=frames)return;
     R.renderFrame(run,R.frameTime(i,fps),width,height,buf);
-    psnrs.push(psnr(luma(buf,lumaA),luma(frame,lumaB)));
+    luma(buf,lumaA);luma(frame,lumaB);psnrs.push(psnr(lumaA,lumaB));blockWorst.push(worstBlockPsnr(lumaA,lumaB,width,height));
   });
   check('decoded frame count equals the receipt',decoded.frames===frames&&decoded.trailingBytes===0,decoded.frames+' frames, '+decoded.trailingBytes+' stray bytes');
   const finite=psnrs.filter(Number.isFinite),worst=psnrs.length?Math.min(...psnrs):0;
@@ -136,6 +169,9 @@ async function verifyRendition(dir,options={}){
   metrics.meanPsnrDb=finite.length?Number((finite.reduce((a,b)=>a+b,0)/finite.length).toFixed(2)):'lossless';
   const weakest=psnrs.indexOf(worst);
   check('every decoded frame is within '+minPsnr+' dB luma PSNR of the replayed frame',psnrs.length===frames&&worst>=minPsnr,'min '+metrics.minPsnrDb+' dB at frame '+weakest+', mean '+metrics.meanPsnrDb+' dB');
+
+  const worstBlock=blockWorst.length?Math.min(...blockWorst):0;metrics.minBlockPsnrDb=Number.isFinite(worstBlock)?Number(worstBlock.toFixed(2)):'lossless';
+  check('every '+BLOCK+'x'+BLOCK+' luma block of every decoded frame is within '+MIN_BLOCK_PSNR+' dB PSNR of the replay (localised edits)',blockWorst.length===frames&&worstBlock>=MIN_BLOCK_PSNR,'min '+metrics.minBlockPsnrDb+' dB at frame '+blockWorst.indexOf(worstBlock));
 
   // 6. Decode the AAC track: tones inside the cue windows, near silence outside.
   const pcm=decodeAudio(mp4Path,cue.sampleRate);metrics.decodedAudioSamples=pcm.length;
@@ -146,13 +182,18 @@ async function verifyRendition(dir,options={}){
   const quiet=new Uint8Array(pcm.length).fill(1);
   for(const[a,b]of win)for(let i=Math.max(0,a-guard);i<Math.min(pcm.length,b+guard);i++)quiet[i]=0;
   let loudOut=0,peakOut=0;
-  for(let i=0;i<pcm.length;i++)if(quiet[i]){const a=Math.abs(pcm[i]);peakOut=Math.max(peakOut,a);if(a>1500)loudOut++;}
+  for(let i=0;i<pcm.length;i++)if(quiet[i]){const a=Math.abs(pcm[i]);peakOut=Math.max(peakOut,a);if(a>MAX_QUIET_PEAK)loudOut++;}
   metrics.audioPeakOutsideCues=peakOut;
   // Every cue must carry its own tone; one silent window cannot hide behind the others.
   const silentCues=[];
   win.forEach(([a,b],ci)=>{let n=0,loud=0;for(let i=a;i<Math.min(b,pcm.length);i++){n++;if(Math.abs(pcm[i])>5000)loud++;}if(!(n>0&&loud/n>0.3))silentCues.push(ci+':'+cue.cues[ci].kind+'@'+cue.cues[ci].ms+'ms '+loud+'/'+n);});
   check('decoded audio carries the tone inside every cue window',silentCues.length===0,silentCues.length?'no tone in '+silentCues.join(', '):win.length+' windows each above 30% loud samples');
-  check('decoded audio is silent outside the cue windows',loudOut===0,'peak '+peakOut+', '+loudOut+' samples above 1500');
+  // The tone must be the cue's own pitch, not merely loud: any other sound in the window (a different frequency, noise, speech) fails.
+  const offPitch=[];let minRatio=Infinity;
+  win.forEach(([a,b],ci)=>{const r=toneRatio(pcm,a,b,cue.cues[ci].hz,cue.sampleRate);minRatio=Math.min(minRatio,r);if(r<MIN_TONE_RATIO)offPitch.push(ci+':'+cue.cues[ci].hz+'Hz ratio '+r.toFixed(2));});
+  metrics.minToneRatio=Number.isFinite(minRatio)?Number(minRatio.toFixed(3)):0;
+  check('decoded audio in every cue window is the cue\'s own pitch',offPitch.length===0,offPitch.length?'off pitch in '+offPitch.join(', '):'min ratio '+metrics.minToneRatio);
+  check('decoded audio is silent outside the cue windows',loudOut===0,'peak '+peakOut+', '+loudOut+' samples above '+MAX_QUIET_PEAK);
 
   return{ok:checks.every(c=>c.ok),checks,metrics};
 }
@@ -165,4 +206,4 @@ if(require.main===module){
     process.exit(report.ok?0:1);
   })().catch(e=>{process.stderr.write(String(e.message||e)+'\n');process.exit(2);});
 }
-module.exports={verifyRendition,parse,psnr,DEFAULT_MIN_PSNR};
+module.exports={verifyRendition,parse,psnr,worstBlockPsnr,toneRatio,DEFAULT_MIN_PSNR,MIN_BLOCK_PSNR,MIN_TONE_RATIO,MAX_QUIET_PEAK};
