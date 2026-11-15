@@ -6,7 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const {silentLaunch, silentLaunchPersistentContext, silentArgs, INIT_SCRIPT_PATH, initScript} = require('./silent-browser.cjs');
+const {silentLaunch, silentLaunchPersistentContext, silentArgs, silenceContext, INIT_SCRIPT_PATH, initScript} = require('./silent-browser.cjs');
 
 function dependency(name) {
   try { return require(name); }
@@ -70,14 +70,17 @@ function chromePath() {
   return fs.existsSync(mac) ? mac : undefined;
 }
 
-async function launchOrSkip(t, name) {
+async function launchOrSkip(t, name, raw = false) {
   const playwright = dependency('playwright');
   const executablePath = name === 'chromium' ? chromePath() : undefined;
   try {
-    return await silentLaunch(playwright[name], {headless: true, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'],
-      ...(executablePath ? {executablePath} : {})});
+    const options = {headless: true, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'], ...(executablePath ? {executablePath} : {})};
+    // raw: a browser whose contexts the test silences itself, so it can install a spy underneath the init script.
+    if (raw) return await playwright[name].launch({...options, args: silentArgs(name, options.args)});
+    return await silentLaunch(playwright[name], options);
   } catch (error) {
-    if (name === 'chromium' || process.env.SILENT_BROWSER_REQUIRE_ALL === '1') throw error;
+    const missing = /Executable doesn't exist|browser.*(?:is not|isn't) installed/i.test(String(error.message));
+    if (name === 'chromium' || process.env.SILENT_BROWSER_REQUIRE_ALL === '1' || !missing) throw error;  // only a confirmed missing executable skips
     t.skip(`${name} is not installed here: ${String(error.message).split('\n')[0]}`);
     return null;
   }
@@ -137,6 +140,71 @@ for (const engineName of ['chromium', 'webkit']) {
       });
       assert.equal(offline.sink, null);
       assert.ok(offline.peak > 0.1, 'offline rendering renders to a buffer and keeps its signal');
+    } finally { await browser.close(); }
+  });
+}
+
+const SPY = `(() => { const calls = []; window.__connectCalls = calls; const native = AudioNode.prototype.connect;
+  AudioNode.prototype.connect = function (target, ...rest) {
+    calls.push({from: this.constructor.name, to: target && target.constructor && target.constructor.name});
+    return native.call(this, target, ...rest);
+  }; })();`;
+
+for (const engineName of ['chromium', 'webkit']) {
+  test(`${engineName}: a connection to the realtime destination reaches the native connect only through the gain-0 sink`, async t => {
+    const browser = await launchOrSkip(t, engineName, true);
+    if (!browser) return;
+    try {
+      const context = await browser.newContext();
+      await context.addInitScript(SPY);          // installed first, so it sits underneath the silent init script
+      await silenceContext(context);
+      const tab = await context.newPage();
+      await tab.goto('data:text/html,<title>x</title>');
+      const seen = await tab.evaluate(() => {
+        const Context = window.AudioContext || window.webkitAudioContext;
+        const ctx = new Context(), osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        const calls = window.__connectCalls.slice(), sink = window.__SILENT_BROWSER__.sink(ctx);
+        ctx.close();
+        return {calls, sinkGain: sink.gain.value};
+      });
+      const toDestination = seen.calls.filter(call => call.to === 'AudioDestinationNode');
+      assert.deepEqual(toDestination, [{from: 'GainNode', to: 'AudioDestinationNode'}], 'only the sink itself reaches the device node');
+      assert.equal(seen.sinkGain, 0);
+      assert.ok(seen.calls.some(call => call.from === 'GainNode' && call.to === 'GainNode'), 'the app node was routed into the sink');
+    } finally { await browser.close(); }
+  });
+
+  test(`${engineName}: pinned elements announce volume changes, keep the range check, and shadow roots are covered`, async t => {
+    const browser = await launchOrSkip(t, engineName);
+    if (!browser) return;
+    try {
+      const tab = await browser.newPage();
+      await tab.goto(page);
+      const result = await tab.evaluate(async () => {
+        const el = document.querySelector('#parsed');
+        const events = []; el.addEventListener('volumechange', () => events.push([el.muted, el.volume]));
+        el.volume = 0.5; el.volume = 0.5; el.muted = true; el.muted = true;
+        let thrown = null; try { el.volume = 3; } catch (error) { thrown = error.name; }
+        const afterThrow = {asked: el.volume, native: window.__SILENT_BROWSER__.native(el)};
+        const host = document.createElement('div'); document.body.append(host);
+        const open = host.attachShadow({mode: 'open'});
+        open.innerHTML = `<audio id="in_shadow" loop src="${el.src}"></audio>`;
+        await new Promise(resolve => setTimeout(resolve, 0));
+        const inner = open.querySelector('#in_shadow');
+        const closedHost = document.createElement('div'); document.body.append(closedHost);
+        const closed = closedHost.attachShadow({mode: 'closed'});
+        closed.innerHTML = `<video id="in_closed" loop src="${el.src}"></video>`;
+        await new Promise(resolve => setTimeout(resolve, 0));
+        const closedInner = closed.querySelector('#in_closed');
+        return {events, thrown, afterThrow, shadowNative: window.__SILENT_BROWSER__.native(inner),
+          closedNative: window.__SILENT_BROWSER__.native(closedInner)};
+      });
+      assert.deepEqual(result.events, [[false, 0.5], [true, 0.5]], 'one event per change the app made, none for a repeated value');
+      assert.equal(result.thrown, 'IndexSizeError');
+      assert.deepEqual(result.afterThrow, {asked: 0.5, native: {muted: true, volume: 0}});
+      assert.deepEqual(result.shadowNative, {muted: true, volume: 0});
+      assert.deepEqual(result.closedNative, {muted: true, volume: 0});
     } finally { await browser.close(); }
   });
 }

@@ -9,8 +9,35 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
 const SKIP_DIRS = new Set(['node_modules', '.git']);
 const EXEMPT = new Set(['tests/silent-browser.cjs', 'tests/silent-browser.test.cjs', 'tests/silent-launch-lint.test.cjs']);
-const LAUNCH = /(?<![\w$])(?<owner>[\w$.]*?)\b(?:launch|launchPersistentContext|launchServer|connectOverCDP)\s*\(/g;
-const OWNER = /(?:^|\.)(?:chromium|webkit|firefox|_electron|electron|browserType|engine)$/;
+const ENGINES = ['chromium', 'webkit', 'firefox', '_electron', 'electron', 'browserType', 'browser_type', 'engine'];
+const NAMES = 'launch|launchPersistentContext|launchServer|connectOverCDP';
+// obj.launch(, obj\n  .launch(, obj['launch'](, and a launch pulled out by destructuring or bound for later.
+const CALL = new RegExp(`(?<owner>[\\w$.\\]\\[]*?[\\w$\\]])\\s*\\.\\s*(?:${NAMES})\\b|(?<owner2>[\\w$]+)\\s*\\[\\s*['"](?:${NAMES})['"]\\s*\\]`, 'g');
+const DESTRUCTURED = new RegExp(`\\{[^}]*\\b(?:${NAMES})\\b[^}]*\\}\\s*=\\s*[\\w$.\\]\\[]*?(?:chromium|webkit|firefox|browserType|engine)\\b`, 'g');
+// A Playwright engine under another name: const runner = chromium; const {chromium: runner} = require('playwright');
+const ALIAS_ASSIGN = /([\w$]+)\s*=\s*(?:[\w$.()'"\[\]]*?\.)?(?:chromium|webkit|firefox)\b(?!\s*\.\s*launch)/g;
+const ALIAS_DESTRUCTURE = /\b(?:chromium|webkit|firefox)\s*:\s*([\w$]+)/g;
+const PUPPETEER = /\bpuppeteer\b\s*\.\s*launch|(?:require\(|from\s+)['"]puppeteer/;
+
+function lineOf(source, index) { return source.slice(0, index).split('\n').length; }
+
+function bareLaunches(source) {
+  // Blank out comments, keeping every newline, so a commented launch is ignored and line numbers stay true.
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, match => match.replace(/[^\n]/g, ' ')).replace(/(^|[^:'"`])\/\/[^\n]*/g, (m, lead) => lead + ' '.repeat(m.length - lead.length));
+  const names = new Set(ENGINES);
+  for (const match of code.matchAll(ALIAS_ASSIGN)) names.add(match[1]);
+  for (const match of code.matchAll(ALIAS_DESTRUCTURE)) names.add(match[1]);
+  const found = new Set();
+  for (const match of code.matchAll(CALL)) {
+    const owner = match.groups.owner || match.groups.owner2;
+    const tail = /([\w$]+)$/.exec(owner);
+    if (owner.endsWith(']') || (tail && names.has(tail[1]))) found.add(lineOf(code, match.index + match[0].search(new RegExp(NAMES))));
+  }
+  for (const match of code.matchAll(DESTRUCTURED)) found.add(lineOf(code, match.index));
+  const puppeteer = PUPPETEER.exec(code);
+  if (puppeteer) found.add(lineOf(code, puppeteer.index));
+  return [...found].sort((x, y) => x - y);
+}
 
 function* files(directory) {
   for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
@@ -19,20 +46,6 @@ function* files(directory) {
     if (entry.isDirectory()) yield* files(full);
     else if (/\.(?:cjs|mjs|js|ts)$/.test(entry.name)) yield full;
   }
-}
-
-function bareLaunches(source) {
-  const found = [];
-  source.split('\n').forEach((line, index) => {
-    if (/^\s*(?:\/\/|\*|\/\*)/.test(line)) return;
-    for (const match of line.matchAll(LAUNCH)) {
-      const owner = match.groups.owner.replace(/\.$/, '');
-      if (owner && OWNER.test(owner)) found.push(index + 1);
-    }
-    if (/\b(?:chromium|webkit|firefox)\s*\.\s*launch\b/.test(line) && !found.includes(index + 1)) found.push(index + 1);
-    if (/\bpuppeteer\b\s*\.\s*launch|require\(\s*['"]puppeteer/.test(line) && !found.includes(index + 1)) found.push(index + 1);
-  });
-  return found;
 }
 
 test('no test or tool launches a browser around the silent helper', () => {
@@ -53,6 +66,15 @@ test('the lint sees a bare launch and accepts the helper', () => {
   assert.deepEqual(bareLaunches('const browser = await silentLaunch(chromium, {headless:true});'), []);
   assert.deepEqual(bareLaunches('await lab.launch(id);'), []);
   assert.deepEqual(bareLaunches('// chromium.launch({headless:true})'), []);
+  assert.deepEqual(bareLaunches('/* webkit.launch() */ const x = 1;'), []);
+  assert.deepEqual(bareLaunches('await chromium\n  .launch({headless:true});'), [2]);
+  assert.deepEqual(bareLaunches('const runner = chromium;\nawait runner.launch();'), [2]);
+  assert.deepEqual(bareLaunches("const {chromium: runner} = require('playwright');\nawait runner.launch();"), [2]);
+  assert.deepEqual(bareLaunches("const b = await playwright[kind].launch();"), [1]);
+  assert.deepEqual(bareLaunches("const b = await chromium['launch']();"), [1]);
+  assert.deepEqual(bareLaunches("const {launch} = chromium;\nawait launch();"), [1]);
+  assert.deepEqual(bareLaunches('const launcher = chromium.launch.bind(chromium);'), [1]);
+  assert.deepEqual(bareLaunches('const runner = silentLaunch(chromium, {});\nawait runner.close();'), []);
 });
 
 test('the helper itself is the only place that calls the Playwright launch API', () => {
