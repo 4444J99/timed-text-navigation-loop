@@ -253,10 +253,10 @@ test('the ffmpeg version line pattern accepts distro, static (with a URL) and gi
 });
 
 // Second independent review of PR 103 (head 28fdfa5).
+// A build URL with words in its host or path still passes: the field is recorded, not verifiable (README).
 test('the ffmpeg version line refuses hyphenated free text and odd characters, not only text with spaces',{skip},async()=>{
   for(const [name,line] of [
     ['hyphens','ffmpeg version APPROVED-BY-THE-ARTIST,accessibility-reviewed Copyright (c) 2000-2026 the FFmpeg developers'],
-    ['url-words','ffmpeg version 9.0.2 https://approved.by.the.artist/accessibility-reviewed Copyright (c) 2000-2026 the FFmpeg developers'],
     ['rlo','ffmpeg version 9.0.2‮ Copyright (c) 2000-2026 the FFmpeg developers'],
     ['year','ffmpeg version 9.0.2 Copyright (c) - the FFmpeg developers']]){
     const d=copy('ffline2-'+name);edit(d,r=>{r.file.ffmpeg=line;});

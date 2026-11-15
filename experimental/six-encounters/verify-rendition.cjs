@@ -19,7 +19,7 @@ const SCHEMA='hole-loop.rendition-receipt.v1';
 const DEFAULT_MIN_PSNR=30;
 const BLOCK=16,MIN_BLOCK_PSNR=20;// measured legitimate worst 16x16 luma block: 27.4 dB over seeds 7, 45, 1234; a 3x3 pixel edit scores about 14 dB
 const MIN_TONE_RATIO=0.8,MAX_QUIET_PEAK=100;// see the audio checks; an honest AAC encode measures 0.94, a second tone at 0.7 of the cue amplitude 0.63
-const FFMPEG_LINE=/^ffmpeg version \S+(?: +https?:\/\/\S+)? +Copyright \(c\) [0-9-]+ the FFmpeg developers$/;// the first line of `ffmpeg -version`, as the exporter records it
+const FFMPEG_LINE=/^ffmpeg version (?=[A-Za-z0-9._+~:-]*\d)[A-Za-z0-9._+~:-]+(?: +https?:\/\/[A-Za-z0-9.-]+(?:\/[A-Za-z0-9._~\/-]*)?)? +Copyright \(c\) [0-9]{4}(?:-[0-9]{4})? the FFmpeg developers$/;// the first line of `ffmpeg -version`, as the exporter records it: a version token with a digit, an optional build URL; recorded, not verifiable
 const TOP_KEYS=['schema','kind','configVersion','seed','encounters','durationMs','timings','video','cueTrack','timeline','file','claims'];
 const sameKeys=(o,keys)=>o!==null&&typeof o==='object'&&JSON.stringify(Object.keys(o).sort())===JSON.stringify([...keys].sort());// measured: replayed seed 36.7 dB worst frame, a different seed 5.5 dB
 
@@ -96,11 +96,11 @@ async function verifyRendition(dir,options={}){
   const check=(name,ok,detail)=>{checks.push({name,ok:Boolean(ok),detail:detail===undefined?'':String(detail)});return Boolean(ok);};
   const receiptPath=path.join(dir,'receipt.json'),mp4Path=path.join(dir,'rendition.mp4'),wavPath=path.join(dir,'cue-track.wav');
   for(const f of[receiptPath,mp4Path,wavPath]){let isFile=false;try{isFile=fs.statSync(f).isFile();}catch(e){isFile=false;}if(!check('present: '+path.basename(f),isFile,f))return{ok:false,checks,metrics};}
-  let receipt,receiptText;
-  try{receiptText=fs.readFileSync(receiptPath,'utf8');receipt=JSON.parse(receiptText);}catch(e){check('receipt.json parses',false,e.message);return{ok:false,checks,metrics};}
+  let receipt,receiptBytes;
+  try{receiptBytes=fs.readFileSync(receiptPath);receipt=JSON.parse(receiptBytes.toString('utf8'));}catch(e){check('receipt.json parses',false,e.message);return{ok:false,checks,metrics};}
   if(!check('receipt schema',receipt!==null&&typeof receipt==='object'&&!Array.isArray(receipt)&&receipt.schema===SCHEMA,receipt&&receipt.schema))return{ok:false,checks,metrics};
   // JSON.parse keeps the last of any duplicate keys, so the pinned fields above are pinned only in the parsed object: the file a person reads must be the canonical serialisation of it.
-  check('receipt.json is the exporter\'s canonical serialisation of its own content (duplicate keys, extra whitespace and escapes fail; key order is the file\'s own)',receiptText===JSON.stringify(receipt,null,2)+'\n','');
+  check('receipt.json is the exporter\'s canonical serialisation of its own content (duplicate keys, extra whitespace and escapes fail; key order is the file\'s own)',receiptBytes.equals(Buffer.from(JSON.stringify(receipt,null,2)+'\n','utf8')),'');
   check('receipt carries exactly the exporter\'s fields and its fixed kind and claims text',
     sameKeys(receipt,TOP_KEYS)&&receipt.kind===X.RECEIPT_KIND&&receipt.claims===X.RECEIPT_CLAIMS&&sameKeys(receipt.video,['width','height','fps','frames','frameStreamSha256'])
     &&sameKeys(receipt.timings,['entryMs','exitMs','maxExposureMs'])&&sameKeys(receipt.cueTrack,['sampleRate','samples','cues','wavSha256'])
