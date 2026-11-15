@@ -105,9 +105,11 @@ test('end to end: the exported file decodes to the receipt, is reproducible, and
 test('an encoder that exits while frames are streaming rejects with its diagnostics instead of crashing Node',{skip:process.platform==='win32'&&'needs a POSIX shell shim'},async()=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'hl-fake-encoder-')),shim=path.join(dir,'ffmpeg'),savedPath=process.env.PATH;
   fs.writeFileSync(shim,'#!/bin/sh\nif [ "$1" = "-version" ]; then echo "ffmpeg version fake"; exit 0; fi\necho "fake encoder refused the stream" 1>&2\nexit 3\n',{mode:0o755});
+  const out=path.join(dir,'out');fs.mkdirSync(out);fs.writeFileSync(path.join(out,'receipt.json'),'{"from":"an earlier successful export"}');
   process.env.PATH=dir+path.delimiter+savedPath;
   try{
-    await assert.rejects(exportRendition({seed:45,encounters:3,fps:12,width:640,height:360,out:path.join(dir,'out')}),/ffmpeg exited 3[\s\S]*fake encoder refused the stream/);
+    await assert.rejects(exportRendition({seed:45,encounters:3,fps:12,width:640,height:360,out}),/ffmpeg exited 3[\s\S]*fake encoder refused the stream/);
+    assert.equal(fs.existsSync(path.join(out,'receipt.json')),false,'a failed export must not leave an earlier receipt vouching for replaced artifacts');
   }finally{process.env.PATH=savedPath;fs.rmSync(dir,{recursive:true,force:true});}
 });
 

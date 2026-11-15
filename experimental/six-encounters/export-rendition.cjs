@@ -27,6 +27,8 @@ function ffmpegVersion(){const r=spawnSync('ffmpeg',['-version'],{encoding:'utf8
 async function exportRendition(options){
   const o={...options},run=R.simulateRun(o.seed,o.encounters),frames=R.frameCount(run,o.fps),cue=R.cueTrack(run);
   fs.mkdirSync(o.out,{recursive:true});
+  // A receipt vouches for the artifacts beside it; remove any earlier one before the first artifact is replaced.
+  fs.rmSync(path.join(o.out,'receipt.json'),{force:true});
   const wavPath=path.join(o.out,'cue-track.wav'),mp4Path=path.join(o.out,'rendition.mp4'),wavBytes=R.wav(cue.pcm,cue.sampleRate);
   fs.writeFileSync(wavPath,wavBytes);
   const version=ffmpegVersion();
