@@ -70,7 +70,7 @@ async function verifyRendition(dir,options={}){
   for(const f of[receiptPath,mp4Path,wavPath])if(!check('present: '+path.basename(f),fs.existsSync(f),f))return{ok:false,checks,metrics};
   let receipt;
   try{receipt=JSON.parse(fs.readFileSync(receiptPath,'utf8'));}catch(e){check('receipt.json parses',false,e.message);return{ok:false,checks,metrics};}
-  if(!check('receipt schema',receipt.schema===SCHEMA,receipt.schema))return{ok:false,checks,metrics};
+  if(!check('receipt schema',receipt!==null&&typeof receipt==='object'&&!Array.isArray(receipt)&&receipt.schema===SCHEMA,receipt&&receipt.schema))return{ok:false,checks,metrics};
   const v=receipt.video||{},fps=v.fps,width=v.width,height=v.height;
   const shape=Number.isInteger(receipt.seed)&&Number.isInteger(receipt.encounters)&&[fps,width,height].every(Number.isInteger);
   if(!check('receipt carries seed, encounters, fps and frame size',shape,JSON.stringify({seed:receipt.seed,encounters:receipt.encounters,fps,width,height})))return{ok:false,checks,metrics};
@@ -107,11 +107,17 @@ async function verifyRendition(dir,options={}){
   check('cue-track.wav on disk is byte-identical to the replay',fileWav.equals(wavBytes),fileWav.length+' bytes on disk, '+wavBytes.length+' replayed');
 
   // 4. The container, as ffprobe reads it.
-  const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=codec_name,codec_type,width,height,nb_read_frames:format=duration','-of','json',mp4Path],{encoding:'utf8'});
+  const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=codec_name,codec_type,width,height,nb_read_frames,avg_frame_rate,r_frame_rate:format=duration','-of','json',mp4Path],{encoding:'utf8'});
   if(!check('ffprobe reads the file',probe.status===0,probe.stderr))return{ok:false,checks,metrics};
   const info=JSON.parse(probe.stdout),vs=info.streams.find(s=>s.codec_type==='video'),as=info.streams.find(s=>s.codec_type==='audio');
   check('video stream is H.264 at the receipt size',vs&&vs.codec_name==='h264'&&vs.width===width&&vs.height===height,vs&&vs.codec_name+' '+vs.width+'x'+vs.height);
   check('decodable video frames equal the receipt',vs&&Number(vs.nb_read_frames)===frames,vs&&vs.nb_read_frames);
+  const[rn,rd]=String(vs&&vs.avg_frame_rate).split('/').map(Number);
+  check('video frame rate equals the receipt fps',vs&&rd>0&&Math.abs(rn/rd-fps)<1e-3&&String(vs.r_frame_rate)===String(vs.avg_frame_rate),vs&&vs.avg_frame_rate+' / '+vs.r_frame_rate+' vs '+fps);
+  const pts=spawnSync('ffprobe',['-v','error','-select_streams','v:0','-show_entries','frame=pts_time','-of','csv=p=0',mp4Path],{encoding:'utf8',maxBuffer:1<<26});
+  const times=pts.status===0?pts.stdout.split('\n').map(x=>x.replace(/,$/,'').trim()).filter(Boolean).map(Number):[];
+  const driftIdx=times.findIndex((t,i)=>!(Math.abs(t-i/fps)<1e-3));
+  check('every video frame sits at index/fps on the timeline',times.length===frames&&driftIdx===-1,driftIdx===-1?times.length+' timestamps':'frame '+driftIdx+' at '+times[driftIdx]+' s');
   check('audio stream is AAC',as&&as.codec_name==='aac',as&&as.codec_name);
   const dur=Number(info.format.duration);metrics.containerDurationSec=dur;
   check('container duration is within 0.25 s of the timeline',Math.abs(dur-run.durationMs/1000)<0.25,dur+' vs '+run.durationMs/1000);
@@ -135,20 +141,17 @@ async function verifyRendition(dir,options={}){
   const pcm=decodeAudio(mp4Path,cue.sampleRate);metrics.decodedAudioSamples=pcm.length;
   check('decoded audio length is within 0.25 s of the cue track',Math.abs(pcm.length-cue.pcm.length)<cue.sampleRate*0.25,pcm.length+' vs '+cue.pcm.length);
   const win=cue.cues.map(c=>[Math.floor(c.ms*cue.sampleRate/1000),Math.floor((c.ms+c.lengthMs)*cue.sampleRate/1000)]);
-  const inside=new Uint8Array(Math.min(pcm.length,cue.pcm.length));
-  for(const[a,b]of win)for(let i=a;i<b&&i<inside.length;i++)inside[i]=1;
   const guard=Math.floor(cue.sampleRate*0.06);// AAC priming and ringing spread a tone slightly past its window
-  let loudIn=0,nearIn=0,loudOut=0,peakOut=0;
-  for(let i=0;i<inside.length;i++){
-    const a=Math.abs(pcm[i]);
-    if(inside[i]){nearIn++;if(a>5000)loudIn++;}
-    else{
-      let near=false;for(const[s,e]of win)if(i>=s-guard&&i<e+guard){near=true;break;}
-      if(!near){peakOut=Math.max(peakOut,a);if(a>1500)loudOut++;}
-    }
-  }
+  // Silence is judged over every decoded sample, including any tail beyond the replayed cue track.
+  const quiet=new Uint8Array(pcm.length).fill(1);
+  for(const[a,b]of win)for(let i=Math.max(0,a-guard);i<Math.min(pcm.length,b+guard);i++)quiet[i]=0;
+  let loudOut=0,peakOut=0;
+  for(let i=0;i<pcm.length;i++)if(quiet[i]){const a=Math.abs(pcm[i]);peakOut=Math.max(peakOut,a);if(a>1500)loudOut++;}
   metrics.audioPeakOutsideCues=peakOut;
-  check('decoded audio carries the tones inside the cue windows',nearIn>0&&loudIn/nearIn>0.3,loudIn+' of '+nearIn+' window samples above 5000');
+  // Every cue must carry its own tone; one silent window cannot hide behind the others.
+  const silentCues=[];
+  win.forEach(([a,b],ci)=>{let n=0,loud=0;for(let i=a;i<Math.min(b,pcm.length);i++){n++;if(Math.abs(pcm[i])>5000)loud++;}if(!(n>0&&loud/n>0.3))silentCues.push(ci+':'+cue.cues[ci].kind+'@'+cue.cues[ci].ms+'ms '+loud+'/'+n);});
+  check('decoded audio carries the tone inside every cue window',silentCues.length===0,silentCues.length?'no tone in '+silentCues.join(', '):win.length+' windows each above 30% loud samples');
   check('decoded audio is silent outside the cue windows',loudOut===0,'peak '+peakOut+', '+loudOut+' samples above 1500');
 
   return{ok:checks.every(c=>c.ok),checks,metrics};

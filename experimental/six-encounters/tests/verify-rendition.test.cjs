@@ -66,16 +66,40 @@ test('swapping in the MP4 of a different seed fails only the decoded-frame compa
 
 test('a truncated MP4 is rejected without throwing; missing files and bad JSON are named',{skip},async()=>{
   const t=copy('trunc'),p=path.join(t,'rendition.mp4'),b=fs.readFileSync(p);fs.writeFileSync(p,b.subarray(0,Math.floor(b.length/3)));
-  let r;try{r=await verifyRendition(t);}catch(e){r={ok:false,checks:[],threw:e.message};}
-  assert.equal(r.ok,false);
+  const r=await verifyRendition(t);
+  assert.equal(r.ok,false);assert.ok(failed(r).length>0);
   const m=copy('missing');fs.rmSync(path.join(m,'cue-track.wav'));
   assert.deepEqual(failed(await verifyRendition(m)),['present: cue-track.wav']);
   const j=copy('json');fs.writeFileSync(path.join(j,'receipt.json'),'{not json');
   assert.deepEqual(failed(await verifyRendition(j)),['receipt.json parses']);
+  const n=copy('null');fs.writeFileSync(path.join(n,'receipt.json'),'null');
+  assert.deepEqual(failed(await verifyRendition(n)),['receipt schema']);
   const s=copy('schema');edit(s,r=>{r.schema='other';});
   assert.deepEqual(failed(await verifyRendition(s)),['receipt schema']);
   const x=copy('range');edit(x,r=>{r.encounters=65;});
   assert.deepEqual(failed(await verifyRendition(x)),['receipt parameters are within the exporter limits']);
+});
+
+function remux(name,args){
+  const d=copy(name),src=path.join(d,'rendition.mp4'),out=path.join(d,'tampered.mp4');
+  const r=spawnSync('ffmpeg',['-v','error','-y','-i',src,...args,out],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);
+  fs.renameSync(out,src);return d;
+}
+
+test('a silent cue window is caught even when the other windows still carry enough tone overall',{skip},async()=>{
+  const d=remux('mute',['-c:v','copy','-af',"volume=0:enable='between(t,0,0.2)'",'-c:a','aac','-b:a','96k']);
+  const r=await verifyRendition(d);assert.deepEqual(failed(r),['decoded audio carries the tone inside every cue window']);
+});
+
+test('sound appended after the cue track ends is caught as sound outside the cue windows',{skip},async()=>{
+  const d=remux('tail',['-f','lavfi','-t','0.12','-i','sine=frequency=500:sample_rate=22050','-filter_complex','[0:a]aresample=22050,aformat=channel_layouts=mono[a0];[1:a]aformat=channel_layouts=mono[a1];[a0][a1]concat=n=2:v=0:a=1[a]','-map','0:v','-map','[a]','-c:v','copy','-c:a','aac','-b:a','96k']);
+  const r=await verifyRendition(d);assert.ok(failed(r).includes('decoded audio is silent outside the cue windows'),failed(r).join('|'));
+});
+
+test('video timestamps that do not sit at index/fps are caught even when every frame decodes',{skip},async()=>{
+  const d=remux('retime',['-c','copy','-bsf:v','setts=ts=TS*3/2']);
+  const f=failed(await verifyRendition(d));
+  assert.ok(f.includes('every video frame sits at index/fps on the timeline')||f.includes('video frame rate equals the receipt fps'),f.join('|'));
 });
 
 test('the command line exits 0 on a good directory and 1 on a tampered one, printing a JSON verdict',{skip},()=>{
