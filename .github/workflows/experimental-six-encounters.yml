@@ -1,10 +1,10 @@
 name: Verify experimental six encounters
 on:
   pull_request:
-    paths: ['experimental/six-encounters/**', '.github/workflows/experimental-six-encounters.yml']
+    paths: ['experimental/six-encounters/**', 'tests/silent-*', '.github/workflows/experimental-six-encounters.yml']
   push:
     branches: ['experiment/six-encounters']
-    paths: ['experimental/six-encounters/**', '.github/workflows/experimental-six-encounters.yml']
+    paths: ['experimental/six-encounters/**', 'tests/silent-*', '.github/workflows/experimental-six-encounters.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,6 +26,7 @@ jobs:
           cache-dependency-path: experimental/six-encounters/package-lock.json
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
+      - run: npm run test:silence
       - run: npm run test:review
       - run: npm test
       - run: npm run test:browser

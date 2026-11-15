@@ -1,5 +1,6 @@
 /* Real DOM/layout checks. Clock control changes browser time, never application state. */
 const {chromium}=require('playwright');
+const {silentLaunch}=require('../../../tests/silent-browser.cjs');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');const http=require('node:http');
 const root=path.resolve(__dirname,'..');
@@ -16,7 +17,7 @@ function check(name){reports.push(name);console.log('PASS',name);}
 (async()=>{
   await new Promise(r=>server.listen(0,'127.0.0.1',r));
   const url=`http://127.0.0.1:${server.address().port}/`;
-  const browser=await chromium.launch({headless:true,...(process.env.HL_CHROMIUM_PATH?{executablePath:process.env.HL_CHROMIUM_PATH,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--single-process','--no-zygote']}: {})});
+  const browser=await silentLaunch(chromium,{headless:true,...(process.env.HL_CHROMIUM_PATH?{executablePath:process.env.HL_CHROMIUM_PATH,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--single-process','--no-zygote']}: {})});
   const context=await browser.newContext();
   try {
     const info={browser:browser.version(),platform:process.platform,viewports:[],checks:reports};

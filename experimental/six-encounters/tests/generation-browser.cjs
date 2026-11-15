@@ -1,9 +1,10 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {silentLaunch}=require('../../../tests/silent-browser.cjs');
 const root=path.resolve(__dirname,'..'),out=path.resolve(process.env.HL_GENERATION_EVIDENCE_DIR||path.join(root,'verification/generative-rerun'));
 fs.mkdirSync(out,{recursive:true});const checks=[];
 function pass(name){checks.push(name);console.log('PASS',name);}
 (async()=>{
-  const browser=await chromium.launch({headless:true,...(process.env.HL_CHROMIUM_PATH?{executablePath:process.env.HL_CHROMIUM_PATH,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--single-process','--no-zygote']}: {})});const context=await browser.newContext();
+  const browser=await silentLaunch(chromium,{headless:true,...(process.env.HL_CHROMIUM_PATH?{executablePath:process.env.HL_CHROMIUM_PATH,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--single-process','--no-zygote']}: {})});const context=await browser.newContext();
   const report={browser:browser.version(),platform:process.platform,viewports:[],checks};
   try{
     for(const [name,viewport]of [['desktop',{width:1440,height:1000}],['mobile',{width:390,height:844}]]){

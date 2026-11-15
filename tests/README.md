@@ -52,3 +52,7 @@ Fresh test output defaults to `test-results/browser/` and is ignored by Git. The
 A matching pair establishes fidelity within the same browser, font environment, and viewport. It does not establish the exact output of an unobserved 2017 server, an unavailable original font, or an untested browser. The mobile run is Chromium emulation, not physical iPhone or Safari verification.
 
 The included GitHub Actions workflow runs these checks on pushes and pull requests. Its presence is configuration; a successful GitHub-hosted run must be verified after repository publication.
+
+## Silent browsers
+
+No check may produce audible sound. Every Playwright launch goes through `tests/silent-browser.cjs` (`silentLaunch`): Chromium gets `--mute-audio` merged into the caller's arguments, and every context gets `tests/silent-init.js`, which pins audio and video elements to native `muted = true` and `volume = 0` (the page still reads back what it set) and routes every realtime `AudioContext` destination connection through a gain-0 sink. `npm run test:silence` proves that with silent fixtures and fails on any launch that bypasses the helper. WebKit coverage of the page test runs where WebKit is installed and is skipped otherwise.

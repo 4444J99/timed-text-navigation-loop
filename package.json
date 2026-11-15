@@ -5,8 +5,9 @@
   "description": "The 2017 LOOPHOLE artwork, extracted as a self-contained static site.",
   "scripts": {
     "test:source": "python3 scripts/verify.py",
+    "test:silence": "node --test tests/silent-browser.test.cjs tests/silent-launch-lint.test.cjs",
     "test:browser": "node tests/verify-browser.cjs",
-    "test": "npm run test:source && npm run test:browser"
+    "test": "npm run test:source && npm run test:silence && npm run test:browser"
   },
   "devDependencies": {
     "playwright": "1.62.1",
