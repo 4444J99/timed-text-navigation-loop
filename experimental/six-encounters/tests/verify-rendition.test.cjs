@@ -2,7 +2,7 @@ const {test,before,after}=require('node:test'),assert=require('node:assert/stric
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawnSync}=require('node:child_process');
 const {exportRendition}=require('../export-rendition.cjs'),{verifyRendition,parse,psnr,DEFAULT_MIN_PSNR}=require('../verify-rendition.cjs');
 
-const tool=n=>spawnSync(n,['-version']).status===0,have=tool('ffmpeg')&&tool('ffprobe'),skip=!have&&'ffmpeg/ffprobe not installed';
+const tool=n=>spawnSync(n,['-version']).status===0,have=tool('ffmpeg')&&tool('ffprobe'),skip=!process.env.CI&&!have&&'ffmpeg/ffprobe not installed';// on CI a missing ffmpeg must fail the run, never skip it silently
 const OPTS={seed:45,encounters:2,fps:10,width:320,height:180};
 let root,good,other;
 
