@@ -4,6 +4,7 @@ const G=require('../generation.js'),R=require('../rendition.js'),{exportRenditio
 
 const W=480,H=270;
 function hex(rgb){return'#'+[...rgb].map(v=>v.toString(16).padStart(2,'0')).join('');}
+function cueCount(run){return run.timeline.length*2;}
 function tool(name){return spawnSync(name,['-version']).status===0;}
 
 test('the bitmap font covers every glyph of every route word, 5x7 each',()=>{
@@ -81,7 +82,7 @@ test('end to end: the exported file decodes to the receipt, is reproducible, and
     const opts={seed:45,encounters:2,fps:10,width:320,height:180};
     const first=await exportRendition({...opts,out:a}),second=await exportRendition({...opts,out:b});
     const r=first.receipt;
-    assert.equal(r.schema,'hole-loop.rendition-receipt.v1');assert.equal(r.video.frames,Math.round(r.durationMs*10/1000));
+    assert.equal(r.schema,'hole-loop.rendition-receipt.v2');assert.equal(r.video.frames,Math.round(r.durationMs*10/1000));
     assert.equal(r.file.videoCodec,'h264');assert.equal(r.file.audioCodec,'aac');assert.equal(r.file.decodedVideoFrames,r.video.frames);
     assert.equal(r.file.width,320);assert.equal(r.file.height,180);
     // The receipt's frame digest is the digest of the frames a second renderer produces from the receipt's own timeline.
@@ -89,6 +90,10 @@ test('end to end: the exported file decodes to the receipt, is reproducible, and
     for(let i=0;i<r.video.frames;i++)h.update(R.renderFrame(run,R.frameTime(i,10),320,180));
     assert.equal(h.digest('hex'),r.video.frameStreamSha256);
     assert.equal(r.cueTrack.wavSha256,crypto.createHash('sha256').update(fs.readFileSync(first.wavPath)).digest('hex'));
+    // The silent equivalent: captions.vtt on disk is the replayed captions, vouched for by the receipt, and reproducible.
+    const vttBytes=fs.readFileSync(path.join(a,'captions.vtt'));
+    assert.equal(vttBytes.toString('utf8'),R.captions(run).vtt);assert.equal(r.captions.sha256,crypto.createHash('sha256').update(vttBytes).digest('hex'));
+    assert.deepEqual(r.captions,{file:'captions.vtt',sha256:r.captions.sha256,cues:cueCount(run)});assert.deepEqual(second.receipt.captions,r.captions);
     assert.equal(second.receipt.video.frameStreamSha256,r.video.frameStreamSha256);assert.equal(second.receipt.cueTrack.wavSha256,r.cueTrack.wavSha256);
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(a,'receipt.json'),'utf8')),r);
     // Container duration agrees with the timeline.
@@ -130,4 +135,83 @@ test('every accepted output size lays both route words out inside the frame with
         assert.ok(ink>0,`${e.chamber} ${w}x${h}: no ink for word ${a.li}`);}
     }
   }
+});
+
+test('the cue list is the single source of the cue track: same cues, same bytes',()=>{
+  for(const seed of[1,45,987654321]){
+    const run=R.simulateRun(seed,5),list=R.cueList(run),track=R.cueTrack(run);
+    assert.deepEqual(track.cues,list);
+    // Cue windows never overlap and each lies inside the run.
+    list.forEach((c,i)=>{assert.equal(c.lengthMs,R.CUE_LENGTH_MS);assert.ok(c.ms+c.lengthMs<=run.durationMs);if(i>0)assert.ok(c.ms>=list[i-1].ms+list[i-1].lengthMs);});
+  }
+  // Pinned digest of the 2-encounter seed-45 cue track: the refactor that introduced cueList() must not change a sample.
+  const run=R.simulateRun(45,2),t=R.cueTrack(run);
+  assert.equal(crypto.createHash('sha256').update(R.wav(t.pcm,t.sampleRate)).digest('hex'),'2061c7d4b0036a3bb01bede261b7469bf7ec50cf4771fdf8745cd794ab993a46');
+});
+
+test('vttTime formats whole milliseconds as HH:MM:SS.mmm and rejects anything else',()=>{
+  assert.equal(R.vttTime(0),'00:00:00.000');assert.equal(R.vttTime(2184),'00:00:02.184');assert.equal(R.vttTime(61001),'00:01:01.001');
+  assert.equal(R.vttTime(3600000+23*60000+45678),'01:23:45.678');assert.equal(R.vttTime(360000000),'100:00:00.000');
+  for(const bad of[-1,1.5,NaN,'3',undefined])assert.throws(()=>R.vttTime(bad),RangeError);
+});
+
+test('captions name every cue in words, in order, start on their cue, and are reproducible',()=>{
+  for(const seed of[1,45,987654321]){
+    const run=R.simulateRun(seed,6),cap=R.captions(run),cues=R.cueList(run);
+    assert.equal(cap.captions.length,cues.length);assert.deepEqual(R.captions(run),cap);
+    cap.captions.forEach((c,i)=>{
+      assert.equal(c.id,'cue-'+(i+1));assert.equal(c.startMs,cues[i].ms);assert.ok(c.endMs>c.startMs);assert.equal(c.endMs,R.captionEnd(run,cues,i));
+      const e=run.timeline[Math.floor(i/2)];
+      if(cues[i].kind==='enter'){assert.equal(c.text,'Chamber '+e.chamber+', '+cues[i].hz+' Hz');assert.equal(c.endMs,cues[i+1].ms,'an entry caption runs to the exit cue');}
+      else{assert.equal(c.text,'Exit '+cues[i].hz+' Hz: '+e.links[e.chosen].word+(e.index===5?'; run ends':''));assert.ok(c.endMs>=(i+1<cues.length?cues[i+1].ms:0));}
+    });
+    assert.deepEqual(R.parseCaptions(cap.vtt),cap.captions);
+  }
+  assert.notEqual(R.captions(R.simulateRun(45,3)).vtt,R.captions(R.simulateRun(46,3)).vtt);
+});
+
+test('regression: every caption of every swept run stays within the repo reading speed (18 characters per second)',()=>{
+  const cps=18;// the default of compileCaptionTrack in sensory-accessibility.js
+  let worst=0;
+  for(let seed=1;seed<=400;seed++){
+    const cap=R.captions(R.simulateRun(seed,12)).captions;
+    for(const c of cap){const rate=c.text.length/((c.endMs-c.startMs)/1000);worst=Math.max(worst,rate);assert.ok(rate<=cps,'seed '+seed+' '+c.id+' reads at '+rate.toFixed(1)+' cps: '+c.text);}
+  }
+  assert.ok(worst>10,'the sweep reaches realistic rates ('+worst.toFixed(1)+')');
+});
+
+test('parseCaptions accepts only the exact subset captions() writes',()=>{
+  const good=R.captions(R.simulateRun(45,2)).vtt;
+  assert.doesNotThrow(()=>R.parseCaptions(good));
+  const[c0,c1]=R.parseCaptions(good),timing0=R.vttTime(c0.startMs)+' --> '+R.vttTime(c0.endMs)+'\n',timing1=R.vttTime(c1.startMs)+' --> '+R.vttTime(c1.endMs)+'\n';
+  assert.ok(good.includes(c0.text)&&good.includes(timing1),'targets come from the parsed captions');
+  const bad={
+    'no header':good.replace('WEBVTT\n\n',''),'CRLF':good.replace(/\n/g,'\r\n'),'no trailing newline':good.slice(0,-1),'empty':'','not a string':null,
+    'markup':good.replace(c0.text,'<b>'+c0.text),'ampersand':good.replace(c0.text,'x & '+c0.text),
+    'arrow in text':good.replace(c0.text,'a --> b'),'bad timestamp':good.replace(timing0,timing0.replace('.',',')),'seconds out of range':good.replace(timing1,timing1.replace(/^\d\d:\d\d:\d\d/,'00:00:62')),
+    'two text lines':good.replace(c0.text,c0.text.replace(', ',',\n')),'bad id':good.replace(c1.id,'two'),'missing timing':good.replace(timing1,'')
+  };
+  for(const[name,v]of Object.entries(bad))assert.throws(()=>R.parseCaptions(v),Error,name);
+});
+
+test('captions refuse text that WebVTT would need escaped, and an entry caption ends at the exit cue so at most two captions stack',()=>{
+  const run=R.simulateRun(45,3);run.timeline[0].links[run.timeline[0].chosen]={word:'a&b',target:'041015'};
+  assert.throws(()=>R.captions(run),/escaping/);
+  for(const w of['a\nb','a\rb','a\0b','a>b','a-->b']){const r2=R.simulateRun(45,2);r2.timeline[0].links[r2.timeline[0].chosen]={word:w,target:'041015'};assert.throws(()=>R.captions(r2),/escaping/,JSON.stringify(w));}
+  for(const seed of[1,45,987654321]){
+    const r=R.simulateRun(seed,8),cap=R.captions(r).captions;
+    cap.forEach((c,i)=>{if(i%2===0)assert.equal(c.endMs,cap[i+1].startMs);});
+  }
+});
+
+test('regression: no instant of any run shows more than two captions, swept over 400 seeds and the minimum-dwell case',()=>{
+  const worst=run=>{const cap=R.captions(run).captions;let m=0;for(const c of cap){const together=cap.filter(o=>o.startMs<=c.startMs&&c.startMs<o.endMs).length;m=Math.max(m,together);}return m;};
+  let seen=0;
+  for(let seed=1;seed<=400;seed++){const run=R.simulateRun(seed,12);seen=Math.max(seen,worst(run));assert.ok(worst(run)<=2,'seed '+seed+' stacks '+worst(run));}
+  assert.equal(seen,2,'the sweep does exercise stacking');
+  // Hand-built worst case: every exposure at its 1000 ms minimum, so exits are 1800 ms apart.
+  const run=R.simulateRun(45,10);let t=0;
+  for(const e of run.timeline){e.enterStart=t;e.activeStart=t+G.config.entry;e.exitStart=e.activeStart+1000;e.end=e.exitStart+G.config.exit;t=e.end;}
+  run.durationMs=t;assert.ok(worst(run)<=2);
+  const cap=R.captions(run).captions;assert.ok(cap.every((c,i)=>c.endMs>c.startMs&&(i===0||c.startMs>=cap[i-1].startMs)));
 });

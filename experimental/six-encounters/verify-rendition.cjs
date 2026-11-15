@@ -15,12 +15,12 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{spawn,spawnSync}=require('node:child_process');
 const R=require('./rendition.js'),G=require('./generation.js'),X=require('./export-rendition.cjs');
 
-const SCHEMA='hole-loop.rendition-receipt.v1';
+const SCHEMA_V1='hole-loop.rendition-receipt.v1',SCHEMA_V2='hole-loop.rendition-receipt.v2';// pinned, not imported: a future exporter schema must not silently redefine what this verifier accepts
 const DEFAULT_MIN_PSNR=30;
 const BLOCK=16,MIN_BLOCK_PSNR=20;// measured legitimate worst 16x16 luma block: 27.4 dB over seeds 7, 45, 1234; a 3x3 pixel edit scores about 14 dB
 const MIN_TONE_RATIO=0.8,MAX_QUIET_PEAK=100;// see the audio checks; an honest AAC encode measures 0.94, a second tone at 0.7 of the cue amplitude 0.63
 const FFMPEG_LINE=/^ffmpeg version (?=[A-Za-z0-9._+~:-]*\d)[A-Za-z0-9._+~:-]+(?: +https?:\/\/[A-Za-z0-9.-]+(?:\/[A-Za-z0-9._~\/-]*)?)? +Copyright \(c\) [0-9]{4}(?:-[0-9]{4})? the FFmpeg developers$/;// the first line of `ffmpeg -version`, as the exporter records it: a version token with a digit, an optional build URL; recorded, not verifiable
-const TOP_KEYS=['schema','kind','configVersion','seed','encounters','durationMs','timings','video','cueTrack','timeline','file','claims'];
+const TOP_KEYS_V1=['schema','kind','configVersion','seed','encounters','durationMs','timings','video','cueTrack','timeline','file','claims'],TOP_KEYS_V2=[...TOP_KEYS_V1,'captions'];
 const sameKeys=(o,keys)=>o!==null&&typeof o==='object'&&JSON.stringify(Object.keys(o).sort())===JSON.stringify([...keys].sort());// measured: replayed seed 36.7 dB worst frame, a different seed 5.5 dB
 
 function parse(argv){
@@ -35,6 +35,7 @@ function parse(argv){
   return{dir:o.dir,minPsnr:o['min-psnr']};
 }
 
+const lexists=f=>{try{fs.lstatSync(f);return true;}catch{return false;}};// a dangling symlink counts as something left beside the receipt
 const sha256=b=>crypto.createHash('sha256').update(b).digest('hex');
 
 /** Stream decoded rgb24 frames out of the file, calling visit(frameIndex, Buffer) for each complete frame. */
@@ -98,12 +99,12 @@ async function verifyRendition(dir,options={}){
   for(const f of[receiptPath,mp4Path,wavPath]){let isFile=false;try{isFile=fs.statSync(f).isFile();}catch(e){isFile=false;}if(!check('present: '+path.basename(f),isFile,f))return{ok:false,checks,metrics};}
   let receipt,receiptBytes;
   try{receiptBytes=fs.readFileSync(receiptPath);receipt=JSON.parse(receiptBytes.toString('utf8'));}catch(e){check('receipt.json parses',false,e.message);return{ok:false,checks,metrics};}
-  if(!check('receipt schema',receipt!==null&&typeof receipt==='object'&&!Array.isArray(receipt)&&receipt.schema===SCHEMA,receipt&&receipt.schema))return{ok:false,checks,metrics};
+  if(!check('receipt schema',receipt!==null&&typeof receipt==='object'&&!Array.isArray(receipt)&&(receipt.schema===SCHEMA_V1||receipt.schema===SCHEMA_V2),receipt&&receipt.schema))return{ok:false,checks,metrics};
   // JSON.parse keeps the last of any duplicate keys, so the pinned fields above are pinned only in the parsed object: the file a person reads must be the canonical serialisation of it.
   check('receipt.json is the exporter\'s canonical serialisation of its own content (duplicate keys, extra whitespace and escapes fail; key order is the file\'s own)',receiptBytes.equals(Buffer.from(JSON.stringify(receipt,null,2)+'\n','utf8')),'');
   check('receipt carries exactly the exporter\'s fields and its fixed kind and claims text',
-    sameKeys(receipt,TOP_KEYS)&&receipt.kind===X.RECEIPT_KIND&&receipt.claims===X.RECEIPT_CLAIMS&&sameKeys(receipt.video,['width','height','fps','frames','frameStreamSha256'])
-    &&sameKeys(receipt.timings,['entryMs','exitMs','maxExposureMs'])&&sameKeys(receipt.cueTrack,['sampleRate','samples','cues','wavSha256'])
+    sameKeys(receipt,receipt.schema===SCHEMA_V2?TOP_KEYS_V2:TOP_KEYS_V1)&&receipt.kind===X.RECEIPT_KIND&&receipt.claims===X.RECEIPT_CLAIMS&&sameKeys(receipt.video,['width','height','fps','frames','frameStreamSha256'])
+    &&(receipt.schema!==SCHEMA_V2||sameKeys(receipt.captions,['file','sha256','cues'])&&receipt.captions.file==='captions.vtt')&&sameKeys(receipt.timings,['entryMs','exitMs','maxExposureMs'])&&sameKeys(receipt.cueTrack,['sampleRate','samples','cues','wavSha256'])
     &&sameKeys(receipt.file,['name','ffmpeg','videoCodec','audioCodec','decodedVideoFrames','width','height'])&&receipt.file.name==='rendition.mp4'&&typeof receipt.file.ffmpeg==='string'&&FFMPEG_LINE.test(receipt.file.ffmpeg),
     Object.keys(receipt).join(','));
   const v=receipt.video||{},fps=v.fps,width=v.width,height=v.height;
@@ -140,6 +141,24 @@ async function verifyRendition(dir,options={}){
   check('cue track SHA-256 re-derives from the seed',sha256(wavBytes)===cueClaim.wavSha256,sha256(wavBytes));
   let fileWav;try{fileWav=fs.readFileSync(wavPath);}catch(e){fileWav=Buffer.alloc(0);}
   check('cue-track.wav on disk is byte-identical to the replay',fileWav.equals(wavBytes),fileWav.length+' bytes on disk, '+wavBytes.length+' replayed');
+
+  // 3b. The silent equivalent of the cue track (v2 receipts), re-derived from the same run.
+  if(receipt.schema===SCHEMA_V2){
+    const vttPath=path.join(dir,'captions.vtt'),claim=receipt.captions||{};
+    let fileVtt=null,readErr=vttPath;try{if(fs.lstatSync(vttPath).isFile())fileVtt=fs.readFileSync(vttPath);else readErr=vttPath+' is not a regular file (a symlink or directory does not count)';}catch(e){readErr=vttPath+': '+e.message;}
+    if(check('present: captions.vtt',fileVtt!==null,readErr)){
+      let derived;try{derived=R.captions(run);}catch(e){check('captions can be written as WebVTT for this run',false,e.message);derived=null;}
+      if(derived){const derivedBytes=Buffer.from(derived.vtt,'utf8');
+      check('captions.vtt on disk is byte-identical to the replayed captions',fileVtt.equals(derivedBytes),fileVtt.length+' bytes on disk, '+derivedBytes.length+' replayed');
+      check('captions SHA-256 and cue count in the receipt re-derive',sha256(derivedBytes)===claim.sha256&&claim.cues===derived.captions.length,sha256(derivedBytes)+', '+derived.captions.length+' captions');
+      let parsed=null,why='';
+      try{parsed=R.parseCaptions(fileVtt.toString('utf8'));}catch(e){why=e.message;}
+      const ends=cue.cues.map((c,k)=>R.captionEnd(run,cue.cues,k));
+      const aligned=parsed&&parsed.length===cue.cues.length&&parsed.every((c,k)=>c.startMs===cue.cues[k].ms&&c.endMs===ends[k]&&c.endMs>c.startMs);
+      check('captions.vtt is strict WebVTT, one caption per cue, starting on the cue and ending by the shared caption rule',aligned,why||(parsed?parsed.length+' captions':'unparsed'));
+      }
+    }
+  } else check('captions: a v1 receipt predates the captions sidecar, so none is claimed or left beside it',receipt.captions===undefined&&!lexists(path.join(dir,'captions.vtt')),receipt.schema);
 
   // 4. The container, as ffprobe reads it.
   const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=index,codec_name,codec_type,width,height,nb_read_frames,avg_frame_rate,r_frame_rate,sample_rate,channels:format=duration','-of','json',mp4Path],{encoding:'utf8'});
