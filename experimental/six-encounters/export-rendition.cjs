@@ -9,6 +9,11 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{spawn,spawnSync}=require('node:child_process');
 const R=require('./rendition.js'),G=require('./generation.js');
 
+// Fixed receipt text and size ceiling, shared with verify-rendition.cjs so the verifier can pin them exactly.
+const RECEIPT_KIND='schematic rendition of the word-routed generative loops; not a capture of the browser artwork, not a composed score';
+const RECEIPT_CLAIMS='Mechanical output only. No artist, accessibility, device or audience acceptance is asserted.';
+const MAX_WIDTH=7680,MAX_HEIGHT=4320;
+
 function parse(argv){
   const o={seed:45,encounters:4,fps:12,width:480,height:270,out:null};
   for(let i=0;i<argv.length;i+=2){
@@ -18,7 +23,7 @@ function parse(argv){
   }
   if(!o.out||!path.isAbsolute(o.out))throw new Error('--out must be an absolute directory');
   for(const k of['seed','encounters','fps','width','height'])if(!Number.isInteger(o[k])||o[k]<0)throw new Error('--'+k+' must be a non-negative integer');
-  if(o.fps<1||o.fps>60||o.width<160||o.height<90||o.width%2||o.height%2)throw new Error('fps 1-60, even width >=160, even height >=90');
+  if(o.fps<1||o.fps>60||o.width<160||o.height<90||o.width%2||o.height%2||o.width>MAX_WIDTH||o.height>MAX_HEIGHT)throw new Error('fps 1-60, even width 160-'+MAX_WIDTH+', even height 90-'+MAX_HEIGHT);
   return o;
 }
 
@@ -55,7 +60,7 @@ async function exportRendition(options){
   const streams=JSON.parse(probe.stdout).streams,video=streams.find(s=>s.codec_type==='video'),audio=streams.find(s=>s.codec_type==='audio');
   const receipt={
     schema:'hole-loop.rendition-receipt.v1',
-    kind:'schematic rendition of the word-routed generative loops; not a capture of the browser artwork, not a composed score',
+    kind:RECEIPT_KIND,
     configVersion:G.config.version,seed:run.seed,encounters:o.encounters,durationMs:run.durationMs,
     timings:{entryMs:G.config.entry,exitMs:G.config.exit,maxExposureMs:G.config.exposure},
     video:{width:o.width,height:o.height,fps:o.fps,frames,frameStreamSha256:hash.digest('hex')},
@@ -64,7 +69,7 @@ async function exportRendition(options){
       chosenWord:e.links[e.chosen].word,next:run.timeline[e.index+1]?run.timeline[e.index+1].chamber:null,enterStart:e.enterStart,activeStart:e.activeStart,exitStart:e.exitStart,end:e.end})),
     file:{name:'rendition.mp4',ffmpeg:version,videoCodec:video&&video.codec_name,audioCodec:audio&&audio.codec_name,decodedVideoFrames:Number(video&&video.nb_read_frames),
       width:video&&video.width,height:video&&video.height},
-    claims:'Mechanical output only. No artist, accessibility, device or audience acceptance is asserted.'
+    claims:RECEIPT_CLAIMS
   };
   fs.writeFileSync(path.join(o.out,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');
   return{receipt,mp4Path,wavPath};
@@ -74,4 +79,4 @@ if(require.main===module){
   exportRendition(parse(process.argv.slice(2))).then(r=>{process.stdout.write(JSON.stringify({mp4:r.mp4Path,frames:r.receipt.video.frames,durationMs:r.receipt.durationMs,frameStreamSha256:r.receipt.video.frameStreamSha256})+'\n');})
     .catch(e=>{process.stderr.write(String(e.message||e)+'\n');process.exit(1);});
 }
-module.exports={exportRendition,parse};
+module.exports={exportRendition,parse,RECEIPT_KIND,RECEIPT_CLAIMS,MAX_WIDTH,MAX_HEIGHT};
