@@ -173,3 +173,69 @@ test('the per-block check also covers the partial tiles along the bottom and rig
   assert.ok(worstBlockPsnr(a,b,w,h)<20,'a 4x4 edit in the bottom-right partial tile must score below the floor');
   assert.equal(worstBlockPsnr(a,a,w,h),Infinity);
 });
+
+// Fresh cold review of PR 80 (issues 91, 92, 93, 96, 97, 98, 101): each probe below passed the hardened verifier.
+function wavBytes(channels,rate,interleaved){
+  const data=Buffer.alloc(interleaved.length*2);interleaved.forEach((v,i)=>data.writeInt16LE(v,i*2));
+  const h=Buffer.alloc(44);h.write('RIFF',0);h.writeUInt32LE(36+data.length,4);h.write('WAVEfmt ',8);h.writeUInt32LE(16,16);h.writeUInt16LE(1,20);h.writeUInt16LE(channels,22);
+  h.writeUInt32LE(rate,24);h.writeUInt32LE(rate*channels*2,28);h.writeUInt16LE(channels*2,32);h.writeUInt16LE(16,34);h.write('data',36);h.writeUInt32LE(data.length,40);
+  return Buffer.concat([h,data]);
+}
+function remuxWav(name,makeWav,codecArgs=[]){
+  const d=copy(name);fs.writeFileSync(path.join(d,'alt.wav'),makeWav(R.cueTrack(R.simulateRun(JSON.parse(fs.readFileSync(path.join(d,'receipt.json'))).seed,JSON.parse(fs.readFileSync(path.join(d,'receipt.json'))).encounters))));
+  const r=spawnSync('ffmpeg',['-v','error','-y','-i',path.join(d,'rendition.mp4'),'-i',path.join(d,'alt.wav'),'-map','0:v','-map','1:a','-c:v','copy','-c:a','aac','-b:a','96k',...codecArgs,path.join(d,'t.mp4')],{encoding:'utf8'});
+  assert.equal(r.status,0,r.stderr);fs.renameSync(path.join(d,'t.mp4'),path.join(d,'rendition.mp4'));fs.rmSync(path.join(d,'alt.wav'));return d;
+}
+const MONO='audio stream is mono at the cue track\'s sample rate';
+
+test('a second voice carried only in the stereo side channel is rejected, not cancelled by a mono downmix',{skip},async()=>{
+  const d=remuxWav('stereo-side',cue=>{
+    const n=cue.pcm.length,out=new Array(n*2);
+    for(let i=0;i<n;i++){const s=Math.round(6000*Math.sin(2*Math.PI*1000*i/cue.sampleRate));out[2*i]=Math.max(-32768,Math.min(32767,cue.pcm[i]+s));out[2*i+1]=Math.max(-32768,Math.min(32767,cue.pcm[i]-s));}
+    return wavBytes(2,cue.sampleRate,out);
+  });
+  assert.ok(failed(await verifyRendition(d)).includes(MONO));
+});
+
+test('a tone above the old 22.05 kHz-resampled band is rejected because the source sample rate must be the cue track\'s',{skip},async()=>{
+  const d=remuxWav('hf',cue=>{
+    const rate=48000,n=Math.round(cue.pcm.length*rate/cue.sampleRate),out=new Array(n),fade=Math.round(rate*0.1);
+    for(let i=0;i<n;i++){const env=Math.min(1,i/fade,(n-i)/fade);out[i]=Math.round(2000*env*Math.sin(2*Math.PI*14000*i/rate));}
+    return wavBytes(1,rate,out);
+  });
+  assert.ok(failed(await verifyRendition(d)).includes(MONO));
+});
+
+test('a second tone at 0.7 of the cue amplitude inside every window fails the pitch check',{skip},async()=>{
+  const d=remuxAudio('second-tone',cue=>{const pcm=new Int16Array(cue.pcm.length);
+    for(const c of cue.cues){const s0=Math.floor(c.ms*cue.sampleRate/1000),len=Math.floor(c.lengthMs*cue.sampleRate/1000);
+      for(let i=0;i<len&&s0+i<pcm.length;i++)pcm[s0+i]=Math.round((Math.sin(2*Math.PI*c.hz*i/cue.sampleRate)+0.7*Math.sin(2*Math.PI*2500*i/cue.sampleRate))/1.7*0.3*32767*Math.min(1,i/220,(len-i)/220));}
+    return pcm;});
+  assert.ok(failed(await verifyRendition(d)).includes("decoded audio in every cue window is the cue's own pitch"));
+});
+
+test('duplicate keys in receipt.json are rejected: the file must be the exporter\'s canonical serialisation',{skip},async()=>{
+  const d=copy('dupkeys'),p=path.join(d,'receipt.json'),text=fs.readFileSync(p,'utf8');
+  fs.writeFileSync(p,text.replace('{\n','{\n  "claims": "APPROVED by the artist; accessibility reviewed",\n  "seed": 99,\n'));
+  assert.ok(failed(await verifyRendition(d)).includes('receipt.json is byte-identical to the exporter\'s canonical serialisation of its own content'));
+  const w=copy('whitespace');fs.writeFileSync(path.join(w,'receipt.json'),JSON.stringify(JSON.parse(fs.readFileSync(path.join(good,'receipt.json'),'utf8'))));
+  assert.ok(failed(await verifyRendition(w)).includes('receipt.json is byte-identical to the exporter\'s canonical serialisation of its own content'));
+});
+
+test('receipt file.ffmpeg must be an ffmpeg version line, not free text',{skip},async()=>{
+  const d=copy('ffmpeg-text');edit(d,r=>{r.file.ffmpeg='ffmpeg 9.0.2 -- APPROVED BY THE ARTIST, accessibility reviewed';});
+  assert.deepEqual(failed(await verifyRendition(d)),['receipt carries exactly the exporter\'s fields and its fixed kind and claims text']);
+});
+
+test('a seed the exporter would never write (outside 0..2^32-1) is rejected even though the run normalises it',{skip},async()=>{
+  for(const [name,seed] of [['seed-high',OPTS.seed+2**32],['seed-neg',OPTS.seed-2**32]]){
+    const d=copy(name);edit(d,r=>{r.seed=seed;});
+    assert.ok(failed(await verifyRendition(d)).includes('receipt parameters are within the exporter limits'),name);
+  }
+});
+
+test('cue-track.wav that is a directory fails a named check instead of throwing',{skip},async()=>{
+  const d=copy('wavdir');fs.rmSync(path.join(d,'cue-track.wav'));fs.mkdirSync(path.join(d,'cue-track.wav'));
+  assert.deepEqual(failed(await verifyRendition(d)),['present: cue-track.wav']);
+  const cli=spawnSync('node',[path.join(__dirname,'..','verify-rendition.cjs'),'--dir',d],{encoding:'utf8'});assert.equal(cli.status,1);
+});
