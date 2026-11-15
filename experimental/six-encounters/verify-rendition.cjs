@@ -15,7 +15,7 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{spawn,spawnSync}=require('node:child_process');
 const R=require('./rendition.js'),G=require('./generation.js'),X=require('./export-rendition.cjs');
 
-const SCHEMA_V1='hole-loop.rendition-receipt.v1',SCHEMA_V2=X.RECEIPT_SCHEMA;
+const SCHEMA_V1='hole-loop.rendition-receipt.v1',SCHEMA_V2='hole-loop.rendition-receipt.v2';// pinned, not imported: a future exporter schema must not silently redefine what this verifier accepts
 const DEFAULT_MIN_PSNR=30;
 const BLOCK=16,MIN_BLOCK_PSNR=20;// measured legitimate worst 16x16 luma block: 27.4 dB over seeds 7, 45, 1234; a 3x3 pixel edit scores about 14 dB
 const MIN_TONE_RATIO=0.5,MAX_QUIET_PEAK=100;// see the audio checks
@@ -141,16 +141,16 @@ async function verifyRendition(dir,options={}){
   // 3b. The silent equivalent of the cue track (v2 receipts), re-derived from the same run.
   if(receipt.schema===SCHEMA_V2){
     const vttPath=path.join(dir,'captions.vtt'),claim=receipt.captions||{};
-    let fileVtt=null;try{if(fs.statSync(vttPath).isFile())fileVtt=fs.readFileSync(vttPath);}catch{}
-    if(check('present: captions.vtt',fileVtt!==null,vttPath)){
+    let fileVtt=null,readErr=vttPath;try{if(fs.statSync(vttPath).isFile())fileVtt=fs.readFileSync(vttPath);else readErr=vttPath+' is not a regular file';}catch(e){readErr=vttPath+': '+e.message;}
+    if(check('present: captions.vtt',fileVtt!==null,readErr)){
       const derived=R.captions(run),derivedBytes=Buffer.from(derived.vtt,'utf8');
       check('captions.vtt on disk is byte-identical to the replayed captions',fileVtt.equals(derivedBytes),fileVtt.length+' bytes on disk, '+derivedBytes.length+' replayed');
       check('captions SHA-256 and cue count in the receipt re-derive',sha256(derivedBytes)===claim.sha256&&claim.cues===derived.captions.length,sha256(derivedBytes)+', '+derived.captions.length+' captions');
       let parsed=null,why='';
       try{parsed=R.parseCaptions(fileVtt.toString('utf8'));}catch(e){why=e.message;}
-      const ends=cue.cues.map((c,k)=>Math.min(run.durationMs,Math.max(k+1<cue.cues.length?cue.cues[k+1].ms:run.durationMs,c.ms+R.CAPTION_MIN_MS)));
+      const ends=cue.cues.map((c,k)=>R.captionEnd(run,cue.cues,k));
       const aligned=parsed&&parsed.length===cue.cues.length&&parsed.every((c,k)=>c.startMs===cue.cues[k].ms&&c.endMs===ends[k]&&c.endMs>c.startMs);
-      check('captions.vtt is strict WebVTT, one caption per cue, starting on the cue and lasting to the next cue or the minimum reading time',aligned,why||(parsed?parsed.length+' captions':'unparsed'));
+      check('captions.vtt is strict WebVTT, one caption per cue, starting on the cue and ending by the shared caption rule',aligned,why||(parsed?parsed.length+' captions':'unparsed'));
     }
   } else check('captions: a v1 receipt predates the captions sidecar, so none is claimed or left beside it',receipt.captions===undefined&&!fs.existsSync(path.join(dir,'captions.vtt')),receipt.schema);
 

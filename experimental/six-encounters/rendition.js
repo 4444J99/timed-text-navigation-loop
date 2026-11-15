@@ -157,23 +157,26 @@
   const CAPTION_MIN_MS=2500;
   const offered=links=>{const n=new Map();for(const l of links)n.set(l.word,(n.get(l.word)||0)+1);return[...n].map(([w,c])=>c>1?w+' (on '+c+' routes)':w).join(', ');};
 
-  /** The silent equivalent of the cue track: one caption per cue, in words, starting with that cue. A caption lasts until the next cue but never
-   *  less than CAPTION_MIN_MS (capped at the end of the run), so the 350 ms exit phase does not flash its sentence for 0.35 s; WebVTT stacks overlapping cues.
-   *  The last exit can only be shown for what is left of the run. Derived only from the run, so it is exactly as reproducible as the sound it describes.
-   *  Mechanical description, not a composed text; chamber ids are the work's own route identifiers. */
+  /** End time of caption i. An entry caption lasts until the next cue (the exit). An exit caption lasts until the next cue but never less than
+   *  CAPTION_MIN_MS, capped at the end of the run, so the 350 ms exit phase does not flash its sentence; it then stacks with the next entry caption
+   *  as WebVTT does, so at most two captions are ever shown together. The last exit can only be shown for what is left of the run. */
+  function captionEnd(run,cues,i){
+    const next=i+1<cues.length?cues[i+1].ms:run.durationMs;
+    return cues[i].kind==='exit'?Math.min(run.durationMs,Math.max(next,cues[i].ms+CAPTION_MIN_MS)):next;
+  }
+
+  /** The silent equivalent of the cue track: one caption per cue, in words, starting with that cue. Derived only from the run, so it is exactly as
+   *  reproducible as the sound it describes. Mechanical description, not a composed text; chamber ids are the work's own route identifiers. */
   function captions(run){
     const cues=cueList(run),n=run.timeline.length,out=[];
-    run.timeline.forEach((e,k)=>{
-      const word=e.links[e.chosen];
-      [{c:cues[2*k],kind:'enter'},{c:cues[2*k+1],kind:'exit'}].forEach(({c,kind},j)=>{
-        if(c.kind!==kind||c.ms!==(kind==='enter'?e.enterStart:e.exitStart))throw new Error('cue list and timeline disagree at encounter '+k);
-        const tone=(kind==='enter'?'Entry tone, ':'Exit tone, ')+c.hz+' Hz for '+c.lengthMs+' ms.';
-        const text=kind==='enter'
-          ?tone+' Encounter '+(e.index+1)+' of '+n+' begins in chamber '+e.chamber+'. Words offered: '+offered(e.links)+'.'
-          :tone+' The word '+word.word+' is followed toward chamber '+word.target+(e.index+1===n?'; the run ends.':'.');
-        const i=2*k+j;
-        out.push({id:'cue-'+(i+1),startMs:c.ms,endMs:Math.min(run.durationMs,Math.max(i+1<cues.length?cues[i+1].ms:run.durationMs,c.ms+CAPTION_MIN_MS)),text});
-      });
+    cues.forEach((c,i)=>{
+      const e=run.timeline[i>>1],word=e.links[e.chosen];
+      const tone=(c.kind==='enter'?'Entry tone, ':'Exit tone, ')+c.hz+' Hz for '+c.lengthMs+' ms.';
+      const text=c.kind==='enter'
+        ?tone+' Encounter '+(i/2+1)+' of '+n+' begins in chamber '+e.chamber+'. Words offered: '+offered(e.links)+'.'
+        :tone+' The word '+word.word+' is followed toward chamber '+word.target+((i>>1)+1===n?'; the run ends.':'.');
+      if(/[<>&]|-->/.test(text))throw new RangeError('caption text would need WebVTT escaping: '+text);
+      out.push({id:'cue-'+(i+1),startMs:c.ms,endMs:captionEnd(run,cues,i),text});
     });
     const vtt='WEBVTT\n\n'+out.map(c=>c.id+'\n'+vttTime(c.startMs)+' --> '+vttTime(c.endMs)+'\n'+c.text+'\n').join('\n');
     return{captions:out,vtt};
@@ -200,7 +203,7 @@
     return out;
   }
 
-  const api={FONT,CHAMBER_HZ,SAMPLE_RATE,CUE_LENGTH_MS,CAPTION_MIN_MS,simulateRun,phaseAt,layout,renderFrame,frameCount,frameTime,cueList,cueTrack,vttTime,captions,parseCaptions,wav};
+  const api={FONT,CHAMBER_HZ,SAMPLE_RATE,CUE_LENGTH_MS,CAPTION_MIN_MS,captionEnd,simulateRun,phaseAt,layout,renderFrame,frameCount,frameTime,cueList,cueTrack,vttTime,captions,parseCaptions,wav};
   root.HLRendition=api;
   if(typeof module!=='undefined')module.exports=api;
 })(typeof window==='undefined'?globalThis:window);
