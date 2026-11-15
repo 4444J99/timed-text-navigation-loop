@@ -6,7 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const {silentLaunch, silentLaunchPersistentContext, silentArgs, silenceContext, INIT_SCRIPT_PATH, initScript} = require('./silent-browser.cjs');
+const {silentLaunch, silentLaunchPersistentContext, silentArgs, INIT_SCRIPT_PATH, initScript} = require('./silent-browser.cjs');
 
 function dependency(name) {
   try { return require(name); }
@@ -194,8 +194,8 @@ for (const engineName of ['chromium', 'webkit']) {
     if (!browser) return;
     try {
       const context = await browser.newContext();
-      await context.addInitScript(SPY);          // installed first, so it sits underneath the silent init script
-      await silenceContext(context);
+      // One script, so the order is not left to Playwright: the spy is evaluated first, then the silent init wraps it.
+      await context.addInitScript({content: `${SPY}\n${initScript()}`});
       const tab = await context.newPage();
       await tab.goto('data:text/html,<title>x</title>');
       const seen = await tab.evaluate(() => {
@@ -243,6 +243,26 @@ for (const engineName of ['chromium', 'webkit']) {
       assert.deepEqual(result.afterThrow, {asked: 0.5, native: {muted: true, volume: 0}});
       assert.deepEqual(result.shadowNative, {muted: true, volume: 0});
       assert.deepEqual(result.closedNative, {muted: true, volume: 0});
+    } finally { await browser.close(); }
+  });
+}
+
+for (const engineName of ['chromium', 'webkit']) {
+  test(`${engineName}: speech synthesis is spoken at volume 0 and SSML markup is spoken as nothing`, async t => {
+    const browser = await launchOrSkip(t, engineName);
+    if (!browser) return;
+    try {
+      const tab = await browser.newPage();
+      await tab.goto(page);
+      const result = await tab.evaluate(() => {
+        if (!window.speechSynthesis) return {skipped: true};
+        const plain = new SpeechSynthesisUtterance(''); plain.volume = 1;
+        const ssml = new SpeechSynthesisUtterance('<speak><prosody volume="x-loud">hello</prosody></speak>'); ssml.volume = 1;
+        speechSynthesis.cancel(); speechSynthesis.speak(plain); speechSynthesis.speak(ssml); speechSynthesis.cancel();
+        return {plain: plain.volume, ssmlVolume: ssml.volume, ssmlText: ssml.text};
+      });
+      if (result.skipped) return t.skip('speechSynthesis is not exposed by this engine');
+      assert.deepEqual(result, {plain: 0, ssmlVolume: 0, ssmlText: ''});
     } finally { await browser.close(); }
   });
 }

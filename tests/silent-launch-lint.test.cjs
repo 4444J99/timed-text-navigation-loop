@@ -17,6 +17,7 @@ const DESTRUCTURED = new RegExp(`\\{[^}]*\\b(?:${NAMES})\\b[^}]*\\}\\s*=\\s*[\\w
 // A Playwright engine under another name: const runner = chromium; const {chromium: runner} = require('playwright');
 const ALIAS_ASSIGN = /([\w$]+)\s*=\s*(?:[\w$.()'"\[\]]*?\.)?(?:chromium|webkit|firefox)\b(?!\s*\.\s*launch)/g;
 const ALIAS_DESTRUCTURE = /\b(?:chromium|webkit|firefox)\s*:\s*([\w$]+)/g;
+const ALIAS_IMPORT = /\b(?:chromium|webkit|firefox)\s+as\s+([\w$]+)/g;  // import {chromium as chrome} from 'playwright'
 const PUPPETEER = /\bpuppeteer\b\s*\.\s*launch|(?:require\(|from\s+)['"]puppeteer/;
 
 function lineOf(source, index) { return source.slice(0, index).split('\n').length; }
@@ -27,6 +28,7 @@ function bareLaunches(source) {
   const names = new Set(ENGINES);
   for (const match of code.matchAll(ALIAS_ASSIGN)) names.add(match[1]);
   for (const match of code.matchAll(ALIAS_DESTRUCTURE)) names.add(match[1]);
+  for (const match of code.matchAll(ALIAS_IMPORT)) names.add(match[1]);
   const found = new Set();
   for (const match of code.matchAll(CALL)) {
     const owner = match.groups.owner || match.groups.owner2;
@@ -71,6 +73,7 @@ test('the lint sees a bare launch and accepts the helper', () => {
   assert.deepEqual(bareLaunches('const runner = chromium;\nawait runner.launch();'), [2]);
   assert.deepEqual(bareLaunches("const {chromium: runner} = require('playwright');\nawait runner.launch();"), [2]);
   assert.deepEqual(bareLaunches("const b = await playwright[kind].launch();"), [1]);
+  assert.deepEqual(bareLaunches("import { chromium as chrome } from 'playwright';\nawait chrome.launch();"), [2]);
   assert.deepEqual(bareLaunches("const b = await chromium['launch']();"), [1]);
   assert.deepEqual(bareLaunches("const {launch} = chromium;\nawait launch();"), [1]);
   assert.deepEqual(bareLaunches('const launcher = chromium.launch.bind(chromium);'), [1]);
