@@ -110,3 +110,22 @@ test('an encoder that exits while frames are streaming rejects with its diagnost
     await assert.rejects(exportRendition({seed:45,encounters:3,fps:12,width:640,height:360,out:path.join(dir,'out')}),/ffmpeg exited 3[\s\S]*fake encoder refused the stream/);
   }finally{process.env.PATH=savedPath;fs.rmSync(dir,{recursive:true,force:true});}
 });
+
+test('every accepted output size lays both route words out inside the frame without overlapping',()=>{
+  const sizes=[[160,90],[480,90],[480,270],[640,360],[1920,1080],[320,1000]];
+  for(const seed of[3,45,987654321]){
+    const run=R.simulateRun(seed,6);
+    for(const[w,h]of sizes)for(const e of run.timeline){
+      const words=R.layout(e,w,h);assert.equal(words.length,e.links.length);
+      words.forEach((a,i)=>{
+        assert.ok(a.x0>=0&&a.x0+a.word.length*a.cellW<=w,`${e.chamber} ${w}x${h}: word ${i} leaves the frame horizontally`);
+        assert.ok(a.y0>=0&&a.y0+a.cellH+a.scale*2<=h,`${e.chamber} ${w}x${h}: word ${i} (y ${a.y0}, cell ${a.cellH}) leaves the frame vertically`);
+        if(i>0){const prev=words[i-1];assert.ok(a.y0>=prev.y0+prev.cellH+prev.scale*2,`${e.chamber} ${w}x${h}: words overlap`);}
+      });
+      // And the active frame really shows ink from every word.
+      const frame=R.renderFrame(run,Math.floor((e.activeStart+e.exitStart)/2),w,h);
+      for(const a of words){let ink=0;for(let y=Math.max(0,a.y0);y<Math.min(h,a.y0+a.cellH);y++)for(let x=a.x0;x<a.x0+a.word.length*a.cellW;x++){const o=(y*w+x)*3;if(hex(frame.slice(o,o+3))!==e.background)ink++;}
+        assert.ok(ink>0,`${e.chamber} ${w}x${h}: no ink for word ${a.li}`);}
+    }
+  }
+});

@@ -65,8 +65,9 @@
 
   /** Layout of one encounter: where each link's word sits and which glyph cells it owns. Pure of time. */
   function layout(enc,width,height){
-    const scale=Math.max(1,Math.floor(width/ (G.config.routes[enc.chamber].reduce((m,r)=>Math.max(m,r.word.length),0)*6+8)));
-    const cellW=6*scale,cellH=8*scale,n=enc.links.length;
+    const n=enc.links.length,longest=G.config.routes[enc.chamber].reduce((m,r)=>Math.max(m,r.word.length),0);
+    // Bounded by width (the longest word plus a margin) and by height (n rows, each at most one slot tall including its underline), so words never overlap or leave the frame.
+    const scale=Math.max(1,Math.min(Math.floor(width/(longest*6+8)),Math.floor(height/((n+1)*10)))),cellW=6*scale,cellH=8*scale;
     return enc.links.map((link,li)=>{
       const x0=Math.floor((width-link.word.length*cellW)/2),y0=Math.floor(height*(li+1)/(n+1)-cellH/2);
       return{li,word:link.word,x0,y0,cellW,cellH,scale,
