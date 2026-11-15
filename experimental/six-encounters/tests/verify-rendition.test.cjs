@@ -251,3 +251,33 @@ test('the ffmpeg version line pattern accepts distro, static (with a URL) and gi
     assert.equal(failed(await verifyRendition(d)).length===0,ok,name);
   }
 });
+
+// Second independent review of PR 103 (head 28fdfa5).
+test('the ffmpeg version line refuses hyphenated free text and odd characters, not only text with spaces',{skip},async()=>{
+  for(const [name,line] of [
+    ['hyphens','ffmpeg version APPROVED-BY-THE-ARTIST,accessibility-reviewed Copyright (c) 2000-2026 the FFmpeg developers'],
+    ['url-words','ffmpeg version 9.0.2 https://approved.by.the.artist/accessibility-reviewed Copyright (c) 2000-2026 the FFmpeg developers'],
+    ['rlo','ffmpeg version 9.0.2‮ Copyright (c) 2000-2026 the FFmpeg developers'],
+    ['year','ffmpeg version 9.0.2 Copyright (c) - the FFmpeg developers']]){
+    const d=copy('ffline2-'+name);edit(d,r=>{r.file.ffmpeg=line;});
+    assert.ok(failed(await verifyRendition(d)).length>0,name);
+  }
+});
+
+test('a receipt with bytes the exporter would never write (invalid UTF-8) fails the canonical check',{skip},async()=>{
+  const d=copy('badutf8'),p=path.join(d,'receipt.json'),raw=fs.readFileSync(p);
+  const at=raw.indexOf(Buffer.from('ffmpeg version'));assert.ok(at>0);
+  fs.writeFileSync(p,Buffer.concat([raw.subarray(0,at),Buffer.from([0xff]),raw.subarray(at)]));
+  assert.ok(failed(await verifyRendition(d)).some(n=>/canonical serialisation/.test(n)));
+});
+
+test('the tone-ratio floor sits between a second tone at 0.35 and at 0.55 of the cue amplitude',{skip},async()=>{
+  for(const [name,amp,passes] of [['tone-35',0.35,true],['tone-55',0.55,false]]){
+    const d=remuxAudio(name,cue=>{const pcm=new Int16Array(cue.pcm.length);
+      for(const c of cue.cues){const s0=Math.floor(c.ms*cue.sampleRate/1000),len=Math.floor(c.lengthMs*cue.sampleRate/1000);
+        for(let i=0;i<len&&s0+i<pcm.length;i++)pcm[s0+i]=Math.round((Math.sin(2*Math.PI*c.hz*i/cue.sampleRate)+amp*Math.sin(2*Math.PI*2500*i/cue.sampleRate))/(1+amp)*0.3*32767*Math.min(1,i/220,(len-i)/220));}
+      return pcm;});
+    const f=failed(await verifyRendition(d));
+    assert.equal(f.includes("decoded audio in every cue window is the cue's own pitch"),!passes,name+' '+f.join('|'));
+  }
+});
