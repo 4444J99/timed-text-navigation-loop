@@ -2,12 +2,12 @@ const {test,before,after}=require('node:test'),assert=require('node:assert/stric
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawnSync}=require('node:child_process');
 const {exportRendition}=require('../export-rendition.cjs'),{verifyRendition,parse,psnr,DEFAULT_MIN_PSNR}=require('../verify-rendition.cjs');
 
-const tool=n=>spawnSync(n,['-version']).status===0,have=tool('ffmpeg')&&tool('ffprobe'),skip=!process.env.CI&&!have&&'ffmpeg/ffprobe not installed';// on CI a missing ffmpeg must fail the run, never skip it silently
+const tool=n=>spawnSync(n,['-version']).status===0,have=tool('ffmpeg')&&tool('ffprobe'),ci=!['','0','false'].includes(String(process.env.CI||'').toLowerCase()),skip=!ci&&!have&&'ffmpeg/ffprobe not installed';// on CI a missing ffmpeg must fail the run, never skip it silently
 const OPTS={seed:45,encounters:2,fps:10,width:320,height:180};
 let root,good,other;
 
 before(async()=>{
-  if(!have)return;
+  if(!have){if(ci)throw new Error('ffmpeg and ffprobe are required when CI is set: the rendition tests must run there, not skip');return;}
   root=fs.mkdtempSync(path.join(os.tmpdir(),'hl-verify-'));good=path.join(root,'good');other=path.join(root,'other');
   await exportRendition({...OPTS,out:good});await exportRendition({...OPTS,seed:46,out:other});
 });
@@ -125,7 +125,7 @@ function inWindows(cue,fn){const pcm=new Int16Array(cue.pcm.length);for(const c 
 test('loud sound of the wrong pitch inside every cue window is rejected, not just silence',{skip},async()=>{
   const d=remuxAudio('wrongpitch',cue=>inWindows(cue,(i,sr)=>Math.sin(2*Math.PI*3000*i/sr)));
   assert.deepEqual(failed(await verifyRendition(d)),["decoded audio in every cue window is the cue's own pitch"]);
-  const n=remuxAudio('noise',cue=>inWindows(cue,(i)=>(Math.sin(i*0.0123)>0?1:-1)*((i*2654435761>>>0)%7<4?1:0.6)));
+  const n=remuxAudio('noise',cue=>inWindows(cue,(i)=>{let h=Math.imul(i+1,2654435761)>>>0;h^=h>>>15;h=Math.imul(h,2246822519)>>>0;h^=h>>>13;return (h/4294967295)*2-1;}));// white noise from an integer hash, not a gated square wave
   assert.deepEqual(failed(await verifyRendition(n)),["decoded audio in every cue window is the cue's own pitch"]);
 });
 
@@ -172,6 +172,114 @@ test('the per-block check also covers the partial tiles along the bottom and rig
   for(let y=86;y<90;y++)for(let x=166;x<170;x++)b[y*w+x]=255;// corner pixels beyond the last full 16x16 tile in both axes
   assert.ok(worstBlockPsnr(a,b,w,h)<20,'a 4x4 edit in the bottom-right partial tile must score below the floor');
   assert.equal(worstBlockPsnr(a,a,w,h),Infinity);
+});
+
+// Fresh cold review of PR 80 (issues 91, 92, 93, 96, 97, 98, 101): each probe below passed the hardened verifier.
+function wavBytes(channels,rate,interleaved){
+  const data=Buffer.alloc(interleaved.length*2);interleaved.forEach((v,i)=>data.writeInt16LE(v,i*2));
+  const h=Buffer.alloc(44);h.write('RIFF',0);h.writeUInt32LE(36+data.length,4);h.write('WAVEfmt ',8);h.writeUInt32LE(16,16);h.writeUInt16LE(1,20);h.writeUInt16LE(channels,22);
+  h.writeUInt32LE(rate,24);h.writeUInt32LE(rate*channels*2,28);h.writeUInt16LE(channels*2,32);h.writeUInt16LE(16,34);h.write('data',36);h.writeUInt32LE(data.length,40);
+  return Buffer.concat([h,data]);
+}
+function remuxWav(name,makeWav,codecArgs=[]){
+  const d=copy(name);fs.writeFileSync(path.join(d,'alt.wav'),makeWav(R.cueTrack(R.simulateRun(JSON.parse(fs.readFileSync(path.join(d,'receipt.json'))).seed,JSON.parse(fs.readFileSync(path.join(d,'receipt.json'))).encounters))));
+  const r=spawnSync('ffmpeg',['-v','error','-y','-i',path.join(d,'rendition.mp4'),'-i',path.join(d,'alt.wav'),'-map','0:v','-map','1:a','-c:v','copy','-c:a','aac','-b:a','96k',...codecArgs,path.join(d,'t.mp4')],{encoding:'utf8'});
+  assert.equal(r.status,0,r.stderr);fs.renameSync(path.join(d,'t.mp4'),path.join(d,'rendition.mp4'));fs.rmSync(path.join(d,'alt.wav'));return d;
+}
+const MONO='audio stream is mono at the cue track\'s sample rate';
+
+test('a second voice carried only in the stereo side channel is rejected, not cancelled by a mono downmix',{skip},async()=>{
+  const d=remuxWav('stereo-side',cue=>{
+    const n=cue.pcm.length,out=new Array(n*2);
+    for(let i=0;i<n;i++){const s=Math.round(6000*Math.sin(2*Math.PI*1000*i/cue.sampleRate));out[2*i]=Math.max(-32768,Math.min(32767,cue.pcm[i]+s));out[2*i+1]=Math.max(-32768,Math.min(32767,cue.pcm[i]-s));}
+    return wavBytes(2,cue.sampleRate,out);
+  });
+  assert.ok(failed(await verifyRendition(d)).includes(MONO));
+});
+
+test('a tone above the old 22.05 kHz-resampled band is rejected because the source sample rate must be the cue track\'s',{skip},async()=>{
+  const d=remuxWav('hf',cue=>{
+    const rate=48000,n=Math.round(cue.pcm.length*rate/cue.sampleRate),out=new Array(n),fade=Math.round(rate*0.1);
+    for(let i=0;i<n;i++){const env=Math.min(1,i/fade,(n-i)/fade);out[i]=Math.round(2000*env*Math.sin(2*Math.PI*14000*i/rate));}
+    return wavBytes(1,rate,out);
+  });
+  assert.ok(failed(await verifyRendition(d)).includes(MONO));
+});
+
+test('a second tone at 0.7 of the cue amplitude inside every window fails the pitch check',{skip},async()=>{
+  const d=remuxAudio('second-tone',cue=>{const pcm=new Int16Array(cue.pcm.length);
+    for(const c of cue.cues){const s0=Math.floor(c.ms*cue.sampleRate/1000),len=Math.floor(c.lengthMs*cue.sampleRate/1000);
+      for(let i=0;i<len&&s0+i<pcm.length;i++)pcm[s0+i]=Math.round((Math.sin(2*Math.PI*c.hz*i/cue.sampleRate)+0.7*Math.sin(2*Math.PI*2500*i/cue.sampleRate))/1.7*0.3*32767*Math.min(1,i/220,(len-i)/220));}
+    return pcm;});
+  assert.ok(failed(await verifyRendition(d)).includes("decoded audio in every cue window is the cue's own pitch"));
+});
+
+test('duplicate keys in receipt.json are rejected: the file must be the exporter\'s canonical serialisation',{skip},async()=>{
+  const d=copy('dupkeys'),p=path.join(d,'receipt.json'),text=fs.readFileSync(p,'utf8');
+  fs.writeFileSync(p,text.replace('{\n','{\n  "claims": "APPROVED by the artist; accessibility reviewed",\n  "seed": 99,\n'));
+  assert.ok(failed(await verifyRendition(d)).includes('receipt.json is the exporter\'s canonical serialisation of its own content (duplicate keys, extra whitespace and escapes fail; key order is the file\'s own)'));
+  const w=copy('whitespace');fs.writeFileSync(path.join(w,'receipt.json'),JSON.stringify(JSON.parse(fs.readFileSync(path.join(good,'receipt.json'),'utf8'))));
+  assert.ok(failed(await verifyRendition(w)).includes('receipt.json is the exporter\'s canonical serialisation of its own content (duplicate keys, extra whitespace and escapes fail; key order is the file\'s own)'));
+});
+
+test('receipt file.ffmpeg must be an ffmpeg version line, not free text',{skip},async()=>{
+  const d=copy('ffmpeg-text');edit(d,r=>{r.file.ffmpeg='ffmpeg 9.0.2 -- APPROVED BY THE ARTIST, accessibility reviewed';});
+  assert.deepEqual(failed(await verifyRendition(d)),['receipt carries exactly the exporter\'s fields and its fixed kind and claims text']);
+});
+
+test('a seed the exporter would never write (outside 0..2^32-1) is rejected even though the run normalises it',{skip},async()=>{
+  for(const [name,seed] of [['seed-high',OPTS.seed+2**32],['seed-neg',OPTS.seed-2**32]]){
+    const d=copy(name);edit(d,r=>{r.seed=seed;});
+    assert.ok(failed(await verifyRendition(d)).includes('receipt parameters are within the exporter limits'),name);
+  }
+});
+
+test('cue-track.wav that is a directory fails a named check instead of throwing',{skip},async()=>{
+  const d=copy('wavdir');fs.rmSync(path.join(d,'cue-track.wav'));fs.mkdirSync(path.join(d,'cue-track.wav'));
+  assert.deepEqual(failed(await verifyRendition(d)),['present: cue-track.wav']);
+  const cli=spawnSync('node',[path.join(__dirname,'..','verify-rendition.cjs'),'--dir',d],{encoding:'utf8'});assert.equal(cli.status,1);
+});
+
+test('the ffmpeg version line pattern accepts distro, static (with a URL) and git builds and still refuses free text',{skip},async()=>{
+  for(const [name,line,ok] of [
+    ['distro','ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers',true],
+    ['static','ffmpeg version 7.0.2-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2024 the FFmpeg developers',true],
+    ['git','ffmpeg version N-117000-gabcdef0123-20240901 Copyright (c) 2000-2024 the FFmpeg developers',true],
+    ['text','ffmpeg version 9.0.2 APPROVED BY THE ARTIST Copyright (c) 2000-2026 the FFmpeg developers',false],
+    ['trailing','ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers; accessibility reviewed',false]]){
+    const d=copy('ffline-'+name);edit(d,r=>{r.file.ffmpeg=line;});
+    assert.equal(failed(await verifyRendition(d)).length===0,ok,name);
+  }
+});
+
+// Second independent review of PR 103 (head 28fdfa5).
+// A build URL with words in its host or path still passes: the field is recorded, not verifiable (README).
+test('the ffmpeg version line refuses hyphenated free text and odd characters, not only text with spaces',{skip},async()=>{
+  for(const [name,line] of [
+    ['hyphens','ffmpeg version APPROVED-BY-THE-ARTIST,accessibility-reviewed Copyright (c) 2000-2026 the FFmpeg developers'],
+    ['rlo','ffmpeg version 9.0.2‮ Copyright (c) 2000-2026 the FFmpeg developers'],
+    ['year','ffmpeg version 9.0.2 Copyright (c) - the FFmpeg developers']]){
+    const d=copy('ffline2-'+name);edit(d,r=>{r.file.ffmpeg=line;});
+    assert.ok(failed(await verifyRendition(d)).length>0,name);
+  }
+});
+
+test('a receipt with bytes the exporter would never write (invalid UTF-8) fails the canonical check',{skip},async()=>{
+  const d=copy('badutf8'),p=path.join(d,'receipt.json'),raw=fs.readFileSync(p);
+  const at=raw.indexOf(Buffer.from('ffmpeg version'));assert.ok(at>0);
+  fs.writeFileSync(p,Buffer.concat([raw.subarray(0,at),Buffer.from([0xff]),raw.subarray(at)]));
+  assert.ok(failed(await verifyRendition(d)).some(n=>/canonical serialisation/.test(n)));
+});
+
+test('the tone-ratio floor sits between a second tone at 0.35 and at 0.55 of the cue amplitude',{skip},async()=>{
+  for(const [name,amp,passes] of [['tone-35',0.35,true],['tone-55',0.55,false]]){
+    const d=remuxAudio(name,cue=>{const pcm=new Int16Array(cue.pcm.length);
+      for(const c of cue.cues){const s0=Math.floor(c.ms*cue.sampleRate/1000),len=Math.floor(c.lengthMs*cue.sampleRate/1000);
+        for(let i=0;i<len&&s0+i<pcm.length;i++)pcm[s0+i]=Math.round((Math.sin(2*Math.PI*c.hz*i/cue.sampleRate)+amp*Math.sin(2*Math.PI*2500*i/cue.sampleRate))/(1+amp)*0.3*32767*Math.min(1,i/220,(len-i)/220));}
+      return pcm;});
+    const f=failed(await verifyRendition(d));
+    assert.equal(f.includes("decoded audio in every cue window is the cue's own pitch"),!passes,name+' '+f.join('|'));
+  }
 });
 
 const sha=b=>require('node:crypto').createHash('sha256').update(b).digest('hex');
@@ -223,4 +331,20 @@ test('captions: a v1 receipt cannot hide a sidecar, and a captions.vtt that is a
   assert.deepEqual(failed(await verifyRendition(a)),['captions: a v1 receipt predates the captions sidecar, so none is claimed or left beside it']);
   const b=copy('capdir');fs.rmSync(path.join(b,'captions.vtt'));fs.mkdirSync(path.join(b,'captions.vtt'));
   assert.deepEqual(failed(await verifyRendition(b)),['present: captions.vtt']);
+});
+
+// Final independent review of PR 103 (head abfbb52).
+test('a receipt written on a CRLF host (version line ending in a carriage return) still verifies, and the digit lookahead is pinned',{skip},async()=>{
+  const d=copy('crlf');edit(d,r=>{r.file.ffmpeg+='\r';});
+  assert.deepEqual(failed(await verifyRendition(d)),[]);
+  const t=copy('nodigit');edit(t,r=>{r.file.ffmpeg='ffmpeg version APPROVED-BY-THE-ARTIST Copyright (c) 2000-2026 the FFmpeg developers';});
+  assert.ok(failed(await verifyRendition(t)).length>0);
+});
+
+test('receipt.json, rendition.mp4 and cue-track.wav must be regular files, not symlinks',{skip},async()=>{
+  for(const f of['receipt.json','rendition.mp4','cue-track.wav']){
+    const d=copy('link-'+f),p=path.join(d,f),real=path.join(root,'real-'+f);
+    fs.copyFileSync(p,real);fs.rmSync(p);fs.symlinkSync(real,p);
+    assert.deepEqual(failed(await verifyRendition(d)),['present: '+f],f);
+  }
 });

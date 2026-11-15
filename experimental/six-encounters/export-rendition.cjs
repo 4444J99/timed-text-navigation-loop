@@ -28,7 +28,7 @@ function parse(argv){
   return o;
 }
 
-function ffmpegVersion(){const r=spawnSync('ffmpeg',['-version'],{encoding:'utf8'});if(r.status!==0)throw new Error('ffmpeg not found');return r.stdout.split('\n')[0];}
+function ffmpegVersion(){const r=spawnSync('ffmpeg',['-version'],{encoding:'utf8'});if(r.status!==0)throw new Error('ffmpeg not found');return r.stdout.split(/\r?\n/)[0];}
 
 async function exportRendition(options){
   const o={...options},run=R.simulateRun(o.seed,o.encounters),frames=R.frameCount(run,o.fps),cue=R.cueTrack(run);

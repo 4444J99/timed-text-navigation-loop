@@ -76,7 +76,7 @@ test('the CLI arguments reject relative output and odd or tiny sizes',()=>{
   assert.equal(parse(['--out','/tmp/x','--seed','9']).seed,9);
 });
 
-test('end to end: the exported file decodes to the receipt, is reproducible, and matches the field colour',{skip:!process.env.CI&&!(tool('ffmpeg')&&tool('ffprobe'))&&'ffmpeg/ffprobe not installed'},async()=>{
+test('end to end: the exported file decodes to the receipt, is reproducible, and matches the field colour',{skip:!['','0','false'].includes(String(process.env.CI||'').toLowerCase())||(tool('ffmpeg')&&tool('ffprobe'))?false:'ffmpeg/ffprobe not installed'},async()=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'hl-rendition-')),a=path.join(dir,'a'),b=path.join(dir,'b');
   try{
     const opts={seed:45,encounters:2,fps:10,width:320,height:180};

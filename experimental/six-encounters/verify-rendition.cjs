@@ -18,7 +18,8 @@ const R=require('./rendition.js'),G=require('./generation.js'),X=require('./expo
 const SCHEMA_V1='hole-loop.rendition-receipt.v1',SCHEMA_V2='hole-loop.rendition-receipt.v2';// pinned, not imported: a future exporter schema must not silently redefine what this verifier accepts
 const DEFAULT_MIN_PSNR=30;
 const BLOCK=16,MIN_BLOCK_PSNR=20;// measured legitimate worst 16x16 luma block: 27.4 dB over seeds 7, 45, 1234; a 3x3 pixel edit scores about 14 dB
-const MIN_TONE_RATIO=0.5,MAX_QUIET_PEAK=100;// see the audio checks
+const MIN_TONE_RATIO=0.8,MAX_QUIET_PEAK=100;// see the audio checks; an honest AAC encode measures 0.94, a second tone at 0.7 of the cue amplitude 0.63
+const FFMPEG_LINE=/^ffmpeg version (?=[A-Za-z0-9._+~:-]*\d)[A-Za-z0-9._+~:-]+(?: +https?:\/\/[A-Za-z0-9.-]+(?:\/[A-Za-z0-9._~\/-]*)?)? +Copyright \(c\) [0-9]{4}(?:-[0-9]{4})? the FFmpeg developers\r?$/;// the first line of `ffmpeg -version`, as the exporter records it: a version token with a digit, an optional build URL; recorded, not verifiable
 const TOP_KEYS_V1=['schema','kind','configVersion','seed','encounters','durationMs','timings','video','cueTrack','timeline','file','claims'],TOP_KEYS_V2=[...TOP_KEYS_V1,'captions'];
 const sameKeys=(o,keys)=>o!==null&&typeof o==='object'&&JSON.stringify(Object.keys(o).sort())===JSON.stringify([...keys].sort());// measured: replayed seed 36.7 dB worst frame, a different seed 5.5 dB
 
@@ -95,19 +96,21 @@ async function verifyRendition(dir,options={}){
   const checks=[],metrics={};
   const check=(name,ok,detail)=>{checks.push({name,ok:Boolean(ok),detail:detail===undefined?'':String(detail)});return Boolean(ok);};
   const receiptPath=path.join(dir,'receipt.json'),mp4Path=path.join(dir,'rendition.mp4'),wavPath=path.join(dir,'cue-track.wav');
-  for(const f of[receiptPath,mp4Path,wavPath])if(!check('present: '+path.basename(f),fs.existsSync(f),f))return{ok:false,checks,metrics};
-  let receipt;
-  try{receipt=JSON.parse(fs.readFileSync(receiptPath,'utf8'));}catch(e){check('receipt.json parses',false,e.message);return{ok:false,checks,metrics};}
+  for(const f of[receiptPath,mp4Path,wavPath]){let isFile=false;try{isFile=fs.lstatSync(f).isFile();}catch(e){isFile=false;}if(!check('present: '+path.basename(f),isFile,f))return{ok:false,checks,metrics};}
+  let receipt,receiptBytes;
+  try{receiptBytes=fs.readFileSync(receiptPath);receipt=JSON.parse(receiptBytes.toString('utf8'));}catch(e){check('receipt.json parses',false,e.message);return{ok:false,checks,metrics};}
   if(!check('receipt schema',receipt!==null&&typeof receipt==='object'&&!Array.isArray(receipt)&&(receipt.schema===SCHEMA_V1||receipt.schema===SCHEMA_V2),receipt&&receipt.schema))return{ok:false,checks,metrics};
+  // JSON.parse keeps the last of any duplicate keys, so the pinned fields above are pinned only in the parsed object: the file a person reads must be the canonical serialisation of it.
+  check('receipt.json is the exporter\'s canonical serialisation of its own content (duplicate keys, extra whitespace and escapes fail; key order is the file\'s own)',receiptBytes.equals(Buffer.from(JSON.stringify(receipt,null,2)+'\n','utf8')),'');
   check('receipt carries exactly the exporter\'s fields and its fixed kind and claims text',
     sameKeys(receipt,receipt.schema===SCHEMA_V2?TOP_KEYS_V2:TOP_KEYS_V1)&&receipt.kind===X.RECEIPT_KIND&&receipt.claims===X.RECEIPT_CLAIMS&&sameKeys(receipt.video,['width','height','fps','frames','frameStreamSha256'])
     &&(receipt.schema!==SCHEMA_V2||sameKeys(receipt.captions,['file','sha256','cues'])&&receipt.captions.file==='captions.vtt')&&sameKeys(receipt.timings,['entryMs','exitMs','maxExposureMs'])&&sameKeys(receipt.cueTrack,['sampleRate','samples','cues','wavSha256'])
-    &&sameKeys(receipt.file,['name','ffmpeg','videoCodec','audioCodec','decodedVideoFrames','width','height'])&&receipt.file.name==='rendition.mp4'&&typeof receipt.file.ffmpeg==='string'&&receipt.file.ffmpeg.length>0,
+    &&sameKeys(receipt.file,['name','ffmpeg','videoCodec','audioCodec','decodedVideoFrames','width','height'])&&receipt.file.name==='rendition.mp4'&&typeof receipt.file.ffmpeg==='string'&&FFMPEG_LINE.test(receipt.file.ffmpeg),
     Object.keys(receipt).join(','));
   const v=receipt.video||{},fps=v.fps,width=v.width,height=v.height;
   const shape=Number.isInteger(receipt.seed)&&Number.isInteger(receipt.encounters)&&[fps,width,height].every(Number.isInteger);
   if(!check('receipt carries seed, encounters, fps and frame size',shape,JSON.stringify({seed:receipt.seed,encounters:receipt.encounters,fps,width,height})))return{ok:false,checks,metrics};
-  if(!check('receipt parameters are within the exporter limits',receipt.encounters>=1&&receipt.encounters<=64&&fps>=1&&fps<=60&&width>=160&&height>=90&&width<=X.MAX_WIDTH&&height<=X.MAX_HEIGHT&&width%2===0&&height%2===0,'')) return{ok:false,checks,metrics};
+  if(!check('receipt parameters are within the exporter limits',receipt.seed>=0&&receipt.seed<=0xFFFFFFFF&&receipt.encounters>=1&&receipt.encounters<=64&&fps>=1&&fps<=60&&width>=160&&height>=90&&width<=X.MAX_WIDTH&&height<=X.MAX_HEIGHT&&width%2===0&&height%2===0,'')) return{ok:false,checks,metrics};
 
   // 1. Route timeline, re-derived from the seed through the real RouteSession.
   const run=R.simulateRun(receipt.seed,receipt.encounters);
@@ -136,7 +139,7 @@ async function verifyRendition(dir,options={}){
   check('cue list re-derives from the seed',JSON.stringify(cue.cues)===JSON.stringify(cueClaim.cues),cue.cues.length+' cues');
   check('cue sample rate and length match',cueClaim.sampleRate===cue.sampleRate&&cueClaim.samples===cue.pcm.length,cueClaim.samples+' vs '+cue.pcm.length);
   check('cue track SHA-256 re-derives from the seed',sha256(wavBytes)===cueClaim.wavSha256,sha256(wavBytes));
-  const fileWav=fs.readFileSync(wavPath);
+  let fileWav;try{fileWav=fs.readFileSync(wavPath);}catch(e){fileWav=Buffer.alloc(0);}
   check('cue-track.wav on disk is byte-identical to the replay',fileWav.equals(wavBytes),fileWav.length+' bytes on disk, '+wavBytes.length+' replayed');
 
   // 3b. The silent equivalent of the cue track (v2 receipts), re-derived from the same run.
@@ -158,7 +161,7 @@ async function verifyRendition(dir,options={}){
   } else check('captions: a v1 receipt predates the captions sidecar, so none is claimed or left beside it',receipt.captions===undefined&&!lexists(path.join(dir,'captions.vtt')),receipt.schema);
 
   // 4. The container, as ffprobe reads it.
-  const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=index,codec_name,codec_type,width,height,nb_read_frames,avg_frame_rate,r_frame_rate:format=duration','-of','json',mp4Path],{encoding:'utf8'});
+  const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=index,codec_name,codec_type,width,height,nb_read_frames,avg_frame_rate,r_frame_rate,sample_rate,channels:format=duration','-of','json',mp4Path],{encoding:'utf8'});
   if(!check('ffprobe reads the file',probe.status===0,probe.stderr))return{ok:false,checks,metrics};
   const info=JSON.parse(probe.stdout),vs=info.streams.find(s=>s.codec_type==='video'),as=info.streams.find(s=>s.codec_type==='audio');
   check('the file holds exactly one video and one audio stream and nothing else',info.streams.length===2&&info.streams.filter(s=>s.codec_type==='video').length===1&&info.streams.filter(s=>s.codec_type==='audio').length===1,info.streams.map(s=>s.codec_type+':'+s.codec_name).join(', '));
@@ -171,6 +174,8 @@ async function verifyRendition(dir,options={}){
   const driftIdx=times.findIndex((t,i)=>!(Math.abs(t-i/fps)<1e-3));
   check('every video frame sits at index/fps on the timeline',times.length===frames&&driftIdx===-1,driftIdx===-1?times.length+' timestamps':'frame '+driftIdx+' at '+times[driftIdx]+' s');
   check('audio stream is AAC',as&&as.codec_name==='aac',as&&as.codec_name);
+  // The decoder below folds to mono at the cue rate; anything it would fold away (a side channel, a band above half that rate) must be refused here, by what the stream is.
+  check('audio stream is mono at the cue track\'s sample rate',as&&as.channels===1&&Number(as.sample_rate)===cue.sampleRate,as&&as.channels+' channel(s) at '+as.sample_rate+' Hz vs 1 at '+cue.sampleRate);
   const dur=Number(info.format.duration);metrics.containerDurationSec=dur;
   check('container duration is within 0.25 s of the timeline',Math.abs(dur-run.durationMs/1000)<0.25,dur+' vs '+run.durationMs/1000);
   check('file facts in the receipt match ffprobe',receipt.file&&receipt.file.videoCodec==='h264'&&receipt.file.audioCodec==='aac'&&receipt.file.decodedVideoFrames===frames&&receipt.file.width===width&&receipt.file.height===height,JSON.stringify(receipt.file));
