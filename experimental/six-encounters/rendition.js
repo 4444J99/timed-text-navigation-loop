@@ -155,29 +155,26 @@
   }
 
   const CAPTION_MIN_MS=2500;
-  const offered=links=>{const n=new Map();for(const l of links)n.set(l.word,(n.get(l.word)||0)+1);return[...n].map(([w,c])=>c>1?w+' (on '+c+' routes)':w).join(', ');};
-
   /** End time of caption i. An entry caption lasts until the next cue (the exit). An exit caption lasts until the next cue but never less than
-   *  CAPTION_MIN_MS, so the 350 ms exit phase does not flash its sentence, and never past the cue after next, so the longest dwell-free spacing
-   *  (1800 ms between exits) cannot pile up a third caption: at most two captions are ever shown together. Capped at the end of the run,
-   *  so the very last exit sentence can only be shown for what is left of the run. */
+   *  CAPTION_MIN_MS, so the 350 ms exit phase does not flash its sentence, and never past the cue after next (exits are at least 1800 ms apart),
+   *  so at most two captions are ever shown together. The last exit has no next cue and keeps its full minimum even though that runs past the end of
+   *  the media; WebVTT allows it and players simply stop at the end of the file. */
   function captionEnd(run,cues,i){
     const next=i+1<cues.length?cues[i+1].ms:run.durationMs;
     if(cues[i].kind==='enter')return next;
     const room=i+2<cues.length?cues[i+2].ms:Infinity;
-    return Math.min(run.durationMs,Math.max(next,Math.min(cues[i].ms+CAPTION_MIN_MS,room)));
+    return Math.max(next,Math.min(cues[i].ms+CAPTION_MIN_MS,room));
   }
 
-  /** The silent equivalent of the cue track: one caption per cue, in words, starting with that cue. Derived only from the run, so it is exactly as
-   *  reproducible as the sound it describes. Mechanical description, not a composed text; chamber ids are the work's own route identifiers. */
+  /** The silent equivalent of the cue track: one caption per cue, starting on that cue, short enough to read at the repo's 18 characters per second
+   *  (see sensory-accessibility.js) in the time each cue allows: entry captions name the chamber and pitch, exit captions the word followed.
+   *  It is not built with compileCaptionTrack because that re-times cues to satisfy reading speed, and these must stay on the tone onsets the verifier pins.
+   *  Derived only from the run, so it is exactly as reproducible as the sound it describes. Chamber ids are the work's own route identifiers. */
   function captions(run){
     const cues=cueList(run),n=run.timeline.length,out=[];
     cues.forEach((c,i)=>{
       const e=run.timeline[i>>1],word=e.links[e.chosen];
-      const tone=(c.kind==='enter'?'Entry tone, ':'Exit tone, ')+c.hz+' Hz for '+c.lengthMs+' ms.';
-      const text=c.kind==='enter'
-        ?tone+' Encounter '+(i/2+1)+' of '+n+' begins in chamber '+e.chamber+'. Words offered: '+offered(e.links)+'.'
-        :tone+' The word '+word.word+' is followed toward chamber '+word.target+((i>>1)+1===n?'; the run ends.':'.');
+      const text=c.kind==='enter'?'Chamber '+e.chamber+', '+c.hz+' Hz':'Followed: '+word.word+((i>>1)+1===n?'; run ends':'');
       if(/[<>&]|-->/.test(text))throw new RangeError('caption text would need WebVTT escaping: '+text);
       out.push({id:'cue-'+(i+1),startMs:c.ms,endMs:captionEnd(run,cues,i),text});
     });

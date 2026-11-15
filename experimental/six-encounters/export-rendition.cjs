@@ -35,7 +35,7 @@ async function exportRendition(options){
   const caption=R.captions(run),vttBytes=Buffer.from(caption.vtt,'utf8');// before the output directory is touched: text that cannot be written as WebVTT must fail the export up front
   fs.mkdirSync(o.out,{recursive:true});
   // A receipt vouches for the artifacts beside it; remove any earlier one, and the sidecar it vouched for, before the first artifact is replaced.
-  fs.rmSync(path.join(o.out,'receipt.json'),{force:true});fs.rmSync(path.join(o.out,'captions.vtt'),{force:true});
+  fs.rmSync(path.join(o.out,'receipt.json'),{force:true});fs.rmSync(path.join(o.out,'captions.vtt'),{force:true,recursive:true});
   const wavPath=path.join(o.out,'cue-track.wav'),mp4Path=path.join(o.out,'rendition.mp4'),wavBytes=R.wav(cue.pcm,cue.sampleRate);
   fs.writeFileSync(wavPath,wavBytes);
   const version=ffmpegVersion();
@@ -84,4 +84,4 @@ if(require.main===module){
   exportRendition(parse(process.argv.slice(2))).then(r=>{process.stdout.write(JSON.stringify({mp4:r.mp4Path,frames:r.receipt.video.frames,durationMs:r.receipt.durationMs,frameStreamSha256:r.receipt.video.frameStreamSha256})+'\n');})
     .catch(e=>{process.stderr.write(String(e.message||e)+'\n');process.exit(1);});
 }
-module.exports={exportRendition,parse,RECEIPT_SCHEMA,RECEIPT_KIND,RECEIPT_CLAIMS,MAX_WIDTH,MAX_HEIGHT};
+module.exports={exportRendition,parse,RECEIPT_KIND,RECEIPT_CLAIMS,MAX_WIDTH,MAX_HEIGHT};

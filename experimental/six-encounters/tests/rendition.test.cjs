@@ -155,20 +155,29 @@ test('vttTime formats whole milliseconds as HH:MM:SS.mmm and rejects anything el
   for(const bad of[-1,1.5,NaN,'3',undefined])assert.throws(()=>R.vttTime(bad),RangeError);
 });
 
-test('captions describe every cue in words, in order, each from its cue for at least the reading minimum, and are reproducible',()=>{
+test('captions name every cue in words, in order, start on their cue, and are reproducible',()=>{
   for(const seed of[1,45,987654321]){
     const run=R.simulateRun(seed,6),cap=R.captions(run),cues=R.cueList(run);
     assert.equal(cap.captions.length,cues.length);assert.deepEqual(R.captions(run),cap);
     cap.captions.forEach((c,i)=>{
-      assert.equal(c.id,'cue-'+(i+1));assert.equal(c.startMs,cues[i].ms);const next=i+1<cues.length?cues[i+1].ms:run.durationMs;assert.equal(c.endMs,cues[i].kind==='enter'?next:Math.min(run.durationMs,Math.max(next,Math.min(cues[i].ms+R.CAPTION_MIN_MS,i+2<cues.length?cues[i+2].ms:Infinity))));assert.ok(c.endMs>c.startMs);if(cues[i].kind==='exit')assert.ok(c.endMs-c.startMs>=Math.min(R.CAPTION_MIN_MS,run.durationMs-c.startMs,(i+2<cues.length?cues[i+2].ms:Infinity)-c.startMs),'an exit sentence is readable for the minimum time unless the run or the third-caption limit ends it');
+      assert.equal(c.id,'cue-'+(i+1));assert.equal(c.startMs,cues[i].ms);assert.ok(c.endMs>c.startMs);assert.equal(c.endMs,R.captionEnd(run,cues,i));
       const e=run.timeline[Math.floor(i/2)];
-      assert.ok(c.text.includes(cues[i].hz+' Hz for '+cues[i].lengthMs+' ms'),c.text);
-      if(cues[i].kind==='enter'){assert.ok(c.text.startsWith('Entry tone'));assert.ok(c.text.includes('chamber '+e.chamber));assert.ok(c.text.includes('Encounter '+(e.index+1)+' of 6'));for(const l of e.links)assert.ok(c.text.includes(l.word));const dup=e.links.length>1&&e.links[0].word===e.links[1].word;assert.equal(c.text.includes('(on 2 routes)'),dup,c.text);assert.equal(c.text.includes(e.links[0].word+', '+e.links[0].word),false,'a repeated word is named once');if(dup)assert.ok(c.text.includes('Words offered: '+e.links[0].word+' (on 2 routes).'),c.text);}
-      else{assert.ok(c.text.startsWith('Exit tone'));assert.ok(c.text.includes('word '+e.links[e.chosen].word+' is followed toward chamber '+e.links[e.chosen].target));assert.equal(c.text.endsWith('the run ends.'),e.index===5);}
+      if(cues[i].kind==='enter'){assert.equal(c.text,'Chamber '+e.chamber+', '+cues[i].hz+' Hz');assert.equal(c.endMs,cues[i+1].ms,'an entry caption runs to the exit cue');}
+      else{assert.equal(c.text,'Followed: '+e.links[e.chosen].word+(e.index===5?'; run ends':''));assert.ok(c.endMs>=(i+1<cues.length?cues[i+1].ms:0));}
     });
     assert.deepEqual(R.parseCaptions(cap.vtt),cap.captions);
   }
   assert.notEqual(R.captions(R.simulateRun(45,3)).vtt,R.captions(R.simulateRun(46,3)).vtt);
+});
+
+test('regression: every caption of every swept run stays within the repo reading speed (18 characters per second)',()=>{
+  const cps=18;// the default of compileCaptionTrack in sensory-accessibility.js
+  let worst=0;
+  for(let seed=1;seed<=400;seed++){
+    const cap=R.captions(R.simulateRun(seed,12)).captions;
+    for(const c of cap){const rate=c.text.length/((c.endMs-c.startMs)/1000);worst=Math.max(worst,rate);assert.ok(rate<=cps,'seed '+seed+' '+c.id+' reads at '+rate.toFixed(1)+' cps: '+c.text);}
+  }
+  assert.ok(worst>10,'the sweep reaches realistic rates ('+worst.toFixed(1)+')');
 });
 
 test('parseCaptions accepts only the exact subset captions() writes',()=>{

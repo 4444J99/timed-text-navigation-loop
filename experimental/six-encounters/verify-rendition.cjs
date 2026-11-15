@@ -34,6 +34,7 @@ function parse(argv){
   return{dir:o.dir,minPsnr:o['min-psnr']};
 }
 
+const lexists=f=>{try{fs.lstatSync(f);return true;}catch{return false;}};// a dangling symlink counts as something left beside the receipt
 const sha256=b=>crypto.createHash('sha256').update(b).digest('hex');
 
 /** Stream decoded rgb24 frames out of the file, calling visit(frameIndex, Buffer) for each complete frame. */
@@ -152,7 +153,7 @@ async function verifyRendition(dir,options={}){
       const aligned=parsed&&parsed.length===cue.cues.length&&parsed.every((c,k)=>c.startMs===cue.cues[k].ms&&c.endMs===ends[k]&&c.endMs>c.startMs);
       check('captions.vtt is strict WebVTT, one caption per cue, starting on the cue and ending by the shared caption rule',aligned,why||(parsed?parsed.length+' captions':'unparsed'));
     }
-  } else check('captions: a v1 receipt predates the captions sidecar, so none is claimed or left beside it',receipt.captions===undefined&&!fs.existsSync(path.join(dir,'captions.vtt')),receipt.schema);
+  } else check('captions: a v1 receipt predates the captions sidecar, so none is claimed or left beside it',receipt.captions===undefined&&!lexists(path.join(dir,'captions.vtt')),receipt.schema);
 
   // 4. The container, as ffprobe reads it.
   const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=index,codec_name,codec_type,width,height,nb_read_frames,avg_frame_rate,r_frame_rate:format=duration','-of','json',mp4Path],{encoding:'utf8'});

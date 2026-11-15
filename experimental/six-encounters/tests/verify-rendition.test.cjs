@@ -184,7 +184,7 @@ test('captions: a fresh v2 export verifies its captions.vtt byte for byte and by
 });
 
 test('captions: reworded text with a re-forged receipt digest is still caught against the replay; so is a forged digest alone',{skip},async()=>{
-  const a=copy('capword'),h=editVtt(a,t=>t.replace('Entry tone','Exit tone'));edit(a,r=>{r.captions.sha256=h;});
+  const a=copy('capword'),h=editVtt(a,t=>t.replace('Chamber ','Room '));edit(a,r=>{r.captions.sha256=h;});
   assert.deepEqual(failed(await verifyRendition(a)),['captions.vtt on disk is byte-identical to the replayed captions','captions SHA-256 and cue count in the receipt re-derive']);
   const b=copy('capdigest');edit(b,r=>{r.captions.sha256='0'.repeat(64);});
   assert.deepEqual(failed(await verifyRendition(b)),['captions SHA-256 and cue count in the receipt re-derive']);
@@ -196,7 +196,7 @@ test('captions: retimed, markup-bearing or truncated files fail the strict WebVT
   const want=['captions.vtt on disk is byte-identical to the replayed captions'];
   const a=copy('capretime');editVtt(a,t=>t.replace('00:00:02.184 --> ','00:00:02.000 --> '));
   assert.deepEqual(failed(await verifyRendition(a)),[want[0],'captions.vtt is strict WebVTT, one caption per cue, starting on the cue and ending by the shared caption rule']);
-  const b=copy('capmarkup');editVtt(b,t=>t.replace('Entry tone','<script>x</script>Entry tone'));
+  const b=copy('capmarkup');editVtt(b,t=>t.replace('Chamber ','<script>x</script>Chamber '));
   assert.deepEqual(failed(await verifyRendition(b)),[want[0],'captions.vtt is strict WebVTT, one caption per cue, starting on the cue and ending by the shared caption rule']);
   const c=copy('captrunc');editVtt(c,t=>t.slice(0,t.lastIndexOf('cue-3')));
   const fc=failed(await verifyRendition(c));assert.ok(fc.includes(want[0])&&fc.includes('captions.vtt is strict WebVTT, one caption per cue, starting on the cue and ending by the shared caption rule')&&!fc.includes('captions SHA-256 and cue count in the receipt re-derive'),fc.join('|'));
