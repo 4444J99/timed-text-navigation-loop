@@ -32,7 +32,8 @@ const page = 'data:text/html;base64,' + Buffer.from(`<!doctype html><meta charse
 function fakeEngine(name) {
   const scripts = [];
   const contexts = [];
-  const context = () => { const c = {addInitScript: async options => { scripts.push(options.path); }, closed: false, close: async () => { c.closed = true; }, newPage: async () => ({close: async () => {}})}; contexts.push(c); return c; };
+  const context = () => { const c = {addInitScript: async options => { scripts.push(options.path); }, closed: false, close: async () => { c.closed = true; }, newPage: async () => ({close: async () => {}}),
+    evaluated: [], pages: () => [{evaluate: async script => { c.evaluated.push(script); }}]}; contexts.push(c); return c; };
   return {scripts, contexts, launched: null, name: () => name,
     async launch(options) { this.launched = options; return {newContext: async () => context(), newPage: async () => { throw new Error('original newPage must not run'); }}; },
     async launchPersistentContext(dir, options) { this.launched = {dir, ...options}; return context(); }};
@@ -56,7 +57,8 @@ test('every context, page and persistent context gets the init script', async ()
   const browser = await silentLaunch(engine, {});
   await browser.newContext();
   const page = await browser.newPage();
-  await silentLaunchPersistentContext(engine, '/profile', {});
+  const persistent = await silentLaunchPersistentContext(engine, '/profile', {});
+  assert.deepEqual(persistent.evaluated, [initScript()], 'the page a persistent context already opened gets the script run in it');
   assert.deepEqual(engine.scripts, [INIT_SCRIPT_PATH, INIT_SCRIPT_PATH, INIT_SCRIPT_PATH]);
   await page.close();
   assert.equal(engine.contexts[1].closed, true, 'the page owns its silenced context and closes it');
@@ -141,6 +143,42 @@ for (const engineName of ['chromium', 'webkit']) {
       assert.equal(offline.sink, null);
       assert.ok(offline.peak > 0.1, 'offline rendering renders to a buffer and keeps its signal');
     } finally { await browser.close(); }
+  });
+}
+
+async function persistentOrSkip(t, name) {
+  const playwright = dependency('playwright');
+  if (!playwright) {
+    if (process.env.SILENT_BROWSER_REQUIRE_PAGE === '1') throw new Error('playwright is required here and is not installed');
+    t.skip('playwright is not installed here');
+    return null;
+  }
+  const profile = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'silent-profile-'));
+  const executablePath = name === 'chromium' ? chromePath() : undefined;
+  try {
+    const context = await silentLaunchPersistentContext(playwright[name], profile, {headless: true, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'],
+      ...(executablePath ? {executablePath} : {})});
+    return {context, cleanup: async () => { await context.close(); fs.rmSync(profile, {recursive: true, force: true}); }};
+  } catch (error) {
+    fs.rmSync(profile, {recursive: true, force: true});
+    const missing = /Executable doesn't exist/i.test(String(error.message));
+    if (name === 'chromium' || !missing || process.env.SILENT_BROWSER_REQUIRE_WEBKIT === '1') throw error;
+    t.skip(`${name} is not installed here: ${String(error.message).split('\n')[0]}`);
+    return null;
+  }
+}
+
+for (const engineName of ['chromium', 'webkit']) {
+  test(`${engineName}: the first page of a persistent context is silenced before the caller writes into it`, async t => {
+    const launched = await persistentOrSkip(t, engineName);
+    if (!launched) return;
+    try {
+      const [first] = launched.context.pages();
+      assert.ok(first, 'a persistent context opens its first page itself');
+      assert.equal(await first.evaluate(() => typeof window.__SILENT_BROWSER__), 'object');
+      await first.setContent('<audio id="a" autoplay loop></audio>');
+      assert.deepEqual(await first.evaluate(() => window.__SILENT_BROWSER__.native(document.querySelector('#a'))), {muted: true, volume: 0});
+    } finally { await launched.cleanup(); }
   });
 }
 
