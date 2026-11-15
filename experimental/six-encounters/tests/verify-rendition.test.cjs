@@ -125,7 +125,7 @@ function inWindows(cue,fn){const pcm=new Int16Array(cue.pcm.length);for(const c 
 test('loud sound of the wrong pitch inside every cue window is rejected, not just silence',{skip},async()=>{
   const d=remuxAudio('wrongpitch',cue=>inWindows(cue,(i,sr)=>Math.sin(2*Math.PI*3000*i/sr)));
   assert.deepEqual(failed(await verifyRendition(d)),["decoded audio in every cue window is the cue's own pitch"]);
-  const n=remuxAudio('noise',cue=>inWindows(cue,(i)=>(Math.sin(i*0.0123)>0?1:-1)*((i*2654435761>>>0)%7<4?1:0.6)));
+  const n=remuxAudio('noise',cue=>inWindows(cue,(i)=>{let h=Math.imul(i+1,2654435761)>>>0;h^=h>>>15;h=Math.imul(h,2246822519)>>>0;h^=h>>>13;return (h/4294967295)*2-1;}));// white noise from an integer hash, not a gated square wave
   assert.deepEqual(failed(await verifyRendition(n)),["decoded audio in every cue window is the cue's own pitch"]);
 });
 
