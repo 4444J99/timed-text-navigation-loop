@@ -27,9 +27,78 @@ const PUPPETEER = /\bpuppeteer\b\s*\.\s*launch|(?:require\(|from\s+)['"]puppetee
 
 function lineOf(source, index) { return source.slice(0, index).split('\n').length; }
 
+const REGEX_AFTER = new Set('(,=:[!&|?{};+-*%<>~^');
+const REGEX_AFTER_WORDS = new Set(['return', 'typeof', 'case', 'do', 'else', 'in', 'of', 'new', 'delete', 'void', 'throw', 'yield', 'await']);
+const isWord = c => /[A-Za-z0-9_$]/.test(c);
+
+// Index just past the regex literal that opens at i (a slash), or i + 1 when it does not close on its line.
+function regexEnd(source, i) {
+  let j = i + 1, inClass = false;
+  while (j < source.length && source[j] !== '\n') {
+    const c = source[j];
+    if (c === '\\') { j += source[j + 1] === '\n' ? 1 : 2; continue; }  // a backslash never carries a regex over a line break
+    if (c === '[') inClass = true;
+    else if (c === ']') inClass = false;
+    else if (c === '/' && !inClass) { j += 1; while (j < source.length && isWord(source[j])) j += 1; return j; }
+    j += 1;
+  }
+  return i + 1;
+}
+
+// Blank out comments, keeping every newline, so a commented launch is ignored and line numbers stay true. A small lexer,
+// so the comment markers it blanks are real ones: string literals are walked (" // " inside a string never hides the code
+// after it), regex literals are skipped whole (/\// and /"/ are not comments or strings), and template literals nest
+// (${ ok ? `a` : `b` }) with their expressions lexed as code. Text inside strings, regexes and templates stays in place on
+// purpose: the scan reports a launch that is only named in text (reword it) rather than risk hiding a real one.
+// Regex versus division is guessed from the previous token, so this is a guard against an accidental bare launch, not a
+// parser. Known limit: a regex literal right after a closing parenthesis or brace (if (ok) /\//.test(s)) is read as division, and a
+// // or /* inside it is then read as a comment, which can hide a launch later on that line.
+function blankComments(source) {
+  const n = source.length, blank = text => text.replace(/[^\n]/g, ' ');
+  const frames = [{kind: 'code', depth: 0}];
+  let out = '', i = 0, prev = '', prevWord = '';
+  while (i < n) {
+    const top = frames[frames.length - 1], c = source[i], pair = source.slice(i, i + 2);
+    if (top.kind === 'tmpl') {
+      if (c === '\\' && i + 1 < n) { out += pair; i += 2; }
+      else if (c === '`') { frames.pop(); out += c; i += 1; prev = '`'; prevWord = ''; }
+      else if (pair === '${') { frames.push({kind: 'code', depth: 0}); out += pair; i += 2; prev = '{'; }
+      else { out += c; i += 1; }
+      continue;
+    }
+    if (pair === '//') { let j = source.indexOf('\n', i); if (j < 0) j = n; out += ' '.repeat(j - i); i = j; continue; }
+    if (pair === '/*') { let j = source.indexOf('*/', i + 2); j = j < 0 ? n : j + 2; out += blank(source.slice(i, j)); i = j; continue; }
+    if (c === '"' || c === "'") {
+      let j = i + 1;
+      while (j < n && source[j] !== c && source[j] !== '\n') j += source[j] === '\\' ? 2 : 1;
+      j = Math.min(j + 1, n);
+      out += source.slice(i, j); i = j; prev = c; prevWord = '';
+      continue;
+    }
+    if (c === '`') { frames.push({kind: 'tmpl', depth: 0}); out += c; i += 1; continue; }
+    if (c === '/' && (prev === '' || REGEX_AFTER.has(prev) || REGEX_AFTER_WORDS.has(prevWord)) && !/(\+\+|--)\s*$/.test(source.slice(Math.max(0, i - 64), i))) {
+      const j = regexEnd(source, i);
+      out += source.slice(i, j); i = j; prev = ')'; prevWord = '';
+      continue;
+    }
+    if (c === '{') top.depth += 1;
+    else if (c === '}') {
+      if (top.depth === 0 && frames.length > 1) { frames.pop(); out += c; i += 1; prev = ')'; prevWord = ''; continue; }
+      top.depth = Math.max(0, top.depth - 1);
+    }
+    out += c; i += 1;
+    if (!/\s/.test(c)) {
+      // a word continues only when the character right before it is a word character; a member name is not a keyword
+      const before = i >= 2 ? source[i - 2] : '';
+      prevWord = isWord(c) ? (isWord(before) ? prevWord + c : (before === '.' ? '.' + c : c)) : '';
+      prev = c;
+    }
+  }
+  return out;
+}
+
 function bareLaunches(source) {
-  // Blank out comments, keeping every newline, so a commented launch is ignored and line numbers stay true.
-  const code = source.replace(/\/\*[\s\S]*?\*\//g, match => match.replace(/[^\n]/g, ' ')).replace(/(^|[^:'"`])\/\/[^\n]*/g, (m, lead) => lead + ' '.repeat(m.length - lead.length));
+  const code = blankComments(source);
   const driver = DRIVER_FILE.test(code);
   const names = new Set(driver ? ENGINES : PLAYWRIGHT_ENGINES);
   for (let size = -1; size !== names.size;) {   // chained aliases: const bt = playwright.webkit; const runner = bt;
@@ -95,6 +164,34 @@ test('the lint sees a bare launch and accepts the helper', () => {
   assert.deepEqual(bareLaunches("const method = 'launch'; await chromium[method]();"), [1]);
   assert.deepEqual(bareLaunches("const pw = require('playwright'); await thing.launch();"), [1]);
   assert.deepEqual(bareLaunches('await lab.launch(id);'), []);
+  assert.deepEqual(bareLaunches('const note = " // "; webkit.launch();'), [1]);
+  // Text that only names a launch is reported (reword it): string text is never blanked, so a lexer slip cannot hide a launch.
+  assert.deepEqual(bareLaunches('const note = "webkit.launch()";'), [1]);
+  // Regex literals are lexed whole: a quote, a slash pair or a block-comment opener inside one is not code structure.
+  assert.deepEqual(bareLaunches('s.replace(/"/g, ""); await webkit.launch();'), [1]);
+  assert.deepEqual(bareLaunches('if (/"/.test(a)) f("x // y"); await webkit.launch();'), [1]);
+  assert.deepEqual(bareLaunches('s.replace(/"/g, ""); u = "a // b"; webkit.launch();'), [1]);
+  assert.deepEqual(bareLaunches('const parts = p.split(/\\//); await chromium.launch();'), [1]);
+  assert.deepEqual(bareLaunches('const g = /a\\/*/; await webkit.launch(); /* real comment */'), [1]);
+  assert.deepEqual(bareLaunches("s.replace(/`/g, '');\nawait webkit.launch();\nconst t = `x`;"), [2]);
+  assert.deepEqual(bareLaunches('return /x/.test(y); // webkit.launch()'), []);
+  assert.deepEqual(bareLaunches('const r = a / b; // webkit.launch()'), []);
+  // Template literals nest and their expressions are code.
+  assert.deepEqual(bareLaunches('const s = `${ok ? `a` : `b`}`;\nfetch("http://x"); webkit.launch();'), [2]);
+  assert.deepEqual(bareLaunches('x = `a ${ {b: 1}.b } c`; // webkit.launch()\nwebkit.launch();'), [2]);
+  // Known limit (see blankComments): a regex right after a closing parenthesis is read as division.
+  assert.deepEqual(bareLaunches('if (ok) /\\//.test(s); await webkit.launch();'), []);
+  // Division is not a regex: after a postfix operator, a string, a template and a closed expression.
+  assert.deepEqual(bareLaunches('x = `${ i++ / 2 } a ${ j / 3 }`; // webkit.launch()\nwebkit.launch();'), [2]);
+  assert.deepEqual(bareLaunches('return "a" / 2; // webkit.launch()\nwebkit.launch();'), [2]);
+  assert.deepEqual(bareLaunches('x = i++        / 2; // webkit.launch()\nwebkit.launch();'), [2]);
+  assert.deepEqual(bareLaunches('const half = cfg.of / 2; const u = "a"; // webkit.launch()\nwebkit.launch();'), [2]);
+  assert.deepEqual(bareLaunches('else return /"/.test(s); await webkit.launch();'), [1]);
+  assert.deepEqual(bareLaunches('x = `x` / 2; // webkit.launch()\nwebkit.launch();'), [2]);
+  assert.deepEqual(bareLaunches('x = /a\\\n/; // webkit.launch()\nwebkit.launch();'), [3]);
+  assert.deepEqual(bareLaunches('const note = `${await webkit.launch()}`;'), [1]);
+  assert.deepEqual(bareLaunches('const s = "a\\" // b"; await webkit.launch();'), [1]);
+  assert.deepEqual(bareLaunches('const url = "http://x"; // chromium.launch()'), []);
 });
 
 test('the helper itself is the only place that calls the Playwright launch API', () => {
