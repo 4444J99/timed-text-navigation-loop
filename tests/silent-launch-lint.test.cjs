@@ -76,8 +76,7 @@ function blankComments(source) {
       continue;
     }
     if (c === '`') { frames.push({kind: 'tmpl', depth: 0}); out += c; i += 1; continue; }
-    const postfix = /(\+\+|--)\s*$/.test(source.slice(Math.max(0, i - 8), i));
-    if (c === '/' && !postfix && (prev === '' || REGEX_AFTER.has(prev) || REGEX_AFTER_WORDS.has(prevWord))) {
+    if (c === '/' && !/(\+\+|--)\s*$/.test(source.slice(Math.max(0, i - 64), i)) && (prev === '' || REGEX_AFTER.has(prev) || REGEX_AFTER_WORDS.has(prevWord))) {
       const j = regexEnd(source, i);
       out += source.slice(i, j); i = j; prev = ')'; prevWord = '';
       continue;
@@ -85,11 +84,13 @@ function blankComments(source) {
     if (c === '{') top.depth += 1;
     else if (c === '}') {
       if (top.depth === 0 && frames.length > 1) { frames.pop(); out += c; i += 1; prev = ')'; prevWord = ''; continue; }
-      top.depth -= 1;
+      top.depth = Math.max(0, top.depth - 1);
     }
     out += c; i += 1;
     if (!/\s/.test(c)) {
-      prevWord = isWord(c) ? (isWord(prev) ? prevWord + c : c) : '';
+      // a word continues only when the character right before it is a word character; a member name is not a keyword
+      const before = i >= 2 ? source[i - 2] : '';
+      prevWord = isWord(c) ? (isWord(before) ? prevWord + c : (before === '.' ? '.' + c : c)) : '';
       prev = c;
     }
   }
@@ -181,6 +182,9 @@ test('the lint sees a bare launch and accepts the helper', () => {
   // Division is not a regex: after a postfix operator, a string, a template and a closed expression.
   assert.deepEqual(bareLaunches('x = `${ i++ / 2 } a ${ j / 3 }`; // webkit.launch()\nwebkit.launch();'), [2]);
   assert.deepEqual(bareLaunches('return "a" / 2; // webkit.launch()\nwebkit.launch();'), [2]);
+  assert.deepEqual(bareLaunches('x = i++        / 2; // webkit.launch()\nwebkit.launch();'), [2]);
+  assert.deepEqual(bareLaunches('const half = cfg.of / 2; const u = "a"; // webkit.launch()\nwebkit.launch();'), [2]);
+  assert.deepEqual(bareLaunches('else return /"/.test(s); await webkit.launch();'), [1]);
   assert.deepEqual(bareLaunches('x = `x` / 2; // webkit.launch()\nwebkit.launch();'), [2]);
   assert.deepEqual(bareLaunches('x = /a\\\n/; // webkit.launch()\nwebkit.launch();'), [3]);
   assert.deepEqual(bareLaunches('const note = `${await webkit.launch()}`;'), [1]);
