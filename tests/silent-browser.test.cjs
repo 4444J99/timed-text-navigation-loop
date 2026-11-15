@@ -31,9 +31,10 @@ const page = 'data:text/html;base64,' + Buffer.from(`<!doctype html><meta charse
 
 function fakeEngine(name) {
   const scripts = [];
-  const context = () => ({addInitScript: async options => { scripts.push(options.path); }});
-  return {scripts, launched: null, name: () => name,
-    async launch(options) { this.launched = options; return {newContext: async () => context(), newPage: async () => ({context: () => context()})}; },
+  const contexts = [];
+  const context = () => { const c = {addInitScript: async options => { scripts.push(options.path); }, closed: false, close: async () => { c.closed = true; }, newPage: async () => ({close: async () => {}})}; contexts.push(c); return c; };
+  return {scripts, contexts, launched: null, name: () => name,
+    async launch(options) { this.launched = options; return {newContext: async () => context(), newPage: async () => { throw new Error('original newPage must not run'); }}; },
     async launchPersistentContext(dir, options) { this.launched = {dir, ...options}; return context(); }};
 }
 
@@ -53,9 +54,12 @@ test('webkit and firefox have no flag and rely on the init script', async () => 
 test('every context, page and persistent context gets the init script', async () => {
   const engine = fakeEngine('webkit');
   const browser = await silentLaunch(engine, {});
-  await browser.newContext(); await browser.newPage();
+  await browser.newContext();
+  const page = await browser.newPage();
   await silentLaunchPersistentContext(engine, '/profile', {});
   assert.deepEqual(engine.scripts, [INIT_SCRIPT_PATH, INIT_SCRIPT_PATH, INIT_SCRIPT_PATH]);
+  await page.close();
+  assert.equal(engine.contexts[1].closed, true, 'the page owns its silenced context and closes it');
   assert.ok(initScript().includes('__SILENT_BROWSER__'));
 });
 
@@ -84,6 +88,11 @@ for (const engineName of ['chromium', 'webkit']) {
     const browser = await launchOrSkip(t, engineName);
     if (!browser) return;
     try {
+      const blank = await browser.newPage();
+      await blank.setContent('<audio id="a"></audio>');
+      assert.equal(await blank.evaluate(() => window.__SILENT_BROWSER__.native(document.querySelector('#a')).muted), true,
+        'a document written into the blank page is silenced too');
+      await blank.close();
       const tab = await browser.newPage();
       await tab.goto(page);
       assert.equal(await tab.evaluate(() => typeof window.__SILENT_BROWSER__), 'object');
