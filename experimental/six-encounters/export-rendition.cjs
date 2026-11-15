@@ -32,12 +32,12 @@ function ffmpegVersion(){const r=spawnSync('ffmpeg',['-version'],{encoding:'utf8
 
 async function exportRendition(options){
   const o={...options},run=R.simulateRun(o.seed,o.encounters),frames=R.frameCount(run,o.fps),cue=R.cueTrack(run);
+  const caption=R.captions(run),vttBytes=Buffer.from(caption.vtt,'utf8');// before the output directory is touched: text that cannot be written as WebVTT must fail the export up front
   fs.mkdirSync(o.out,{recursive:true});
   // A receipt vouches for the artifacts beside it; remove any earlier one, and the sidecar it vouched for, before the first artifact is replaced.
   fs.rmSync(path.join(o.out,'receipt.json'),{force:true});fs.rmSync(path.join(o.out,'captions.vtt'),{force:true});
   const wavPath=path.join(o.out,'cue-track.wav'),mp4Path=path.join(o.out,'rendition.mp4'),wavBytes=R.wav(cue.pcm,cue.sampleRate);
   fs.writeFileSync(wavPath,wavBytes);
-  const caption=R.captions(run),vttBytes=Buffer.from(caption.vtt,'utf8');
   const version=ffmpegVersion();
   const ff=spawn('ffmpeg',['-hide_banner','-loglevel','error','-y','-f','rawvideo','-pix_fmt','rgb24','-s',`${o.width}x${o.height}`,'-r',String(o.fps),'-i','-',
     '-i',wavPath,'-c:v','libx264','-preset','ultrafast','-crf','12','-pix_fmt','yuv420p','-c:a','aac','-b:a','96k','-frames:v',String(frames),mp4Path],{stdio:['pipe','inherit','pipe']});

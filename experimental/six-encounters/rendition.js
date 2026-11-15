@@ -158,11 +158,14 @@
   const offered=links=>{const n=new Map();for(const l of links)n.set(l.word,(n.get(l.word)||0)+1);return[...n].map(([w,c])=>c>1?w+' (on '+c+' routes)':w).join(', ');};
 
   /** End time of caption i. An entry caption lasts until the next cue (the exit). An exit caption lasts until the next cue but never less than
-   *  CAPTION_MIN_MS, capped at the end of the run, so the 350 ms exit phase does not flash its sentence; it then stacks with the next entry caption
-   *  as WebVTT does, so at most two captions are ever shown together. The last exit can only be shown for what is left of the run. */
+   *  CAPTION_MIN_MS, so the 350 ms exit phase does not flash its sentence, and never past the cue after next, so the longest dwell-free spacing
+   *  (1800 ms between exits) cannot pile up a third caption: at most two captions are ever shown together. Capped at the end of the run,
+   *  so the very last exit sentence can only be shown for what is left of the run. */
   function captionEnd(run,cues,i){
     const next=i+1<cues.length?cues[i+1].ms:run.durationMs;
-    return cues[i].kind==='exit'?Math.min(run.durationMs,Math.max(next,cues[i].ms+CAPTION_MIN_MS)):next;
+    if(cues[i].kind==='enter')return next;
+    const room=i+2<cues.length?cues[i+2].ms:Infinity;
+    return Math.min(run.durationMs,Math.max(next,Math.min(cues[i].ms+CAPTION_MIN_MS,room)));
   }
 
   /** The silent equivalent of the cue track: one caption per cue, in words, starting with that cue. Derived only from the run, so it is exactly as
@@ -190,7 +193,7 @@
       const lines=block.split('\n');if(lines.length!==3)throw new Error('cue block must be id, timing, one text line: '+JSON.stringify(block));
       const[id,timing,text]=lines,m=/^(\S+) --> (\S+)$/.exec(timing);
       if(!/^cue-\d+$/.test(id)||!m)throw new Error('bad cue id or timing line: '+JSON.stringify(block));
-      if(text===''||text.includes('-->')||/[<&]/.test(text))throw new Error('caption text is empty or holds markup: '+JSON.stringify(text));
+      if(text===''||text.includes('-->')||/[<>&]/.test(text))throw new Error('caption text is empty or holds markup: '+JSON.stringify(text));
       return{id,startMs:ms(m[1]),endMs:ms(m[2]),text};
     });
   }

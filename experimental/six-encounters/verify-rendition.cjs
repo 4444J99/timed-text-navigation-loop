@@ -141,7 +141,7 @@ async function verifyRendition(dir,options={}){
   // 3b. The silent equivalent of the cue track (v2 receipts), re-derived from the same run.
   if(receipt.schema===SCHEMA_V2){
     const vttPath=path.join(dir,'captions.vtt'),claim=receipt.captions||{};
-    let fileVtt=null,readErr=vttPath;try{if(fs.statSync(vttPath).isFile())fileVtt=fs.readFileSync(vttPath);else readErr=vttPath+' is not a regular file';}catch(e){readErr=vttPath+': '+e.message;}
+    let fileVtt=null,readErr=vttPath;try{if(fs.lstatSync(vttPath).isFile())fileVtt=fs.readFileSync(vttPath);else readErr=vttPath+' is not a regular file (a symlink or directory does not count)';}catch(e){readErr=vttPath+': '+e.message;}
     if(check('present: captions.vtt',fileVtt!==null,readErr)){
       const derived=R.captions(run),derivedBytes=Buffer.from(derived.vtt,'utf8');
       check('captions.vtt on disk is byte-identical to the replayed captions',fileVtt.equals(derivedBytes),fileVtt.length+' bytes on disk, '+derivedBytes.length+' replayed');

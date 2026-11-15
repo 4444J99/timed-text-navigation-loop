@@ -160,10 +160,10 @@ test('captions describe every cue in words, in order, each from its cue for at l
     const run=R.simulateRun(seed,6),cap=R.captions(run),cues=R.cueList(run);
     assert.equal(cap.captions.length,cues.length);assert.deepEqual(R.captions(run),cap);
     cap.captions.forEach((c,i)=>{
-      assert.equal(c.id,'cue-'+(i+1));assert.equal(c.startMs,cues[i].ms);const next=i+1<cues.length?cues[i+1].ms:run.durationMs;assert.equal(c.endMs,cues[i].kind==='enter'?next:Math.min(run.durationMs,Math.max(next,cues[i].ms+R.CAPTION_MIN_MS)));assert.ok(c.endMs>c.startMs);if(cues[i].kind==='exit')assert.ok(c.endMs-c.startMs>=Math.min(R.CAPTION_MIN_MS,run.durationMs-c.startMs),'an exit sentence is readable for the minimum time unless the run ends');
+      assert.equal(c.id,'cue-'+(i+1));assert.equal(c.startMs,cues[i].ms);const next=i+1<cues.length?cues[i+1].ms:run.durationMs;assert.equal(c.endMs,cues[i].kind==='enter'?next:Math.min(run.durationMs,Math.max(next,Math.min(cues[i].ms+R.CAPTION_MIN_MS,i+2<cues.length?cues[i+2].ms:Infinity))));assert.ok(c.endMs>c.startMs);if(cues[i].kind==='exit')assert.ok(c.endMs-c.startMs>=Math.min(R.CAPTION_MIN_MS,run.durationMs-c.startMs,(i+2<cues.length?cues[i+2].ms:Infinity)-c.startMs),'an exit sentence is readable for the minimum time unless the run or the third-caption limit ends it');
       const e=run.timeline[Math.floor(i/2)];
       assert.ok(c.text.includes(cues[i].hz+' Hz for '+cues[i].lengthMs+' ms'),c.text);
-      if(cues[i].kind==='enter'){assert.ok(c.text.startsWith('Entry tone'));assert.ok(c.text.includes('chamber '+e.chamber));assert.ok(c.text.includes('Encounter '+(e.index+1)+' of 6'));for(const l of e.links)assert.ok(c.text.includes(l.word));const dup=e.links.length>1&&e.links[0].word===e.links[1].word;assert.equal(c.text.includes('(on 2 routes)'),dup,c.text);assert.equal(c.text.split(e.links[0].word).length-1,1,'a repeated word is named once');}
+      if(cues[i].kind==='enter'){assert.ok(c.text.startsWith('Entry tone'));assert.ok(c.text.includes('chamber '+e.chamber));assert.ok(c.text.includes('Encounter '+(e.index+1)+' of 6'));for(const l of e.links)assert.ok(c.text.includes(l.word));const dup=e.links.length>1&&e.links[0].word===e.links[1].word;assert.equal(c.text.includes('(on 2 routes)'),dup,c.text);assert.equal(c.text.includes(e.links[0].word+', '+e.links[0].word),false,'a repeated word is named once');if(dup)assert.ok(c.text.includes('Words offered: '+e.links[0].word+' (on 2 routes).'),c.text);}
       else{assert.ok(c.text.startsWith('Exit tone'));assert.ok(c.text.includes('word '+e.links[e.chosen].word+' is followed toward chamber '+e.links[e.chosen].target));assert.equal(c.text.endsWith('the run ends.'),e.index===5);}
     });
     assert.deepEqual(R.parseCaptions(cap.vtt),cap.captions);
@@ -190,7 +190,18 @@ test('captions refuse text that WebVTT would need escaped, and an entry caption 
   assert.throws(()=>R.captions(run),/escaping/);
   for(const seed of[1,45,987654321]){
     const r=R.simulateRun(seed,8),cap=R.captions(r).captions;
-    for(const c of cap){const together=cap.filter(o=>o.startMs<=c.startMs&&c.startMs<o.endMs).length;assert.ok(together<=2,'cue '+c.id+' shows with '+(together-1)+' others');}
     cap.forEach((c,i)=>{if(i%2===0)assert.equal(c.endMs,cap[i+1].startMs);});
   }
+});
+
+test('regression: no instant of any run shows more than two captions, swept over 400 seeds and the minimum-dwell case',()=>{
+  const worst=run=>{const cap=R.captions(run).captions;let m=0;for(const c of cap){const together=cap.filter(o=>o.startMs<=c.startMs&&c.startMs<o.endMs).length;m=Math.max(m,together);}return m;};
+  let seen=0;
+  for(let seed=1;seed<=400;seed++){const run=R.simulateRun(seed,12);seen=Math.max(seen,worst(run));assert.ok(worst(run)<=2,'seed '+seed+' stacks '+worst(run));}
+  assert.equal(seen,2,'the sweep does exercise stacking');
+  // Hand-built worst case: every exposure at its 1000 ms minimum, so exits are 1800 ms apart.
+  const run=R.simulateRun(45,10);let t=0;
+  for(const e of run.timeline){e.enterStart=t;e.activeStart=t+G.config.entry;e.exitStart=e.activeStart+1000;e.end=e.exitStart+G.config.exit;t=e.end;}
+  run.durationMs=t;assert.ok(worst(run)<=2);
+  const cap=R.captions(run).captions;assert.ok(cap.every((c,i)=>c.endMs>c.startMs&&(i===0||c.startMs>=cap[i-1].startMs)));
 });
