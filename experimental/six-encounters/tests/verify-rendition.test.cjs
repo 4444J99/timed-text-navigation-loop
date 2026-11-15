@@ -2,12 +2,12 @@ const {test,before,after}=require('node:test'),assert=require('node:assert/stric
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawnSync}=require('node:child_process');
 const {exportRendition}=require('../export-rendition.cjs'),{verifyRendition,parse,psnr,DEFAULT_MIN_PSNR}=require('../verify-rendition.cjs');
 
-const tool=n=>spawnSync(n,['-version']).status===0,have=tool('ffmpeg')&&tool('ffprobe'),skip=!process.env.CI&&!have&&'ffmpeg/ffprobe not installed';// on CI a missing ffmpeg must fail the run, never skip it silently
+const tool=n=>spawnSync(n,['-version']).status===0,have=tool('ffmpeg')&&tool('ffprobe'),ci=!['','0','false'].includes(String(process.env.CI||'').toLowerCase()),skip=!ci&&!have&&'ffmpeg/ffprobe not installed';// on CI a missing ffmpeg must fail the run, never skip it silently
 const OPTS={seed:45,encounters:2,fps:10,width:320,height:180};
 let root,good,other;
 
 before(async()=>{
-  if(!have)return;
+  if(!have){if(ci)throw new Error('ffmpeg and ffprobe are required when CI is set: the rendition tests must run there, not skip');return;}
   root=fs.mkdtempSync(path.join(os.tmpdir(),'hl-verify-'));good=path.join(root,'good');other=path.join(root,'other');
   await exportRendition({...OPTS,out:good});await exportRendition({...OPTS,seed:46,out:other});
 });
