@@ -10,6 +10,7 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const R=require('./rendition.js'),G=require('./generation.js');
 
 // Fixed receipt text and size ceiling, shared with verify-rendition.cjs so the verifier can pin them exactly.
+const RECEIPT_SCHEMA='hole-loop.rendition-receipt.v2';// v2 adds the captions.vtt sidecar and the receipt's captions block; v1 receipts (no captions) still verify
 const RECEIPT_KIND='schematic rendition of the word-routed generative loops; not a capture of the browser artwork, not a composed score';
 const RECEIPT_CLAIMS='Mechanical output only. No artist, accessibility, device or audience acceptance is asserted.';
 const MAX_WIDTH=7680,MAX_HEIGHT=4320;
@@ -31,9 +32,10 @@ function ffmpegVersion(){const r=spawnSync('ffmpeg',['-version'],{encoding:'utf8
 
 async function exportRendition(options){
   const o={...options},run=R.simulateRun(o.seed,o.encounters),frames=R.frameCount(run,o.fps),cue=R.cueTrack(run);
+  const caption=R.captions(run),vttBytes=Buffer.from(caption.vtt,'utf8');// before the output directory is touched: text that cannot be written as WebVTT must fail the export up front
   fs.mkdirSync(o.out,{recursive:true});
-  // A receipt vouches for the artifacts beside it; remove any earlier one before the first artifact is replaced.
-  fs.rmSync(path.join(o.out,'receipt.json'),{force:true});
+  // A receipt vouches for the artifacts beside it; remove any earlier one, and the sidecar it vouched for, before the first artifact is replaced.
+  fs.rmSync(path.join(o.out,'captions.vtt'),{force:true});fs.rmSync(path.join(o.out,'receipt.json'),{force:true});// no recursive: a directory at either name is an error that keeps its contents
   const wavPath=path.join(o.out,'cue-track.wav'),mp4Path=path.join(o.out,'rendition.mp4'),wavBytes=R.wav(cue.pcm,cue.sampleRate);
   fs.writeFileSync(wavPath,wavBytes);
   const version=ffmpegVersion();
@@ -59,18 +61,21 @@ async function exportRendition(options){
   if(probe.status!==0)throw new Error('ffprobe failed: '+probe.stderr);
   const streams=JSON.parse(probe.stdout).streams,video=streams.find(s=>s.codec_type==='video'),audio=streams.find(s=>s.codec_type==='audio');
   const receipt={
-    schema:'hole-loop.rendition-receipt.v1',
+    schema:RECEIPT_SCHEMA,
     kind:RECEIPT_KIND,
     configVersion:G.config.version,seed:run.seed,encounters:o.encounters,durationMs:run.durationMs,
     timings:{entryMs:G.config.entry,exitMs:G.config.exit,maxExposureMs:G.config.exposure},
     video:{width:o.width,height:o.height,fps:o.fps,frames,frameStreamSha256:hash.digest('hex')},
     cueTrack:{sampleRate:cue.sampleRate,samples:cue.pcm.length,cues:cue.cues,wavSha256:crypto.createHash('sha256').update(wavBytes).digest('hex')},
+    captions:{file:'captions.vtt',sha256:crypto.createHash('sha256').update(vttBytes).digest('hex'),cues:caption.captions.length},
     timeline:run.timeline.map(e=>({index:e.index,chamber:e.chamber,background:e.background,seed:e.seed,motion:e.motion,direction:e.direction,colors:e.colors,
       chosenWord:e.links[e.chosen].word,next:run.timeline[e.index+1]?run.timeline[e.index+1].chamber:null,enterStart:e.enterStart,activeStart:e.activeStart,exitStart:e.exitStart,end:e.end})),
     file:{name:'rendition.mp4',ffmpeg:version,videoCodec:video&&video.codec_name,audioCodec:audio&&audio.codec_name,decodedVideoFrames:Number(video&&video.nb_read_frames),
       width:video&&video.width,height:video&&video.height},
     claims:RECEIPT_CLAIMS
   };
+  // The silent equivalent of the cue track is written only once the encode has succeeded, immediately before the receipt that vouches for it.
+  fs.writeFileSync(path.join(o.out,'captions.vtt'),vttBytes);
   fs.writeFileSync(path.join(o.out,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');
   return{receipt,mp4Path,wavPath};
 }
