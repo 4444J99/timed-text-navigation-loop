@@ -27,40 +27,30 @@ const PUPPETEER = /\bpuppeteer\b\s*\.\s*launch|(?:require\(|from\s+)['"]puppetee
 
 function lineOf(source, index) { return source.slice(0, index).split('\n').length; }
 
-// String contents that mean something to the lint: a launch method name (chromium['launch']) and a bare module name
-// (require('playwright')). Every other string is text, never a call.
-const KEPT_STRING = new RegExp(`^(?:${NAMES}|(?:@[\\w.-]+/)?[\\w.-]+)$`);
-
-// Blank out comments and the text of string literals, keeping every newline, so a commented or quoted launch is ignored,
-// line numbers stay true and " // " inside a string never hides the code after it. A launch method name or module name
-// used as a string stays, and a template literal with ${...} stays whole (its expressions run).
-function blankText(source) {
+// Blank out comments, keeping every newline, so a commented launch is ignored and line numbers stay true. String
+// literals are walked, so " // " inside a string never hides the code after it. String text is deliberately left in
+// place: the scan stays fail-closed, because a lexer that a regex literal desynchronises can then only report more.
+function blankComments(source) {
+  let out = '', i = 0, quote = null;
   const blank = text => text.replace(/[^\n]/g, ' ');
-  let out = '', i = 0, quote = null, start = 0;
   while (i < source.length) {
     const c = source[i], pair = source.slice(i, i + 2);
     if (quote === null) {
       if (pair === '//') { let j = source.indexOf('\n', i); if (j < 0) j = source.length; out += ' '.repeat(j - i); i = j; continue; }
       if (pair === '/*') { let j = source.indexOf('*/', i + 2); j = j < 0 ? source.length : j + 2; out += blank(source.slice(i, j)); i = j; continue; }
-      out += c;
-      if (c === '"' || c === "'" || c === '`') { quote = c; start = out.length; }
-      i += 1;
-      continue;
-    }
-    if (c === '\\' && i + 1 < source.length) { out += c + source[i + 1]; i += 2; continue; }
-    if (c === quote || (c === '\n' && quote !== '`')) {
-      const text = out.slice(start);
-      if (!(KEPT_STRING.test(text) || (quote === '`' && text.includes('${')))) out = out.slice(0, start) + blank(text);
-      quote = null;
+      if (c === '"' || c === "'" || c === '`') quote = c;
+      out += c; i += 1; continue;
     }
     out += c;
+    if (c === '\\' && i + 1 < source.length) { out += source[i + 1]; i += 2; continue; }
+    if (c === quote || (c === '\n' && quote !== '`')) quote = null;
     i += 1;
   }
   return out;
 }
 
 function bareLaunches(source) {
-  const code = blankText(source);
+  const code = blankComments(source);
   const driver = DRIVER_FILE.test(code);
   const names = new Set(driver ? ENGINES : PLAYWRIGHT_ENGINES);
   for (let size = -1; size !== names.size;) {   // chained aliases: const bt = playwright.webkit; const runner = bt;
@@ -127,9 +117,10 @@ test('the lint sees a bare launch and accepts the helper', () => {
   assert.deepEqual(bareLaunches("const pw = require('playwright'); await thing.launch();"), [1]);
   assert.deepEqual(bareLaunches('await lab.launch(id);'), []);
   assert.deepEqual(bareLaunches('const note = " // "; webkit.launch();'), [1]);
-  assert.deepEqual(bareLaunches('const note = "webkit.launch()";'), []);
-  assert.deepEqual(bareLaunches("const note = 'chromium.launch()'; // not a call"), []);
-  assert.deepEqual(bareLaunches('const note = `see webkit.launch() for the call`;'), []);
+  // Fail-closed on purpose: text that only names a launch is reported (reword it); a regex literal holding a quote cannot hide one.
+  assert.deepEqual(bareLaunches('const note = "webkit.launch()";'), [1]);
+  assert.deepEqual(bareLaunches('s.replace(/"/g, ""); await webkit.launch();'), [1]);
+  assert.deepEqual(bareLaunches("s.replace(/`/g, '');\nawait webkit.launch();\nconst t = `x`;"), [2]);
   assert.deepEqual(bareLaunches('const note = `${await webkit.launch()}`;'), [1]);
   assert.deepEqual(bareLaunches('const s = "a\\" // b"; await webkit.launch();'), [1]);
   assert.deepEqual(bareLaunches('const url = "http://x"; // chromium.launch()'), []);
