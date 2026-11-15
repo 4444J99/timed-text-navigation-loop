@@ -217,9 +217,9 @@ test('a second tone at 0.7 of the cue amplitude inside every window fails the pi
 test('duplicate keys in receipt.json are rejected: the file must be the exporter\'s canonical serialisation',{skip},async()=>{
   const d=copy('dupkeys'),p=path.join(d,'receipt.json'),text=fs.readFileSync(p,'utf8');
   fs.writeFileSync(p,text.replace('{\n','{\n  "claims": "APPROVED by the artist; accessibility reviewed",\n  "seed": 99,\n'));
-  assert.ok(failed(await verifyRendition(d)).includes('receipt.json is byte-identical to the exporter\'s canonical serialisation of its own content'));
+  assert.ok(failed(await verifyRendition(d)).includes('receipt.json is the exporter\'s canonical serialisation of its own content (duplicate keys, extra whitespace and escapes fail; key order is the file\'s own)'));
   const w=copy('whitespace');fs.writeFileSync(path.join(w,'receipt.json'),JSON.stringify(JSON.parse(fs.readFileSync(path.join(good,'receipt.json'),'utf8'))));
-  assert.ok(failed(await verifyRendition(w)).includes('receipt.json is byte-identical to the exporter\'s canonical serialisation of its own content'));
+  assert.ok(failed(await verifyRendition(w)).includes('receipt.json is the exporter\'s canonical serialisation of its own content (duplicate keys, extra whitespace and escapes fail; key order is the file\'s own)'));
 });
 
 test('receipt file.ffmpeg must be an ffmpeg version line, not free text',{skip},async()=>{
@@ -238,4 +238,16 @@ test('cue-track.wav that is a directory fails a named check instead of throwing'
   const d=copy('wavdir');fs.rmSync(path.join(d,'cue-track.wav'));fs.mkdirSync(path.join(d,'cue-track.wav'));
   assert.deepEqual(failed(await verifyRendition(d)),['present: cue-track.wav']);
   const cli=spawnSync('node',[path.join(__dirname,'..','verify-rendition.cjs'),'--dir',d],{encoding:'utf8'});assert.equal(cli.status,1);
+});
+
+test('the ffmpeg version line pattern accepts distro, static (with a URL) and git builds and still refuses free text',{skip},async()=>{
+  for(const [name,line,ok] of [
+    ['distro','ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers',true],
+    ['static','ffmpeg version 7.0.2-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2024 the FFmpeg developers',true],
+    ['git','ffmpeg version N-117000-gabcdef0123-20240901 Copyright (c) 2000-2024 the FFmpeg developers',true],
+    ['text','ffmpeg version 9.0.2 APPROVED BY THE ARTIST Copyright (c) 2000-2026 the FFmpeg developers',false],
+    ['trailing','ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers; accessibility reviewed',false]]){
+    const d=copy('ffline-'+name);edit(d,r=>{r.file.ffmpeg=line;});
+    assert.equal(failed(await verifyRendition(d)).length===0,ok,name);
+  }
 });
