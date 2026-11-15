@@ -173,3 +173,47 @@ test('the per-block check also covers the partial tiles along the bottom and rig
   assert.ok(worstBlockPsnr(a,b,w,h)<20,'a 4x4 edit in the bottom-right partial tile must score below the floor');
   assert.equal(worstBlockPsnr(a,a,w,h),Infinity);
 });
+
+const sha=b=>require('node:crypto').createHash('sha256').update(b).digest('hex');
+function editVtt(dir,fn){const p=path.join(dir,'captions.vtt'),t=fn(fs.readFileSync(p,'utf8'));fs.writeFileSync(p,t);return sha(Buffer.from(t));}
+
+test('captions: a fresh v2 export verifies its captions.vtt byte for byte and by receipt digest',{skip},async()=>{
+  const r=await verifyRendition(good),names=r.checks.map(c=>c.name);
+  for(const n of['present: captions.vtt','captions.vtt on disk is byte-identical to the replayed captions','captions SHA-256 and cue count in the receipt re-derive','captions.vtt is strict WebVTT, one caption per cue, on the cue times and contiguous to the end of the run'])assert.ok(names.includes(n),n);
+  assert.deepEqual(failed(r),[]);assert.equal(JSON.parse(fs.readFileSync(path.join(good,'receipt.json'))).schema,'hole-loop.rendition-receipt.v2');
+});
+
+test('captions: reworded text with a re-forged receipt digest is still caught against the replay; so is a forged digest alone',{skip},async()=>{
+  const a=copy('capword'),h=editVtt(a,t=>t.replace('Entry tone','Exit tone'));edit(a,r=>{r.captions.sha256=h;});
+  assert.deepEqual(failed(await verifyRendition(a)),['captions.vtt on disk is byte-identical to the replayed captions','captions SHA-256 and cue count in the receipt re-derive']);
+  const b=copy('capdigest');edit(b,r=>{r.captions.sha256='0'.repeat(64);});
+  assert.deepEqual(failed(await verifyRendition(b)),['captions SHA-256 and cue count in the receipt re-derive']);
+  const c=copy('capcount');edit(c,r=>{r.captions.cues+=1;});
+  assert.deepEqual(failed(await verifyRendition(c)),['captions SHA-256 and cue count in the receipt re-derive']);
+});
+
+test('captions: retimed, markup-bearing or truncated files fail the strict WebVTT check as well as the byte comparison (the receipt still matches the replay)',{skip},async()=>{
+  const want=['captions.vtt on disk is byte-identical to the replayed captions'];
+  const a=copy('capretime');editVtt(a,t=>t.replace('00:00:02.184 --> ','00:00:02.000 --> '));
+  assert.deepEqual(failed(await verifyRendition(a)),[want[0],'captions.vtt is strict WebVTT, one caption per cue, on the cue times and contiguous to the end of the run']);
+  const b=copy('capmarkup');editVtt(b,t=>t.replace('Entry tone','<script>x</script>Entry tone'));
+  assert.deepEqual(failed(await verifyRendition(b)),[want[0],'captions.vtt is strict WebVTT, one caption per cue, on the cue times and contiguous to the end of the run']);
+  const c=copy('captrunc');editVtt(c,t=>t.slice(0,t.lastIndexOf('cue-3')));
+  const fc=failed(await verifyRendition(c));assert.ok(fc.includes(want[0])&&fc.includes('captions.vtt is strict WebVTT, one caption per cue, on the cue times and contiguous to the end of the run')&&!fc.includes('captions SHA-256 and cue count in the receipt re-derive'),fc.join('|'));
+});
+
+test('captions: a missing captions.vtt is named, and a v2 receipt may not drop or rename its captions block',{skip},async()=>{
+  const a=copy('capmissing');fs.rmSync(path.join(a,'captions.vtt'));
+  assert.deepEqual(failed(await verifyRendition(a)),['present: captions.vtt']);
+  const b=copy('capdrop');edit(b,r=>{delete r.captions;});
+  assert.ok(failed(await verifyRendition(b)).includes("receipt carries exactly the exporter's fields and its fixed kind and claims text"));
+  const c=copy('caprename');edit(c,r=>{r.captions.file='../elsewhere.vtt';});
+  assert.ok(failed(await verifyRendition(c)).includes("receipt carries exactly the exporter's fields and its fixed kind and claims text"));
+});
+
+test('captions: a v1 receipt (no captions) from before the sidecar still verifies, and cannot smuggle a captions block',{skip},async()=>{
+  const a=copy('v1');edit(a,r=>{r.schema='hole-loop.rendition-receipt.v1';delete r.captions;});fs.rmSync(path.join(a,'captions.vtt'));
+  const r=await verifyRendition(a);assert.deepEqual(failed(r),[]);assert.ok(r.checks.some(c=>/v1 receipt predates the captions sidecar/.test(c.name)&&c.ok));
+  const b=copy('v1captions');edit(b,r=>{r.schema='hole-loop.rendition-receipt.v1';});
+  const fb=failed(await verifyRendition(b));assert.ok(fb.includes("receipt carries exactly the exporter's fields and its fixed kind and claims text"),fb.join('|'));
+});

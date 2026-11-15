@@ -10,6 +10,7 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const R=require('./rendition.js'),G=require('./generation.js');
 
 // Fixed receipt text and size ceiling, shared with verify-rendition.cjs so the verifier can pin them exactly.
+const RECEIPT_SCHEMA='hole-loop.rendition-receipt.v2';// v2 adds the captions.vtt sidecar and the receipt's captions block; v1 receipts (no captions) still verify
 const RECEIPT_KIND='schematic rendition of the word-routed generative loops; not a capture of the browser artwork, not a composed score';
 const RECEIPT_CLAIMS='Mechanical output only. No artist, accessibility, device or audience acceptance is asserted.';
 const MAX_WIDTH=7680,MAX_HEIGHT=4320;
@@ -36,6 +37,9 @@ async function exportRendition(options){
   fs.rmSync(path.join(o.out,'receipt.json'),{force:true});
   const wavPath=path.join(o.out,'cue-track.wav'),mp4Path=path.join(o.out,'rendition.mp4'),wavBytes=R.wav(cue.pcm,cue.sampleRate);
   fs.writeFileSync(wavPath,wavBytes);
+  // The silent equivalent of the cue track, written beside it and vouched for by the receipt.
+  const caption=R.captions(run),vttBytes=Buffer.from(caption.vtt,'utf8');
+  fs.writeFileSync(path.join(o.out,'captions.vtt'),vttBytes);
   const version=ffmpegVersion();
   const ff=spawn('ffmpeg',['-hide_banner','-loglevel','error','-y','-f','rawvideo','-pix_fmt','rgb24','-s',`${o.width}x${o.height}`,'-r',String(o.fps),'-i','-',
     '-i',wavPath,'-c:v','libx264','-preset','ultrafast','-crf','12','-pix_fmt','yuv420p','-c:a','aac','-b:a','96k','-frames:v',String(frames),mp4Path],{stdio:['pipe','inherit','pipe']});
@@ -59,12 +63,13 @@ async function exportRendition(options){
   if(probe.status!==0)throw new Error('ffprobe failed: '+probe.stderr);
   const streams=JSON.parse(probe.stdout).streams,video=streams.find(s=>s.codec_type==='video'),audio=streams.find(s=>s.codec_type==='audio');
   const receipt={
-    schema:'hole-loop.rendition-receipt.v1',
+    schema:RECEIPT_SCHEMA,
     kind:RECEIPT_KIND,
     configVersion:G.config.version,seed:run.seed,encounters:o.encounters,durationMs:run.durationMs,
     timings:{entryMs:G.config.entry,exitMs:G.config.exit,maxExposureMs:G.config.exposure},
     video:{width:o.width,height:o.height,fps:o.fps,frames,frameStreamSha256:hash.digest('hex')},
     cueTrack:{sampleRate:cue.sampleRate,samples:cue.pcm.length,cues:cue.cues,wavSha256:crypto.createHash('sha256').update(wavBytes).digest('hex')},
+    captions:{file:'captions.vtt',sha256:crypto.createHash('sha256').update(vttBytes).digest('hex'),cues:caption.captions.length},
     timeline:run.timeline.map(e=>({index:e.index,chamber:e.chamber,background:e.background,seed:e.seed,motion:e.motion,direction:e.direction,colors:e.colors,
       chosenWord:e.links[e.chosen].word,next:run.timeline[e.index+1]?run.timeline[e.index+1].chamber:null,enterStart:e.enterStart,activeStart:e.activeStart,exitStart:e.exitStart,end:e.end})),
     file:{name:'rendition.mp4',ffmpeg:version,videoCodec:video&&video.codec_name,audioCodec:audio&&audio.codec_name,decodedVideoFrames:Number(video&&video.nb_read_frames),
@@ -79,4 +84,4 @@ if(require.main===module){
   exportRendition(parse(process.argv.slice(2))).then(r=>{process.stdout.write(JSON.stringify({mp4:r.mp4Path,frames:r.receipt.video.frames,durationMs:r.receipt.durationMs,frameStreamSha256:r.receipt.video.frameStreamSha256})+'\n');})
     .catch(e=>{process.stderr.write(String(e.message||e)+'\n');process.exit(1);});
 }
-module.exports={exportRendition,parse,RECEIPT_KIND,RECEIPT_CLAIMS,MAX_WIDTH,MAX_HEIGHT};
+module.exports={exportRendition,parse,RECEIPT_SCHEMA,RECEIPT_KIND,RECEIPT_CLAIMS,MAX_WIDTH,MAX_HEIGHT};

@@ -123,22 +123,64 @@
   function frameCount(run,fps){return Math.round(run.durationMs*fps/1000);}
   function frameTime(index,fps){return Math.floor(index*1000/fps);}
 
-  /** Cue track: a short tone at each phase boundary. Chamber pitch at entry start, the octave below at exit start. */
-  function cueTrack(run){
-    const total=Math.ceil(run.durationMs*SAMPLE_RATE/1000),pcm=new Int16Array(total);
-    const tone=(startMs,hz,lenMs)=>{
-      const s0=Math.floor(startMs*SAMPLE_RATE/1000),len=Math.floor(lenMs*SAMPLE_RATE/1000),fade=Math.floor(.01*SAMPLE_RATE);
-      for(let i=0;i<len&&s0+i<total;i++){
-        const env=Math.min(1,i/fade,(len-i)/fade);
-        pcm[s0+i]=Math.round(Math.sin(2*Math.PI*hz*i/SAMPLE_RATE)*env*0.3*32767);
-      }
-    };
+  const CUE_LENGTH_MS=120;
+  /** The cue list alone (no samples): a short tone at each phase boundary. Chamber pitch at entry start, the octave below at exit start. */
+  function cueList(run){
     const cues=[];
     for(const e of run.timeline){
-      tone(e.enterStart,CHAMBER_HZ[e.chamber],120);cues.push({ms:e.enterStart,kind:'enter',hz:CHAMBER_HZ[e.chamber],lengthMs:120});
-      tone(e.exitStart,CHAMBER_HZ[e.chamber]/2,120);cues.push({ms:e.exitStart,kind:'exit',hz:CHAMBER_HZ[e.chamber]/2,lengthMs:120});
+      cues.push({ms:e.enterStart,kind:'enter',hz:CHAMBER_HZ[e.chamber],lengthMs:CUE_LENGTH_MS});
+      cues.push({ms:e.exitStart,kind:'exit',hz:CHAMBER_HZ[e.chamber]/2,lengthMs:CUE_LENGTH_MS});
+    }
+    return cues;
+  }
+
+  /** Cue track: the tones of cueList(run) rendered to 16-bit mono PCM. */
+  function cueTrack(run){
+    const total=Math.ceil(run.durationMs*SAMPLE_RATE/1000),pcm=new Int16Array(total),cues=cueList(run);
+    for(const c of cues){
+      const s0=Math.floor(c.ms*SAMPLE_RATE/1000),len=Math.floor(c.lengthMs*SAMPLE_RATE/1000),fade=Math.floor(.01*SAMPLE_RATE);
+      for(let i=0;i<len&&s0+i<total;i++){
+        const env=Math.min(1,i/fade,(len-i)/fade);
+        pcm[s0+i]=Math.round(Math.sin(2*Math.PI*c.hz*i/SAMPLE_RATE)*env*0.3*32767);
+      }
     }
     return{pcm,cues,sampleRate:SAMPLE_RATE};
+  }
+
+  /** WebVTT time, HH:MM:SS.mmm, from whole milliseconds. */
+  function vttTime(ms){
+    if(!Number.isInteger(ms)||ms<0)throw new RangeError('milliseconds must be a non-negative integer');
+    const p=(n,w)=>String(n).padStart(w,'0');
+    return p(Math.floor(ms/3600000),2)+':'+p(Math.floor(ms/60000)%60,2)+':'+p(Math.floor(ms/1000)%60,2)+'.'+p(ms%1000,3);
+  }
+
+  /** The silent equivalent of the cue track: one caption per cue, in words, shown from that cue until the next cue (the last until the run ends).
+   *  Derived only from the run, so it is exactly as reproducible as the sound it describes. Mechanical description, not a composed text. */
+  function captions(run){
+    const cues=cueList(run),out=[];
+    cues.forEach((c,i)=>{
+      const e=run.timeline.find(t=>c.kind==='enter'?t.enterStart===c.ms:t.exitStart===c.ms),n=run.timeline.length;
+      const tone=(c.kind==='enter'?'Entry tone, ':'Exit tone, ')+c.hz+' Hz for '+c.lengthMs+' ms.';
+      const text=c.kind==='enter'
+        ?tone+' Encounter '+(e.index+1)+' of '+n+' begins in chamber '+e.chamber+'. Words offered: '+e.links.map(l=>l.word).join(', ')+'.'
+        :tone+' The word '+e.links[e.chosen].word+' is followed toward chamber '+e.links[e.chosen].target+(e.index+1===n?'; the run ends.':'.');
+      out.push({id:'cue-'+(i+1),startMs:c.ms,endMs:i+1<cues.length?cues[i+1].ms:run.durationMs,text});
+    });
+    const vtt='WEBVTT\n\n'+out.map(c=>c.id+'\n'+vttTime(c.startMs)+' --> '+vttTime(c.endMs)+'\n'+c.text+'\n').join('\n');
+    return{captions:out,vtt};
+  }
+
+  /** Strict reader for exactly the WebVTT subset captions() writes. Returns the caption list or throws with the offending line. */
+  function parseCaptions(vtt){
+    if(typeof vtt!=='string'||!vtt.startsWith('WEBVTT\n\n')||!vtt.endsWith('\n')||vtt.includes('\r'))throw new Error('not the expected WEBVTT header, line endings or trailing newline');
+    const time=/^(\d{2,}):([0-5]\d):([0-5]\d)\.(\d{3})$/,ms=t=>{const m=time.exec(t);if(!m)throw new Error('bad timestamp '+t);return((+m[1]*60+ +m[2])*60+ +m[3])*1000+ +m[4];};
+    return vtt.slice(8,-1).split('\n\n').map(block=>{
+      const lines=block.split('\n');if(lines.length!==3)throw new Error('cue block must be id, timing, one text line: '+JSON.stringify(block));
+      const[id,timing,text]=lines,m=/^(\S+) --> (\S+)$/.exec(timing);
+      if(!/^cue-\d+$/.test(id)||!m)throw new Error('bad cue id or timing line: '+JSON.stringify(block));
+      if(text===''||text.includes('-->')||/[<&]/.test(text))throw new Error('caption text is empty or holds markup: '+JSON.stringify(text));
+      return{id,startMs:ms(m[1]),endMs:ms(m[2]),text};
+    });
   }
 
   function wav(pcm,sampleRate){
@@ -149,7 +191,7 @@
     return out;
   }
 
-  const api={FONT,CHAMBER_HZ,SAMPLE_RATE,simulateRun,phaseAt,layout,renderFrame,frameCount,frameTime,cueTrack,wav};
+  const api={FONT,CHAMBER_HZ,SAMPLE_RATE,CUE_LENGTH_MS,simulateRun,phaseAt,layout,renderFrame,frameCount,frameTime,cueList,cueTrack,vttTime,captions,parseCaptions,wav};
   root.HLRendition=api;
   if(typeof module!=='undefined')module.exports=api;
 })(typeof window==='undefined'?globalThis:window);

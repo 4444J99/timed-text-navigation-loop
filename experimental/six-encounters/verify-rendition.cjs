@@ -15,11 +15,11 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),{spawn,spawnSync}=require('node:child_process');
 const R=require('./rendition.js'),G=require('./generation.js'),X=require('./export-rendition.cjs');
 
-const SCHEMA='hole-loop.rendition-receipt.v1';
+const SCHEMA_V1='hole-loop.rendition-receipt.v1',SCHEMA_V2=X.RECEIPT_SCHEMA;
 const DEFAULT_MIN_PSNR=30;
 const BLOCK=16,MIN_BLOCK_PSNR=20;// measured legitimate worst 16x16 luma block: 27.4 dB over seeds 7, 45, 1234; a 3x3 pixel edit scores about 14 dB
 const MIN_TONE_RATIO=0.5,MAX_QUIET_PEAK=100;// see the audio checks
-const TOP_KEYS=['schema','kind','configVersion','seed','encounters','durationMs','timings','video','cueTrack','timeline','file','claims'];
+const TOP_KEYS_V1=['schema','kind','configVersion','seed','encounters','durationMs','timings','video','cueTrack','timeline','file','claims'],TOP_KEYS_V2=[...TOP_KEYS_V1,'captions'];
 const sameKeys=(o,keys)=>o!==null&&typeof o==='object'&&JSON.stringify(Object.keys(o).sort())===JSON.stringify([...keys].sort());// measured: replayed seed 36.7 dB worst frame, a different seed 5.5 dB
 
 function parse(argv){
@@ -97,10 +97,10 @@ async function verifyRendition(dir,options={}){
   for(const f of[receiptPath,mp4Path,wavPath])if(!check('present: '+path.basename(f),fs.existsSync(f),f))return{ok:false,checks,metrics};
   let receipt;
   try{receipt=JSON.parse(fs.readFileSync(receiptPath,'utf8'));}catch(e){check('receipt.json parses',false,e.message);return{ok:false,checks,metrics};}
-  if(!check('receipt schema',receipt!==null&&typeof receipt==='object'&&!Array.isArray(receipt)&&receipt.schema===SCHEMA,receipt&&receipt.schema))return{ok:false,checks,metrics};
+  if(!check('receipt schema',receipt!==null&&typeof receipt==='object'&&!Array.isArray(receipt)&&(receipt.schema===SCHEMA_V1||receipt.schema===SCHEMA_V2),receipt&&receipt.schema))return{ok:false,checks,metrics};
   check('receipt carries exactly the exporter\'s fields and its fixed kind and claims text',
-    sameKeys(receipt,TOP_KEYS)&&receipt.kind===X.RECEIPT_KIND&&receipt.claims===X.RECEIPT_CLAIMS&&sameKeys(receipt.video,['width','height','fps','frames','frameStreamSha256'])
-    &&sameKeys(receipt.timings,['entryMs','exitMs','maxExposureMs'])&&sameKeys(receipt.cueTrack,['sampleRate','samples','cues','wavSha256'])
+    sameKeys(receipt,receipt.schema===SCHEMA_V2?TOP_KEYS_V2:TOP_KEYS_V1)&&receipt.kind===X.RECEIPT_KIND&&receipt.claims===X.RECEIPT_CLAIMS&&sameKeys(receipt.video,['width','height','fps','frames','frameStreamSha256'])
+    &&(receipt.schema!==SCHEMA_V2||sameKeys(receipt.captions,['file','sha256','cues'])&&receipt.captions.file==='captions.vtt')&&sameKeys(receipt.timings,['entryMs','exitMs','maxExposureMs'])&&sameKeys(receipt.cueTrack,['sampleRate','samples','cues','wavSha256'])
     &&sameKeys(receipt.file,['name','ffmpeg','videoCodec','audioCodec','decodedVideoFrames','width','height'])&&receipt.file.name==='rendition.mp4'&&typeof receipt.file.ffmpeg==='string'&&receipt.file.ffmpeg.length>0,
     Object.keys(receipt).join(','));
   const v=receipt.video||{},fps=v.fps,width=v.width,height=v.height;
@@ -137,6 +137,21 @@ async function verifyRendition(dir,options={}){
   check('cue track SHA-256 re-derives from the seed',sha256(wavBytes)===cueClaim.wavSha256,sha256(wavBytes));
   const fileWav=fs.readFileSync(wavPath);
   check('cue-track.wav on disk is byte-identical to the replay',fileWav.equals(wavBytes),fileWav.length+' bytes on disk, '+wavBytes.length+' replayed');
+
+  // 3b. The silent equivalent of the cue track (v2 receipts), re-derived from the same run.
+  if(receipt.schema===SCHEMA_V2){
+    const vttPath=path.join(dir,'captions.vtt'),claim=receipt.captions||{};
+    if(check('present: captions.vtt',fs.existsSync(vttPath),vttPath)){
+      const derived=R.captions(run),derivedBytes=Buffer.from(derived.vtt,'utf8'),fileVtt=fs.readFileSync(vttPath);
+      check('captions.vtt on disk is byte-identical to the replayed captions',fileVtt.equals(derivedBytes),fileVtt.length+' bytes on disk, '+derivedBytes.length+' replayed');
+      check('captions SHA-256 and cue count in the receipt re-derive',sha256(derivedBytes)===claim.sha256&&claim.cues===derived.captions.length,sha256(derivedBytes)+', '+derived.captions.length+' captions');
+      let parsed=null,why='';
+      try{parsed=R.parseCaptions(fileVtt.toString('utf8'));}catch(e){why=e.message;}
+      const ends=cue.cues.map((c,k)=>k+1<cue.cues.length?cue.cues[k+1].ms:run.durationMs);
+      const aligned=parsed&&parsed.length===cue.cues.length&&parsed.every((c,k)=>c.startMs===cue.cues[k].ms&&c.endMs===ends[k]&&c.endMs>c.startMs);
+      check('captions.vtt is strict WebVTT, one caption per cue, on the cue times and contiguous to the end of the run',aligned,why||(parsed?parsed.length+' captions':'unparsed'));
+    }
+  } else check('captions: a v1 receipt predates the captions sidecar and claims none',receipt.captions===undefined,receipt.schema);
 
   // 4. The container, as ffprobe reads it.
   const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=index,codec_name,codec_type,width,height,nb_read_frames,avg_frame_rate,r_frame_rate:format=duration','-of','json',mp4Path],{encoding:'utf8'});

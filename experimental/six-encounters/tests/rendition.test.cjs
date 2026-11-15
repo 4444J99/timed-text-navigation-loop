@@ -4,6 +4,7 @@ const G=require('../generation.js'),R=require('../rendition.js'),{exportRenditio
 
 const W=480,H=270;
 function hex(rgb){return'#'+[...rgb].map(v=>v.toString(16).padStart(2,'0')).join('');}
+function cueCount(run){return run.timeline.length*2;}
 function tool(name){return spawnSync(name,['-version']).status===0;}
 
 test('the bitmap font covers every glyph of every route word, 5x7 each',()=>{
@@ -81,7 +82,7 @@ test('end to end: the exported file decodes to the receipt, is reproducible, and
     const opts={seed:45,encounters:2,fps:10,width:320,height:180};
     const first=await exportRendition({...opts,out:a}),second=await exportRendition({...opts,out:b});
     const r=first.receipt;
-    assert.equal(r.schema,'hole-loop.rendition-receipt.v1');assert.equal(r.video.frames,Math.round(r.durationMs*10/1000));
+    assert.equal(r.schema,'hole-loop.rendition-receipt.v2');assert.equal(r.video.frames,Math.round(r.durationMs*10/1000));
     assert.equal(r.file.videoCodec,'h264');assert.equal(r.file.audioCodec,'aac');assert.equal(r.file.decodedVideoFrames,r.video.frames);
     assert.equal(r.file.width,320);assert.equal(r.file.height,180);
     // The receipt's frame digest is the digest of the frames a second renderer produces from the receipt's own timeline.
@@ -89,6 +90,10 @@ test('end to end: the exported file decodes to the receipt, is reproducible, and
     for(let i=0;i<r.video.frames;i++)h.update(R.renderFrame(run,R.frameTime(i,10),320,180));
     assert.equal(h.digest('hex'),r.video.frameStreamSha256);
     assert.equal(r.cueTrack.wavSha256,crypto.createHash('sha256').update(fs.readFileSync(first.wavPath)).digest('hex'));
+    // The silent equivalent: captions.vtt on disk is the replayed captions, vouched for by the receipt, and reproducible.
+    const vttBytes=fs.readFileSync(path.join(a,'captions.vtt'));
+    assert.equal(vttBytes.toString('utf8'),R.captions(run).vtt);assert.equal(r.captions.sha256,crypto.createHash('sha256').update(vttBytes).digest('hex'));
+    assert.deepEqual(r.captions,{file:'captions.vtt',sha256:r.captions.sha256,cues:cueCount(run)});assert.deepEqual(second.receipt.captions,r.captions);
     assert.equal(second.receipt.video.frameStreamSha256,r.video.frameStreamSha256);assert.equal(second.receipt.cueTrack.wavSha256,r.cueTrack.wavSha256);
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(a,'receipt.json'),'utf8')),r);
     // Container duration agrees with the timeline.
@@ -130,4 +135,50 @@ test('every accepted output size lays both route words out inside the frame with
         assert.ok(ink>0,`${e.chamber} ${w}x${h}: no ink for word ${a.li}`);}
     }
   }
+});
+
+test('the cue list is the single source of the cue track: same cues, same bytes',()=>{
+  for(const seed of[1,45,987654321]){
+    const run=R.simulateRun(seed,5),list=R.cueList(run),track=R.cueTrack(run);
+    assert.deepEqual(track.cues,list);
+    // Cue windows never overlap and each lies inside the run.
+    list.forEach((c,i)=>{assert.equal(c.lengthMs,R.CUE_LENGTH_MS);assert.ok(c.ms+c.lengthMs<=run.durationMs);if(i>0)assert.ok(c.ms>=list[i-1].ms+list[i-1].lengthMs);});
+  }
+  // Pinned digest of the 2-encounter seed-45 cue track: the refactor that introduced cueList() must not change a sample.
+  const run=R.simulateRun(45,2),t=R.cueTrack(run);
+  assert.equal(crypto.createHash('sha256').update(R.wav(t.pcm,t.sampleRate)).digest('hex'),'2061c7d4b0036a3bb01bede261b7469bf7ec50cf4771fdf8745cd794ab993a46');
+});
+
+test('vttTime formats whole milliseconds as HH:MM:SS.mmm and rejects anything else',()=>{
+  assert.equal(R.vttTime(0),'00:00:00.000');assert.equal(R.vttTime(2184),'00:00:02.184');assert.equal(R.vttTime(61001),'00:01:01.001');
+  assert.equal(R.vttTime(3600000+23*60000+45678),'01:23:45.678');assert.equal(R.vttTime(360000000),'100:00:00.000');
+  for(const bad of[-1,1.5,NaN,'3',undefined])assert.throws(()=>R.vttTime(bad),RangeError);
+});
+
+test('captions describe every cue in words, in order, from that cue until the next, and are reproducible',()=>{
+  for(const seed of[1,45,987654321]){
+    const run=R.simulateRun(seed,6),cap=R.captions(run),cues=R.cueList(run);
+    assert.equal(cap.captions.length,cues.length);assert.deepEqual(R.captions(run),cap);
+    cap.captions.forEach((c,i)=>{
+      assert.equal(c.id,'cue-'+(i+1));assert.equal(c.startMs,cues[i].ms);assert.equal(c.endMs,i+1<cues.length?cues[i+1].ms:run.durationMs);assert.ok(c.endMs>c.startMs);
+      const e=run.timeline[Math.floor(i/2)];
+      assert.ok(c.text.includes(cues[i].hz+' Hz for '+cues[i].lengthMs+' ms'),c.text);
+      if(cues[i].kind==='enter'){assert.ok(c.text.startsWith('Entry tone'));assert.ok(c.text.includes('chamber '+e.chamber));assert.ok(c.text.includes('Encounter '+(e.index+1)+' of 6'));for(const l of e.links)assert.ok(c.text.includes(l.word));}
+      else{assert.ok(c.text.startsWith('Exit tone'));assert.ok(c.text.includes('word '+e.links[e.chosen].word+' is followed toward chamber '+e.links[e.chosen].target));assert.equal(c.text.endsWith('the run ends.'),e.index===5);}
+    });
+    assert.deepEqual(R.parseCaptions(cap.vtt),cap.captions);
+  }
+  assert.notEqual(R.captions(R.simulateRun(45,3)).vtt,R.captions(R.simulateRun(46,3)).vtt);
+});
+
+test('parseCaptions accepts only the exact subset captions() writes',()=>{
+  const good=R.captions(R.simulateRun(45,2)).vtt;
+  assert.doesNotThrow(()=>R.parseCaptions(good));
+  const bad={
+    'no header':good.replace('WEBVTT\n\n',''),'CRLF':good.replace(/\n/g,'\r\n'),'no trailing newline':good.slice(0,-1),'empty':'','not a string':null,
+    'markup':good.replace('Entry tone','<b>Entry tone'),'ampersand':good.replace('Entry tone','Entry & tone'),
+    'arrow in text':good.replace('Entry tone','a --> b'),'bad timestamp':good.replace('00:00:00.000','00:00:00,000'),'seconds out of range':good.replace('00:00:02.184','00:00:62.184'),
+    'two text lines':good.replace('Entry tone, 440','Entry\ntone, 440'),'bad id':good.replace('cue-2','two'),'missing timing':good.replace(/00:00:02\.184 --> 00:00:02\.534\n/,'')
+  };
+  for(const[name,v]of Object.entries(bad))assert.throws(()=>R.parseCaptions(v),Error,name);
 });
