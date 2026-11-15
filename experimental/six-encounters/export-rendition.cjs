@@ -33,12 +33,19 @@ async function exportRendition(options){
   const ff=spawn('ffmpeg',['-hide_banner','-loglevel','error','-y','-f','rawvideo','-pix_fmt','rgb24','-s',`${o.width}x${o.height}`,'-r',String(o.fps),'-i','-',
     '-i',wavPath,'-c:v','libx264','-preset','ultrafast','-crf','12','-pix_fmt','yuv420p','-c:a','aac','-b:a','96k','-frames:v',String(frames),mp4Path],{stdio:['pipe','inherit','pipe']});
   let err='';ff.stderr.on('data',d=>{err+=d;});
-  const closed=new Promise((res,rej)=>{ff.on('close',code=>code===0?res():rej(new Error('ffmpeg exited '+code+': '+err.slice(-1500))));ff.on('error',rej);});
+  // An encoder that exits early closes the pipe; that must surface as a rejection carrying its own diagnostics.
+  let exited=null;
+  const closed=new Promise((res,rej)=>{
+    ff.on('close',code=>{exited=code;code===0?res():rej(new Error('ffmpeg exited '+code+': '+err.slice(-1500)));});
+    ff.on('error',rej);
+  });
+  closed.catch(()=>{});
+  ff.stdin.on('error',()=>{});
   const hash=crypto.createHash('sha256'),buf=new Uint8Array(o.width*o.height*3);
-  for(let i=0;i<frames;i++){
+  for(let i=0;i<frames&&exited===null;i++){
     R.renderFrame(run,R.frameTime(i,o.fps),o.width,o.height,buf);
     hash.update(buf);
-    if(!ff.stdin.write(Buffer.from(buf)))await new Promise(r=>ff.stdin.once('drain',r));
+    if(!ff.stdin.write(Buffer.from(buf))&&exited===null)await Promise.race([new Promise(r=>ff.stdin.once('drain',r)),closed.catch(()=>{})]);
   }
   ff.stdin.end();await closed;
   const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=codec_name,codec_type,width,height,nb_read_frames,duration','-of','json',mp4Path],{encoding:'utf8'});
