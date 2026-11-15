@@ -269,3 +269,36 @@ for (const engineName of ['chromium', 'webkit']) {
     } finally { await browser.close(); }
   });
 }
+
+for (const engineName of ['chromium', 'webkit']) {
+  test(`${engineName}: media routed through the source-node constructor is released like the factory, and nested declarative shadow roots are pinned`, async t => {
+    const browser = await launchOrSkip(t, engineName);
+    if (!browser) return;
+    try {
+      const tab = await browser.newPage();
+      await tab.goto(page);
+      const result = await tab.evaluate(async () => {
+        const Context = window.AudioContext || window.webkitAudioContext;
+        const ctx = new Context(), el = document.querySelector('#parsed_video');
+        const node = new MediaElementAudioSourceNode(ctx, {mediaElement: el});
+        node.connect(ctx.destination);
+        el.muted = false; el.volume = 0.25;
+        const constructed = {captured: window.__SILENT_BROWSER__.captured(el), native: window.__SILENT_BROWSER__.native(el),
+          isNode: node instanceof MediaElementAudioSourceNode, sinkGain: window.__SILENT_BROWSER__.sinkInfo(ctx).gain};
+        ctx.close();
+        if (typeof Element.prototype.setHTMLUnsafe !== 'function') return {constructed, nested: null};
+        const host = document.createElement('div'); document.body.append(host);
+        const src = document.querySelector('#parsed').src;
+        host.setHTMLUnsafe(`<div><template shadowrootmode="open"><div><template shadowrootmode="open"><audio id="deep" loop src="${src}"></audio></template></div></template></div>`);
+        await new Promise(resolve => setTimeout(resolve, 0));
+        const inner = host.firstElementChild.shadowRoot.firstElementChild.shadowRoot.querySelector('#deep');
+        return {constructed, nested: window.__SILENT_BROWSER__.native(inner)};
+      });
+      assert.equal(result.constructed.captured && result.constructed.isNode, true);
+      assert.deepEqual(result.constructed.native, {muted: false, volume: 0.25});
+      assert.equal(result.constructed.sinkGain, 0);
+      if (result.nested === null) t.diagnostic('declarative shadow DOM parsing (setHTMLUnsafe) is not exposed by this engine');
+      else assert.deepEqual(result.nested, {muted: true, volume: 0});
+    } finally { await browser.close(); }
+  });
+}
