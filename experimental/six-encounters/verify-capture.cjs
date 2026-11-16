@@ -78,7 +78,8 @@ async function verifyCapture(dir,options={}){
     &&Number.isInteger(receipt.durationMs)&&receipt.durationMs>0&&Array.isArray(tl)&&tl.length===receipt.encounters;
   if(!check('receipt numbers are in range and the timeline has one entry per encounter',integerOk,JSON.stringify({seed:receipt.seed,encounters:receipt.encounters,video:v})))return{ok:false,checks,metrics};
   check('receipt configuration version is the artwork\'s current one',receipt.configVersion===G.config.version,receipt.configVersion+' vs '+G.config.version);
-  check('receipt timings state the configured entry, exit and exposure',receipt.timings&&receipt.timings.configuredEntryMs===G.config.entry&&receipt.timings.configuredExitMs===G.config.exit&&receipt.timings.maxExposureMs===G.config.exposure,JSON.stringify(receipt.timings));
+  check('receipt driver is exactly the one the capture tool writes',JSON.stringify(receipt.driver)===JSON.stringify(C.DRIVER),JSON.stringify(receipt.driver));
+  check('receipt timings state the configured entry, exit and exposure',receipt.timings&&sameKeys(receipt.timings,['configuredEntryMs','configuredExitMs','maxExposureMs'])&&receipt.timings.configuredEntryMs===G.config.entry&&receipt.timings.configuredExitMs===G.config.exit&&receipt.timings.maxExposureMs===G.config.exposure,JSON.stringify(receipt.timings));
 
   // Which artwork was captured. A later edit to the artwork makes the capture a record of an earlier revision, which is not a failure unless asked for.
   const mismatched=Object.entries(receipt.artwork&&receipt.artwork.files||{}).filter(([f,h])=>!C.ARTWORK_FILES.includes(f)||!fs.existsSync(path.join(__dirname,f))||sha256(fs.readFileSync(path.join(__dirname,f)))!==h).map(([f])=>f);
@@ -90,7 +91,7 @@ async function verifyCapture(dir,options={}){
   const eMs=[],xMs=[],dwell=[];
   let timelineOk=true;const bad=[];
   tl.forEach((e,i)=>{
-    const ok=sameKeys(e,['index','chamber','background','seed','motion','direction','colors','links','chosen','chosenWord','next','enterStart','activeStart','exitStart','end'])
+    const ok=e!==null&&typeof e==='object'&&sameKeys(e,['index','chamber','background','seed','motion','direction','colors','links','chosen','chosenWord','next','enterStart','activeStart','exitStart','end'])
       &&e.index===i&&[e.enterStart,e.activeStart,e.exitStart,e.end].every(Number.isInteger)&&e.enterStart<e.activeStart&&e.activeStart<e.exitStart&&e.exitStart<e.end;
     if(!ok){timelineOk=false;bad.push(i+': shape or order');return;}
     const entry=e.activeStart-e.enterStart,exit=e.end-e.exitStart,dw=e.exitStart-e.activeStart;eMs.push(entry);xMs.push(exit);dwell.push(dw);
@@ -98,7 +99,7 @@ async function verifyCapture(dir,options={}){
     if(exit<G.config.exit||exit>G.config.exit+EXIT_SLACK_MS)bad.push(i+': exit '+exit+' ms');
     if(dw<1000||dw>G.config.exposure)bad.push(i+': dwell '+dw+' ms');
     if(i===0&&e.enterStart!==0)bad.push('0: does not start at 0');
-    if(i>0&&e.enterStart!==tl[i-1].end)bad.push(i+': does not start where the previous encounter ended');
+    if(i>0&&(tl[i-1]===null||typeof tl[i-1]!=='object'||e.enterStart!==tl[i-1].end))bad.push(i+': does not start where the previous encounter ended');
   });
   check('every encounter is ordered, contiguous from 0 and inside the configured entry, dwell and exit bounds',timelineOk&&bad.length===0,bad.join('; ')||'entry '+Math.min(...eMs)+'-'+Math.max(...eMs)+' ms, dwell '+Math.min(...dwell)+'-'+Math.max(...dwell)+' ms, exit '+Math.min(...xMs)+'-'+Math.max(...xMs)+' ms');
   if(!timelineOk)return{ok:false,checks,metrics};
@@ -121,6 +122,15 @@ async function verifyCapture(dir,options={}){
   // The first loop is the entrance row the driver clicked: the first seeded draw builds the rows, the driver's own stream picks one.
   const rows=G.entrance(draws[0],content.entranceLabel,score.entrance.rows),row=rows[Math.floor(C.mulberry((receipt.seed^0xc0de)>>>0)()*rows.length)];
   check('the first encounter is the seeded entrance row the driver clicked',tl[0].chamber===row.chamber&&tl[0].background===row.background,tl[0].chamber+' '+tl[0].background+' vs '+row.chamber+' '+row.background);
+  // The driver's own seeded choices: after the entrance row, each encounter draws its dwell then its pick; the click lands on the first frame at or after the dwell.
+  const driverRng=C.mulberry((receipt.seed^0xc0de)>>>0);driverRng();
+  const choiceBad=[];
+  tl.forEach((e,i)=>{
+    const dwellWanted=1000+Math.floor(driverRng()*3500),pick=driverRng(),dw=e.exitStart-e.activeStart;
+    if(!Array.isArray(e.links)||e.chosen!==Math.floor(pick*e.links.length))choiceBad.push(i+': followed link '+e.chosen+' is not the seeded pick');
+    if(!(dw>=dwellWanted&&dw<dwellWanted+1000/v.fps+1))choiceBad.push(i+': dwell '+dw+' ms is not the seeded '+dwellWanted+' ms rounded up to a frame');
+  });
+  check('every encounter\'s dwell and followed word are the driver\'s seeded choices',choiceBad.length===0,choiceBad.join('; '));
   check('the route replays through RouteSession: links, palette, motion, direction, followed words, next encounters and the seeded first draw',replayBad.length===0,replayBad.join('; '));
 
   // Cue track and captions regenerated from the timeline.
@@ -141,7 +151,7 @@ async function verifyCapture(dir,options={}){
   const frames=Math.round(receipt.durationMs*v.fps/1000);
   check('the receipt frame count is the run length at the frame rate',v.frames===frames&&/^[0-9a-f]{64}$/.test(v.framePngSha256Chain),v.frames+' vs '+frames);
   const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=codec_name,codec_type,width,height,nb_read_frames,r_frame_rate,pix_fmt,channels,sample_rate:format=duration','-of','json',mp4Path],{encoding:'utf8'});
-  if(probe.status!==0)throw new Error('ffprobe failed: '+probe.stderr);
+  if(!check('ffprobe can read capture.mp4',probe.status===0,probe.status===0?'':String(probe.stderr).slice(-300)))return{ok:false,checks,metrics};
   const info=JSON.parse(probe.stdout),vs=info.streams.find(s=>s.codec_type==='video'),as=info.streams.find(s=>s.codec_type==='audio');
   check('the file holds exactly one video and one audio stream and nothing else',info.streams.length===2&&Boolean(vs)&&Boolean(as),info.streams.map(s=>s.codec_type).join(','));
   if(!vs||!as||info.streams.length!==2)return{ok:false,checks,metrics};
@@ -156,7 +166,8 @@ async function verifyCapture(dir,options={}){
   const bgs=G.config.backgrounds.map(hexRgb),share=new Array(tl.length).fill(null).map(()=>({n:0,own:0,beaten:0,worst:1}));
   const phaseOf=ms=>{const i=tl.findIndex(e=>ms>=e.enterStart&&ms<e.end);return i<0?-1:i;};
   let prev=null,differing=0,pairs=0;
-  const decoded=await decodeFrames(mp4Path,v.width,v.height,(index,buf)=>{
+  let decoded;
+  try{decoded=await decodeFrames(mp4Path,v.width,v.height,(index,buf)=>{
     if(prev){pairs++;if(Buffer.compare(prev,buf)!==0)differing++;}
     prev=Buffer.from(buf);
     const ms=Math.floor(index*1000/v.fps),i=phaseOf(ms);
@@ -169,7 +180,7 @@ async function verifyCapture(dir,options={}){
     s.n++;if(own<0)return;// a background that is not configured is refused by the route replay; here it just never matches
 s.worst=Math.min(s.worst,counts[own]/total);
     if(counts[own]/total>=MIN_BG_SHARE&&counts.every((c,b)=>b===own||c<counts[own]))s.own++;
-  });
+  });}catch(e){check('every frame of capture.mp4 decodes',false,e.message);return{ok:false,checks,metrics};}
   check('the decoded frame count and size are exact',decoded.frames===v.frames&&decoded.trailingBytes===0,decoded.frames+' frames, '+decoded.trailingBytes+' trailing bytes');
   const wrong=share.map((s,i)=>({s,i})).filter(({s})=>s.n===0||s.own!==s.n).map(({s,i})=>i+': '+s.own+'/'+s.n+' active frames show the receipt background as the largest configured field');
   check('while each loop is active its receipt background is the largest configured field in every decoded frame',wrong.length===0,wrong.join('; ')||share.map(s=>s.n+' frames, smallest share '+s.worst.toFixed(2)).join('; '));
@@ -177,7 +188,8 @@ s.worst=Math.min(s.worst,counts[own]/total);
   check('the picture moves: most adjacent frame pairs differ',pairs>0&&differing/pairs>=MIN_MOVING_PAIRS,differing+'/'+pairs);
 
   // Audio.
-  const pcm=decodeAudio(mp4Path,cue.sampleRate);
+  let pcm;
+  try{pcm=decodeAudio(mp4Path,cue.sampleRate);}catch(e){check('the audio of capture.mp4 decodes',false,e.message);return{ok:false,checks,metrics};}
   check('decoded audio length is within 0.25 s of the cue track',Math.abs(pcm.length-cue.pcm.length)<cue.sampleRate*0.25,pcm.length+' vs '+cue.pcm.length);
   const win=cue.cues.map(c=>[Math.floor(c.ms*cue.sampleRate/1000),Math.floor((c.ms+c.lengthMs)*cue.sampleRate/1000)]);
   const guard=Math.floor(cue.sampleRate*V.GUARD_BAND_SEC),zone=new Uint8Array(pcm.length).fill(2);

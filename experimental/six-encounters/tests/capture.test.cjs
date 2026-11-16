@@ -28,7 +28,7 @@ test('arguments: absolute directory required, unknown flags rejected, capture bo
   assert.deepEqual(parse(['--dir','/x','--recapture','--require-artwork-match']),{dir:'/x',recapture:true,requireArtworkMatch:true});
   assert.throws(()=>parseCapture(['--out','rel']),/absolute/);assert.throws(()=>parseCapture(['out','/x']),/usage/);assert.throws(()=>parseCapture(['--out']),/usage/);assert.throws(()=>parseCapture(['--out','/x','--encounters','0']),/1 to/);
   assert.throws(()=>parseCapture(['--out','/x','--encounters','17']),/1 to/);assert.throws(()=>parseCapture(['--out','/x','--width','321']),/even width/);
-  assert.throws(()=>parseCapture(['--out','/x','--fps','31']),/fps 1-30/);assert.throws(()=>parseCapture(['--out','/x','--seed','4294967296']),/32 bits/);
+  assert.throws(()=>parseCapture(['--out','/x','--fps','31']),/fps 1-30/);assert.throws(()=>parseCapture(['--out','/x','--seed','4294967296']),/32 bits/);assert.throws(()=>parseCapture(['--out','/x','--seed','']),/non-negative/);assert.throws(()=>parseCapture(['--out','/x','--seed','  ']),/non-negative/);
   assert.equal(parseCapture(['--out','/x']).width,960);
 });
 
@@ -97,11 +97,30 @@ test('a flipped cue-track byte, an edited caption and a missing sidecar are each
   assert.ok(has(await verifyCapture(d),'beside the receipt'));
 });
 
-test('a truncated MP4 fails: the container checks, or the tools refuse it',{skip},async()=>{
+test('a truncated MP4 is a failed check, not a tool failure',{skip},async()=>{
   const d=copy('trunc'),p=path.join(d,'capture.mp4'),b=fs.readFileSync(p);fs.writeFileSync(p,b.subarray(0,b.length>>1));
-  let refused=false,r=null;
-  try{r=await verifyCapture(d);refused=!r.ok;}catch(e){refused=/ffprobe|ffmpeg/i.test(String(e.message));}
-  assert.ok(refused,r&&failed(r).join(' | '));
+  const r=await verifyCapture(d);assert.equal(r.ok,false);assert.ok(r.checks.some(c=>!c.ok&&/capture\.mp4|frame count|decode/.test(c.name)),failed(r).join(' | '));
+});
+
+test('a garbage MP4 and a malformed timeline are failed checks, not crashes',{skip},async()=>{
+  let d=copy('garbage');fs.writeFileSync(path.join(d,'capture.mp4'),'not an mp4');
+  let r=await verifyCapture(d);assert.equal(r.ok,false);assert.ok(has(r,'ffprobe can read'));
+  d=copy('nulltl');edit(d,x=>{x.timeline[0]=null;});
+  r=await verifyCapture(d);assert.equal(r.ok,false);assert.ok(has(r,'configured entry, dwell and exit bounds'));
+});
+
+test('a followed word or dwell that is not the driver\'s seeded choice, and a changed driver block, are refused',{skip},async()=>{
+  let d=copy('pick');edit(d,r=>{const e=r.timeline[1];e.chosen=1-e.chosen;e.chosenWord=e.links[e.chosen].word;e.next=e.links[e.chosen].target;});
+  assert.ok(has(await verifyCapture(d),'seeded choices'));
+  d=copy('driver');edit(d,r=>{r.driver=null;});assert.ok(has(await verifyCapture(d),'driver is exactly'));
+  d=copy('timingkeys');edit(d,r=>{r.timings.extra=1;});assert.ok(has(await verifyCapture(d),'timings state'));
+});
+
+test('an unusable launch leaves no frame directory behind',{skip},async()=>{
+  const out=path.join(root,'nolaunch'),saved=process.env.HL_CHROMIUM_PATH;
+  process.env.HL_CHROMIUM_PATH=path.join(root,'no-such-chromium');
+  try{await assert.rejects(()=>captureRendition({...OPTS,out}));}finally{if(saved===undefined)delete process.env.HL_CHROMIUM_PATH;else process.env.HL_CHROMIUM_PATH=saved;}
+  assert.deepEqual(fs.readdirSync(out).filter(n=>n.startsWith('.capture-frames-')),[]);
 });
 
 test('an audio track that is not the cue track fails the audio checks',{skip},async()=>{

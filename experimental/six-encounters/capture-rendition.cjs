@@ -24,6 +24,7 @@ const R=require('./rendition.js'),G=require('./generation.js');
 const CAPTURE_SCHEMA='hole-loop.capture-receipt.v1';
 const CAPTURE_KIND='capture of the real browser artwork (index.html) in headless Chromium under a controlled clock, driven by a reader who always follows a word; not a composed score';
 const CAPTURE_CLAIMS='Mechanical output only. No artist, accessibility, device or audience acceptance is asserted.';
+const DRIVER=Object.freeze({dwellMs:Object.freeze([1000,4500]),entranceRow:'seeded',follows:'a seeded link of every active loop',clock:'Playwright fake clock, every CSS animation paused and set to the frame time',randomness:'crypto.getRandomValues replaced by a stream seeded from seed'});
 const ARTWORK_FILES=['index.html','style.css','content.js','engine.js','generation.js','render.js','app.js'];
 const MAX_ENCOUNTERS=16,MIN_WIDTH=320,MIN_HEIGHT=180,MAX_WIDTH=1920,MAX_HEIGHT=1080;
 // Frames must come out the same on every run. Animations on the compositor thread and parallel rasterisation made two runs of one seed differ in whole
@@ -37,6 +38,7 @@ function parse(argv){
   for(let i=0;i<argv.length;i+=2){
     const k=argv[i].startsWith('--')?argv[i].slice(2):null,v=argv[i+1];
     if(k===null||!(k in o)||v===undefined)throw new Error('usage: capture-rendition.cjs --seed N --encounters N --out DIR [--fps N --width N --height N]');
+    if(k!=='out'&&v.trim()==='')throw new Error('--'+k+' must be a non-negative integer');
     o[k]=k==='out'?v:Number(v);
   }
   if(!o.out||!path.isAbsolute(o.out))throw new Error('--out must be an absolute directory');
@@ -112,10 +114,10 @@ async function captureRendition(options){
   fs.mkdirSync(o.out,{recursive:true});
   // A receipt vouches for the artifacts beside it; remove any earlier one, and the sidecar it vouched for, before the first artifact is replaced.
   fs.rmSync(path.join(o.out,'captions.vtt'),{force:true});fs.rmSync(path.join(o.out,'receipt.json'),{force:true});
-  const framesDir=fs.mkdtempSync(path.join(o.out,'.capture-frames-'));
   const browser=await silentLaunch(chromium,{headless:true,args:CHROMIUM_ARGS,...(process.env.HL_CHROMIUM_PATH?{executablePath:process.env.HL_CHROMIUM_PATH}:{})});
-  let events,base,frameHashes=[],chromiumVersion;
+  let framesDir=null,events,base,frameHashes=[],chromiumVersion;
   try{
+    framesDir=fs.mkdtempSync(path.join(o.out,'.capture-frames-'));
     chromiumVersion=browser.version();
     const page=await browser.newPage({viewport:{width:o.width,height:o.height},deviceScaleFactor:1});
     page.setDefaultTimeout(10000);
@@ -174,7 +176,7 @@ async function captureRendition(options){
     const receipt={
       schema:CAPTURE_SCHEMA,kind:CAPTURE_KIND,configVersion:G.config.version,seed:o.seed,encounters:o.encounters,durationMs:end,
       timings:{configuredEntryMs:G.config.entry,configuredExitMs:G.config.exit,maxExposureMs:G.config.exposure},
-      driver:{dwellMs:[1000,4500],entranceRow:'seeded',follows:'a seeded link of every active loop',clock:'Playwright fake clock, every CSS animation paused and set to the frame time',randomness:'crypto.getRandomValues replaced by a stream seeded from seed'},
+      driver:DRIVER,
       video:{width:o.width,height:o.height,fps:o.fps,frames,framePngSha256Chain:sha256(frameHashes.slice(0,frames).join('\n'))},
       cueTrack:{sampleRate:cue.sampleRate,samples:cue.pcm.length,cues:cue.cues,wavSha256:sha256(wavBytes)},
       captions:{file:'captions.vtt',sha256:sha256(vttBytes),cues:caption.captions.length},
@@ -190,7 +192,7 @@ async function captureRendition(options){
     return{receipt,mp4Path,wavPath};
   }finally{
     await browser.close().catch(()=>{});
-    fs.rmSync(framesDir,{recursive:true,force:true});
+    if(framesDir)fs.rmSync(framesDir,{recursive:true,force:true});
   }
 }
 
@@ -198,4 +200,4 @@ if(require.main===module){
   captureRendition(parse(process.argv.slice(2))).then(r=>{process.stdout.write(JSON.stringify({mp4:r.mp4Path,frames:r.receipt.video.frames,durationMs:r.receipt.durationMs,framePngSha256Chain:r.receipt.video.framePngSha256Chain})+'\n');})
     .catch(e=>{process.stderr.write(String(e.message||e)+'\n');process.exit(1);});
 }
-module.exports={captureRendition,parse,buildTimeline,mulberry,CAPTURE_SCHEMA,CAPTURE_KIND,CAPTURE_CLAIMS,ARTWORK_FILES,MAX_ENCOUNTERS};
+module.exports={captureRendition,parse,buildTimeline,mulberry,DRIVER,CAPTURE_SCHEMA,CAPTURE_KIND,CAPTURE_CLAIMS,ARTWORK_FILES,MAX_ENCOUNTERS};
