@@ -415,3 +415,24 @@ test('an honest export keeps the audio of its guard band far below the guard-ban
   const r=await verifyRendition(good);
   assert.ok(r.metrics.audioPeakGuardBand<=500&&r.metrics.audioPeakOutsideCues<=20,JSON.stringify(r.metrics));
 });
+
+// Issue 100: the whole frame stream was re-rendered and hashed before ffprobe looked at the MP4.
+test('a receipt at the limits (7680x4320, 60 fps, 64 encounters) beside a 320x180 MP4 is rejected from the header probe, without the replay render',{skip},async()=>{
+  const d=copy('big-receipt');edit(d,r=>{r.encounters=64;r.video.fps=60;r.video.width=7680;r.video.height=4320;});
+  const t0=Date.now(),r=await verifyRendition(d),f=failed(r),names=r.checks.map(c=>c.name);
+  assert.equal(r.ok,false);
+  assert.ok(f.includes('video stream is H.264 at the receipt size')&&f.includes('video frame rate equals the receipt fps'),f.join('|'));
+  for(const n of names)assert.ok(!/raw frame stream SHA-256|decoded frame|luma PSNR|chroma PSNR/.test(n),'the expensive replay ran: '+n);
+  assert.ok(Date.now()-t0<15000,'took '+(Date.now()-t0)+' ms');
+});
+
+test('the header probe gate keeps the diagnosis of a file with a wrong stream layout, and an honest file still replays in full',{skip},async()=>{
+  const r=await verifyRendition(good),names=r.checks.map(c=>c.name);
+  assert.ok(names.indexOf('video stream is H.264 at the receipt size')<names.indexOf('raw frame stream SHA-256 re-derives from the seed'),'probe runs before the render');
+  assert.ok(names.includes('raw frame stream SHA-256 re-derives from the seed')&&names.some(n=>/luma PSNR/.test(n)));
+  const a=copy('extra-gate'),pa=path.join(a,'rendition.mp4');
+  const x=spawnSync('ffmpeg',['-v','error','-y','-i',pa,'-f','lavfi','-t','1','-i','sine=frequency=800:sample_rate=22050','-map','0','-map','1:a','-c','copy','-c:a:1','aac',path.join(a,'t.mp4')],{encoding:'utf8'});assert.equal(x.status,0,x.stderr);
+  fs.renameSync(path.join(a,'t.mp4'),pa);
+  const rr=await verifyRendition(a);assert.deepEqual(failed(rr),['the file holds exactly one video and one audio stream and nothing else']);
+  assert.ok(!rr.checks.some(c=>/raw frame stream SHA-256/.test(c.name)),'a wrong stream layout ends the run before the render');
+});

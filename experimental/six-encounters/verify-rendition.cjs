@@ -141,12 +141,6 @@ async function verifyRendition(dir,options={}){
   const frames=R.frameCount(run,fps);
   check('frame count matches duration and fps',v.frames===frames,v.frames+' vs '+frames);
 
-  // 2. Raw frame stream hash, re-derived.
-  const hash=crypto.createHash('sha256'),size=width*height*3,buf=new Uint8Array(size);
-  for(let i=0;i<frames;i++){R.renderFrame(run,R.frameTime(i,fps),width,height,buf);hash.update(buf);}
-  const frameHash=hash.digest('hex');
-  check('raw frame stream SHA-256 re-derives from the seed',frameHash===v.frameStreamSha256,frameHash===v.frameStreamSha256?frameHash:'receipt '+v.frameStreamSha256+' replay '+frameHash);
-
   // 3. Cue track, re-derived and compared to the receipt and to the file on disk.
   const cue=R.cueTrack(run),wavBytes=R.wav(cue.pcm,cue.sampleRate),cueClaim=receipt.cueTrack||{};
   check('cue list re-derives from the seed',JSON.stringify(cue.cues)===JSON.stringify(cueClaim.cues),cue.cues.length+' cues');
@@ -173,15 +167,32 @@ async function verifyRendition(dir,options={}){
     }
   } else check('captions: a v1 receipt predates the captions sidecar, so none is claimed or left beside it',receipt.captions===undefined&&!lexists(path.join(dir,'captions.vtt')),receipt.schema);
 
-  // 4. The container, as ffprobe reads it.
-  const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=index,codec_name,codec_type,width,height,nb_read_frames,avg_frame_rate,r_frame_rate,sample_rate,channels:format=duration','-of','json',mp4Path],{encoding:'utf8'});
+  // 4a. The container header, as ffprobe reads it: no frame is decoded. These facts bound the cost of everything below, so they come before the replay render (a receipt at the limits beside a tiny MP4 must not cost a whole-stream render).
+  const probe=spawnSync('ffprobe',['-v','error','-show_entries','stream=index,codec_name,codec_type,width,height,avg_frame_rate,r_frame_rate,sample_rate,channels:format=duration','-of','json',mp4Path],{encoding:'utf8',maxBuffer:1<<24});
   if(!check('ffprobe reads the file',probe.status===0,probe.stderr))return{ok:false,checks,metrics};
-  const info=JSON.parse(probe.stdout),vs=info.streams.find(s=>s.codec_type==='video'),as=info.streams.find(s=>s.codec_type==='audio');
-  check('the file holds exactly one video and one audio stream and nothing else',info.streams.length===2&&info.streams.filter(s=>s.codec_type==='video').length===1&&info.streams.filter(s=>s.codec_type==='audio').length===1,info.streams.map(s=>s.codec_type+':'+s.codec_name).join(', '));
-  check('video stream is H.264 at the receipt size',vs&&vs.codec_name==='h264'&&vs.width===width&&vs.height===height,vs&&vs.codec_name+' '+vs.width+'x'+vs.height);
-  check('decodable video frames equal the receipt',vs&&Number(vs.nb_read_frames)===frames,vs&&vs.nb_read_frames);
+  let info;try{info=JSON.parse(probe.stdout);}catch(e){check('ffprobe output parses',false,e.message);return{ok:false,checks,metrics};}
+  const vs=info.streams.find(s=>s.codec_type==='video'),as=info.streams.find(s=>s.codec_type==='audio');
+  const layoutOk=[
+    check('the file holds exactly one video and one audio stream and nothing else',info.streams.length===2&&info.streams.filter(s=>s.codec_type==='video').length===1&&info.streams.filter(s=>s.codec_type==='audio').length===1,info.streams.map(s=>s.codec_type+':'+s.codec_name).join(', ')),
+    check('video stream is H.264 at the receipt size',vs&&vs.codec_name==='h264'&&vs.width===width&&vs.height===height,vs&&vs.codec_name+' '+vs.width+'x'+vs.height)];
   const[rn,rd]=String(vs&&vs.avg_frame_rate).split('/').map(Number);
-  check('video frame rate equals the receipt fps',vs&&rd>0&&Math.abs(rn/rd-fps)<1e-3&&String(vs.r_frame_rate)===String(vs.avg_frame_rate),vs&&vs.avg_frame_rate+' / '+vs.r_frame_rate+' vs '+fps);
+  layoutOk.push(check('video frame rate equals the receipt fps',vs&&rd>0&&Math.abs(rn/rd-fps)<1e-3&&String(vs.r_frame_rate)===String(vs.avg_frame_rate),vs&&vs.avg_frame_rate+' / '+vs.r_frame_rate+' vs '+fps));
+  const dur=Number(info.format.duration);metrics.containerDurationSec=dur;
+  // Header-only, so it is reported even when the layout gate below ends the run. frameCount rounds, so the video may over- or undershoot the timeline by up to half a frame: 0.5/fps s, which exceeds 0.25 s below 2 fps.
+  const durTol=Math.max(0.25,0.5/fps+DURATION_SLACK_SEC);
+  check('container duration is within '+durTol.toFixed(3)+' s of the timeline (the larger of 0.25 s and half a frame)',Math.abs(dur-run.durationMs/1000)<durTol,dur+' vs '+run.durationMs/1000);
+  if(!layoutOk.every(Boolean))return{ok:false,checks,metrics};// the replay below would render and decode a stream the file does not hold
+
+  // 2. Raw frame stream hash, re-derived.
+  const hash=crypto.createHash('sha256'),size=width*height*3,buf=new Uint8Array(size);
+  for(let i=0;i<frames;i++){R.renderFrame(run,R.frameTime(i,fps),width,height,buf);hash.update(buf);}
+  const frameHash=hash.digest('hex');
+  check('raw frame stream SHA-256 re-derives from the seed',frameHash===v.frameStreamSha256,frameHash===v.frameStreamSha256?frameHash:'receipt '+v.frameStreamSha256+' replay '+frameHash);
+
+  // 4b. What needs a decode of the file.
+  const counted=spawnSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=nb_read_frames','-of','json',mp4Path],{encoding:'utf8'});
+  let nbRead;try{nbRead=JSON.parse(counted.stdout).streams[0].nb_read_frames;}catch(e){nbRead=undefined;}
+  check('decodable video frames equal the receipt',counted.status===0&&Number(nbRead)===frames,nbRead);
   const pts=spawnSync('ffprobe',['-v','error','-select_streams','v:0','-show_entries','frame=pts_time','-of','csv=p=0',mp4Path],{encoding:'utf8',maxBuffer:1<<26});
   const times=pts.status===0?pts.stdout.split('\n').map(x=>x.replace(/,$/,'').trim()).filter(Boolean).map(Number):[];
   const driftIdx=times.findIndex((t,i)=>!(Math.abs(t-i/fps)<1e-3));
@@ -189,10 +200,6 @@ async function verifyRendition(dir,options={}){
   check('audio stream is AAC',as&&as.codec_name==='aac',as&&as.codec_name);
   // The decoder below folds to mono at the cue rate; anything it would fold away (a side channel, a band above half that rate) must be refused here, by what the stream is.
   check('audio stream is mono at the cue track\'s sample rate',as&&as.channels===1&&Number(as.sample_rate)===cue.sampleRate,as&&as.channels+' channel(s) at '+as.sample_rate+' Hz vs 1 at '+cue.sampleRate);
-  const dur=Number(info.format.duration);metrics.containerDurationSec=dur;
-  // frameCount rounds, so the video may over- or undershoot the timeline by up to half a frame: 0.5/fps s, which exceeds 0.25 s below 2 fps.
-  const durTol=Math.max(0.25,0.5/fps+DURATION_SLACK_SEC);
-  check('container duration is within '+durTol.toFixed(3)+' s of the timeline (the larger of 0.25 s and half a frame)',Math.abs(dur-run.durationMs/1000)<durTol,dur+' vs '+run.durationMs/1000);
   check('file facts in the receipt match ffprobe',receipt.file&&receipt.file.videoCodec==='h264'&&receipt.file.audioCodec==='aac'&&receipt.file.decodedVideoFrames===frames&&receipt.file.width===width&&receipt.file.height===height,JSON.stringify(receipt.file));
 
   // 5. Decode every video frame and compare to the frame re-rendered from the seed.
