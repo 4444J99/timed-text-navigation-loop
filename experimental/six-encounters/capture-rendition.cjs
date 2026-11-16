@@ -112,8 +112,8 @@ async function captureRendition(options){
   const url='file://'+path.resolve(__dirname,'index.html');
   const version=ffmpegVersion();
   fs.mkdirSync(o.out,{recursive:true});
-  // A receipt vouches for the artifacts beside it; remove any earlier one, and the sidecar it vouched for, before the first artifact is replaced.
-  fs.rmSync(path.join(o.out,'captions.vtt'),{force:true});fs.rmSync(path.join(o.out,'receipt.json'),{force:true});
+  // A receipt vouches for the artifacts beside it; remove every earlier one before anything new is written.
+  for(const f of['captions.vtt','receipt.json','capture.mp4','cue-track.wav'])fs.rmSync(path.join(o.out,f),{force:true});// a failed run leaves no earlier file beside new ones
   const browser=await silentLaunch(chromium,{headless:true,args:CHROMIUM_ARGS,...(process.env.HL_CHROMIUM_PATH?{executablePath:process.env.HL_CHROMIUM_PATH}:{})});
   let framesDir=null,events,base,frameHashes=[],chromiumVersion;
   try{
