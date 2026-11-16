@@ -13,7 +13,7 @@
  * Mechanical evidence only; the receipt is unsigned, so anyone holding the directory can rewrite it and its sidecars together. */
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto'),{spawn,spawnSync}=require('node:child_process');
-const R=require('./rendition.js'),G=require('./generation.js'),C=require('./capture-rendition.cjs'),V=require('./verify-rendition.cjs');
+const R=require('./rendition.js'),G=require('./generation.js'),C=require('./capture-rendition.cjs'),V=require('./verify-rendition.cjs'),{content,score}=require('./content.js');
 
 const TOP_KEYS=['schema','kind','configVersion','seed','encounters','durationMs','timings','driver','video','cueTrack','captions','timeline','artwork','environment','file','claims'];
 const ENTRY_SLACK_MS=150,EXIT_SLACK_MS=150;// measured: the artwork mounts, then starts its 450 ms entry clock, and ends its 350 ms exit on the next timer tick (README, capture); slack well above the measured 46 and 11 ms
@@ -118,6 +118,9 @@ async function verifyCapture(dir,options={}){
     if(!Number.isInteger(e.seed)||e.seed<0||e.seed>0xffffffff)replayBad.push(i+': seed');
   });
   if(tl[0].seed!==draws[1])replayBad.push('0: first encounter seed is not the second draw of the seeded stream ('+tl[0].seed+' vs '+draws[1]+')');
+  // The first loop is the entrance row the driver clicked: the first seeded draw builds the rows, the driver's own stream picks one.
+  const rows=G.entrance(draws[0],content.entranceLabel,score.entrance.rows),row=rows[Math.floor(C.mulberry((receipt.seed^0xc0de)>>>0)()*rows.length)];
+  check('the first encounter is the seeded entrance row the driver clicked',tl[0].chamber===row.chamber&&tl[0].background===row.background,tl[0].chamber+' '+tl[0].background+' vs '+row.chamber+' '+row.background);
   check('the route replays through RouteSession: links, palette, motion, direction, followed words, next encounters and the seeded first draw',replayBad.length===0,replayBad.join('; '));
 
   // Cue track and captions regenerated from the timeline.
@@ -163,7 +166,8 @@ async function verifyCapture(dir,options={}){
       if(Math.abs(buf[p]-bgs[b][0])<=BG_TOLERANCE&&Math.abs(buf[p+1]-bgs[b][1])<=BG_TOLERANCE&&Math.abs(buf[p+2]-bgs[b][2])<=BG_TOLERANCE){counts[b]++;break;}
     }
     const own=G.config.backgrounds.indexOf(tl[i].background),total=buf.length/3,s=share[i];
-    s.n++;s.worst=Math.min(s.worst,counts[own]/total);
+    s.n++;if(own<0)return;// a background that is not configured is refused by the route replay; here it just never matches
+s.worst=Math.min(s.worst,counts[own]/total);
     if(counts[own]/total>=MIN_BG_SHARE&&counts.every((c,b)=>b===own||c<counts[own]))s.own++;
   });
   check('the decoded frame count and size are exact',decoded.frames===v.frames&&decoded.trailingBytes===0,decoded.frames+' frames, '+decoded.trailingBytes+' trailing bytes');

@@ -35,8 +35,8 @@ const SETTLE_MS=200;// the entrance builds itself on load; give its first animat
 function parse(argv){
   const o={seed:45,encounters:4,fps:12,width:960,height:540,out:null};
   for(let i=0;i<argv.length;i+=2){
-    const k=argv[i].replace(/^--/,''),v=argv[i+1];
-    if(!(k in o)||v===undefined)throw new Error('usage: capture-rendition.cjs --seed N --encounters N --out DIR [--fps N --width N --height N]');
+    const k=argv[i].startsWith('--')?argv[i].slice(2):null,v=argv[i+1];
+    if(k===null||!(k in o)||v===undefined)throw new Error('usage: capture-rendition.cjs --seed N --encounters N --out DIR [--fps N --width N --height N]');
     o[k]=k==='out'?v:Number(v);
   }
   if(!o.out||!path.isAbsolute(o.out))throw new Error('--out must be an absolute directory');
@@ -157,6 +157,7 @@ async function captureRendition(options){
     await page.close();
     const timeline=buildTimeline(events,base);
     const frames=Math.round(end*o.fps/1000);
+    if(frames<1||frames>frameHashes.length)throw new Error('captured '+frameHashes.length+' frames for a run of '+frames);// the loop stops at the first frame at or after the end, so this cannot happen; it is checked, not assumed
     for(const e of timeline.slice(0,o.encounters))if(e.chosen<0||[e.enterStart,e.activeStart,e.exitStart,e.end].some(v=>!Number.isInteger(v)))throw new Error('route recorder missed a phase of encounter '+e.index);
     const used=timeline.slice(0,o.encounters),run={configVersion:G.config.version,seed:o.seed,durationMs:end,timeline:used};
     const cue=R.cueTrack(run),caption=R.captions(run),vttBytes=Buffer.from(caption.vtt,'utf8'),wavBytes=R.wav(cue.pcm,cue.sampleRate);
@@ -197,4 +198,4 @@ if(require.main===module){
   captureRendition(parse(process.argv.slice(2))).then(r=>{process.stdout.write(JSON.stringify({mp4:r.mp4Path,frames:r.receipt.video.frames,durationMs:r.receipt.durationMs,framePngSha256Chain:r.receipt.video.framePngSha256Chain})+'\n');})
     .catch(e=>{process.stderr.write(String(e.message||e)+'\n');process.exit(1);});
 }
-module.exports={captureRendition,parse,buildTimeline,CAPTURE_SCHEMA,CAPTURE_KIND,CAPTURE_CLAIMS,ARTWORK_FILES,MAX_ENCOUNTERS};
+module.exports={captureRendition,parse,buildTimeline,mulberry,CAPTURE_SCHEMA,CAPTURE_KIND,CAPTURE_CLAIMS,ARTWORK_FILES,MAX_ENCOUNTERS};

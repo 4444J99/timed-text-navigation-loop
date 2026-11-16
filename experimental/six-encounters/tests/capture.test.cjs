@@ -26,7 +26,7 @@ const has=(r,fragment)=>failed(r).some(n=>n.includes(fragment));
 test('arguments: absolute directory required, unknown flags rejected, capture bounds enforced',()=>{
   assert.throws(()=>parse([]),/absolute/);assert.throws(()=>parse(['--dir','rel']),/absolute/);assert.throws(()=>parse(['--dir','/x','--bogus']),/usage/);
   assert.deepEqual(parse(['--dir','/x','--recapture','--require-artwork-match']),{dir:'/x',recapture:true,requireArtworkMatch:true});
-  assert.throws(()=>parseCapture(['--out','rel']),/absolute/);assert.throws(()=>parseCapture(['--out','/x','--encounters','0']),/1 to/);
+  assert.throws(()=>parseCapture(['--out','rel']),/absolute/);assert.throws(()=>parseCapture(['out','/x']),/usage/);assert.throws(()=>parseCapture(['--out']),/usage/);assert.throws(()=>parseCapture(['--out','/x','--encounters','0']),/1 to/);
   assert.throws(()=>parseCapture(['--out','/x','--encounters','17']),/1 to/);assert.throws(()=>parseCapture(['--out','/x','--width','321']),/even width/);
   assert.throws(()=>parseCapture(['--out','/x','--fps','31']),/fps 1-30/);assert.throws(()=>parseCapture(['--out','/x','--seed','4294967296']),/32 bits/);
   assert.equal(parseCapture(['--out','/x']).width,960);
@@ -60,6 +60,11 @@ test('a different seed gives a different run and its own receipt verifies',{skip
 test('a receipt whose seed was changed fails the seeded first draw',{skip},async()=>{
   const d=copy('seed');edit(d,r=>{r.seed=46;});
   assert.ok(has(await verifyCapture(d),'seeded first draw'));
+});
+
+test('a first encounter that is not the seeded entrance row is refused',{skip},async()=>{
+  const d=copy('entrance');edit(d,r=>{const e=r.timeline[0];e.chamber=e.chamber==='040915'?'041015':'040915';});
+  assert.ok(has(await verifyCapture(d),'seeded entrance row'));
 });
 
 test('a rewritten followed word fails the route replay and the regenerated captions',{skip},async()=>{
