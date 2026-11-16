@@ -126,7 +126,9 @@ test('loud sound of the wrong pitch inside every cue window is rejected, not jus
   const d=remuxAudio('wrongpitch',cue=>inWindows(cue,(i,sr)=>Math.sin(2*Math.PI*3000*i/sr)));
   assert.deepEqual(failed(await verifyRendition(d)),["decoded audio in every cue window is the cue's own pitch"]);
   const n=remuxAudio('noise',cue=>inWindows(cue,(i)=>{let h=Math.imul(i+1,2654435761)>>>0;h^=h>>>15;h=Math.imul(h,2246822519)>>>0;h^=h>>>13;return (h/4294967295)*2-1;}));// white noise from an integer hash, not a gated square wave
-  assert.deepEqual(failed(await verifyRendition(n)),["decoded audio in every cue window is the cue's own pitch"]);
+  // Broadband noise rings past its window edge (measured 1.4-1.7k within 10 ms); the 60 ms blind guard band used to hide that, the 10 ms guard band cap of 1000 now reports it as well.
+  const fn=failed(await verifyRendition(n));// the silence failure depends on how far the encoder rings past the window (1.4-1.7k measured on ffmpeg 9.0.2 against the cap of 1000), so it is allowed, not required
+  assert.ok(fn.includes("decoded audio in every cue window is the cue's own pitch")&&fn.every(x=>["decoded audio in every cue window is the cue's own pitch",'decoded audio is silent outside the cue windows'].includes(x)),fn.join('|'));
 });
 
 test('a quiet tone mixed under the whole track (below the old 1500 floor) is caught outside the cue windows',{skip},async()=>{
@@ -389,4 +391,63 @@ test('the relaxed duration tolerance is still bounded: a container stretched by 
   const r0=spawnSync('ffmpeg',['-v','error','-y','-i',src,'-c','copy','-bsf:v','setts=ts=TS*'+scale+':dts=DTS*'+scale,'-t','100',out],{encoding:'utf8'});assert.equal(r0.status,0,r0.stderr);
   fs.renameSync(out,src);
   assert.ok(failed(await verifyRendition(d)).some(n=>/container duration is within/.test(n)));
+});
+
+// Issue 94: the guard band beside each cue window was excluded from the silence check, so a loud burst right after a window passed.
+function withBursts(cue,where){
+  const pcm=Int16Array.from(cue.pcm),len=Math.floor(cue.sampleRate*0.045);
+  for(const c of cue.cues){
+    const start=where==='after'?Math.floor((c.ms+c.lengthMs)*cue.sampleRate/1000):Math.floor(c.ms*cue.sampleRate/1000)-len;
+    for(let i=0;i<len;i++){const j=start+i;if(j>=0&&j<pcm.length)pcm[j]=Math.round(12000*Math.sin(2*Math.PI*1800*i/cue.sampleRate));}
+  }
+  return pcm;
+}
+const SILENT='decoded audio is silent outside the cue windows';
+
+test('a 45 ms 1.8 kHz burst at amplitude 12000 right after (or right before) every cue window is caught beside it, in the guard band',{skip},async()=>{
+  for(const where of['after','before']){
+    const d=remuxAudio('burst-'+where,cue=>withBursts(cue,where)),r=await verifyRendition(d);
+    assert.deepEqual(failed(r),[SILENT],where);
+    assert.ok(r.metrics.audioPeakGuardBand>1000,where+' '+r.metrics.audioPeakGuardBand);
+  }
+});
+
+test('an honest export keeps the audio of its guard band far below the guard-band cap',{skip},async()=>{
+  const r=await verifyRendition(good);
+  assert.ok(r.metrics.audioPeakGuardBand<=500&&r.metrics.audioPeakOutsideCues<=20,JSON.stringify(r.metrics));
+});
+
+// Issue 100: the whole frame stream was re-rendered and hashed before ffprobe looked at the MP4.
+test('a receipt at the limits (7680x4320, 60 fps, 64 encounters) beside a 320x180 MP4 is rejected from the header probe, without the replay render',{skip},async()=>{
+  const d=copy('big-receipt');edit(d,r=>{r.encounters=64;r.video.fps=60;r.video.width=7680;r.video.height=4320;});
+  const t0=Date.now(),r=await verifyRendition(d),f=failed(r),names=r.checks.map(c=>c.name);
+  assert.equal(r.ok,false);
+  assert.ok(f.includes('video stream is H.264 at the receipt size')&&f.includes('video frame rate equals the receipt fps'),f.join('|'));
+  for(const n of names)assert.ok(!/raw frame stream SHA-256|decoded frame|luma PSNR|chroma PSNR/.test(n),'the expensive replay ran: '+n);
+  assert.ok(Date.now()-t0<15000,'took '+(Date.now()-t0)+' ms');
+});
+
+test('the header probe gate keeps the diagnosis of a file with a wrong stream layout, and an honest file still replays in full',{skip},async()=>{
+  const r=await verifyRendition(good),names=r.checks.map(c=>c.name);
+  assert.ok(names.indexOf('video stream is H.264 at the receipt size')<names.indexOf('raw frame stream SHA-256 re-derives from the seed'),'probe runs before the render');
+  assert.ok(names.includes('raw frame stream SHA-256 re-derives from the seed')&&names.some(n=>/luma PSNR/.test(n)));
+  const a=copy('extra-gate'),pa=path.join(a,'rendition.mp4');
+  const x=spawnSync('ffmpeg',['-v','error','-y','-i',pa,'-f','lavfi','-t','1','-i','sine=frequency=800:sample_rate=22050','-map','0','-map','1:a','-c','copy','-c:a:1','aac',path.join(a,'t.mp4')],{encoding:'utf8'});assert.equal(x.status,0,x.stderr);
+  fs.renameSync(path.join(a,'t.mp4'),pa);
+  const rr=await verifyRendition(a);assert.deepEqual(failed(rr),['the file holds exactly one video and one audio stream and nothing else']);
+  assert.ok(!rr.checks.some(c=>/raw frame stream SHA-256/.test(c.name)),'a wrong stream layout ends the run before the render');
+});
+
+// Issue 99: the calibration numbers in the comments and README were measured on ffmpeg 9.0.2 (Homebrew libx264, native AAC); CI's apt build was not measured, so only the
+// honest-export verdict and a margin of 1 dB over each floor are asserted here. These are the honest configurations that measured worst.
+test('the honest exports that measured worst on each statistic keep their documented margin over the floors',{skip},async()=>{
+  const {MIN_BLOCK_PSNR}=require('../verify-rendition.cjs');
+  for(const [name,o,key,floor,margin] of [
+    ['w-block',{seed:1,encounters:2,fps:10,width:320,height:180},'minBlockPsnrDb',MIN_BLOCK_PSNR,1],
+    ['w-frame',{seed:1,encounters:2,fps:10,width:160,height:90},'minPsnrDb',DEFAULT_MIN_PSNR,1],
+    ['w-chroma',{seed:1234,encounters:2,fps:10,width:160,height:90},'minChromaPsnrDb',MIN_CHROMA_PSNR,1]]){
+    const d=path.join(root,name);await exportRendition({...o,out:d});
+    const r=await verifyRendition(d);assert.deepEqual(failed(r),[],name);
+    assert.ok(r.metrics[key]>=floor+margin,name+' '+key+' '+r.metrics[key]);
+  }
 });

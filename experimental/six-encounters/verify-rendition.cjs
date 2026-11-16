@@ -16,14 +16,15 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const R=require('./rendition.js'),G=require('./generation.js'),X=require('./export-rendition.cjs');
 
 const SCHEMA_V1='hole-loop.rendition-receipt.v1',SCHEMA_V2='hole-loop.rendition-receipt.v2';// pinned, not imported: a future exporter schema must not silently redefine what this verifier accepts
-const DEFAULT_MIN_PSNR=30;
+const DEFAULT_MIN_PSNR=30;// measured over 40 honest exports (README, Calibration): worst frame 33.15 dB, so 3.1 dB of margin; a different seed scores 5.5 dB. Raising it much would leave under 1.2 dB to the honest minimum on encoders not measured
 const DURATION_SLACK_SEC=0.05;// container timestamps are rounded to the stream time base on top of the half-frame rounding of the frame count
-const BLOCK=16,MIN_BLOCK_PSNR=20;// measured legitimate worst 16x16 luma block: 27.4 dB over seeds 7, 45, 1234; a 3x3 pixel edit scores about 14 dB
-const MIN_CHROMA_PSNR=25;// measured over seeds 0, 3, 7, 45, 1234: an honest encode scores 36.0 dB or more on the worst frame, a greyscale re-encode (hue=s=0) 8.5 to 8.9 dB
+const BLOCK=16,MIN_BLOCK_PSNR=20;// measured over 40 honest exports (README, Calibration): worst 16x16 luma block 23.78 dB (seed 1, 320x180), so 3.8 dB of margin; a 4x4 edit scores below 20 dB. Edits that score 22.7 to 25.5 dB (README, Known residual) overlap the honest range and pass
+const MIN_CHROMA_PSNR=25;// measured over 40 honest exports (README, Calibration): worst frame 34.64 dB (seed 1234, 160x90), a greyscale re-encode (hue=s=0) 8.5 to 8.9 dB
 const MIN_TONE_RATIO=0.8,MAX_QUIET_PEAK=100;// see the audio checks; an honest AAC encode measures 0.94, a second tone at 0.7 of the cue amplitude 0.63
+const GUARD_BAND_SEC=0.01,GUARD_BAND_PEAK=1000;// measured over 40 honest exports (README): the AAC ringing within 10 ms of a window peaks at 189 and beyond 10 ms at 14, so the band is 10 ms wide with a cap 5x the honest peak (was 60 ms, unchecked)
 const FFMPEG_LINE=/^ffmpeg version (?=[A-Za-z0-9._+~:-]*\d)[A-Za-z0-9._+~:-]+(?: +https?:\/\/[A-Za-z0-9.-]+(?:\/[A-Za-z0-9._~\/-]*)?)? +Copyright \(c\) [0-9]{4}(?:-[0-9]{4})? the FFmpeg developers\r?$/;// the first line of `ffmpeg -version`, as the exporter records it: a version token with a digit, an optional build URL; recorded, not verifiable
 const TOP_KEYS_V1=['schema','kind','configVersion','seed','encounters','durationMs','timings','video','cueTrack','timeline','file','claims'],TOP_KEYS_V2=[...TOP_KEYS_V1,'captions'];
-const sameKeys=(o,keys)=>o!==null&&typeof o==='object'&&JSON.stringify(Object.keys(o).sort())===JSON.stringify([...keys].sort());// measured: replayed seed 36.7 dB worst frame, a different seed 5.5 dB
+const sameKeys=(o,keys)=>o!==null&&typeof o==='object'&&JSON.stringify(Object.keys(o).sort())===JSON.stringify([...keys].sort());
 
 function parse(argv){
   const o={dir:null,'min-psnr':DEFAULT_MIN_PSNR};
@@ -140,12 +141,6 @@ async function verifyRendition(dir,options={}){
   const frames=R.frameCount(run,fps);
   check('frame count matches duration and fps',v.frames===frames,v.frames+' vs '+frames);
 
-  // 2. Raw frame stream hash, re-derived.
-  const hash=crypto.createHash('sha256'),size=width*height*3,buf=new Uint8Array(size);
-  for(let i=0;i<frames;i++){R.renderFrame(run,R.frameTime(i,fps),width,height,buf);hash.update(buf);}
-  const frameHash=hash.digest('hex');
-  check('raw frame stream SHA-256 re-derives from the seed',frameHash===v.frameStreamSha256,frameHash===v.frameStreamSha256?frameHash:'receipt '+v.frameStreamSha256+' replay '+frameHash);
-
   // 3. Cue track, re-derived and compared to the receipt and to the file on disk.
   const cue=R.cueTrack(run),wavBytes=R.wav(cue.pcm,cue.sampleRate),cueClaim=receipt.cueTrack||{};
   check('cue list re-derives from the seed',JSON.stringify(cue.cues)===JSON.stringify(cueClaim.cues),cue.cues.length+' cues');
@@ -172,15 +167,32 @@ async function verifyRendition(dir,options={}){
     }
   } else check('captions: a v1 receipt predates the captions sidecar, so none is claimed or left beside it',receipt.captions===undefined&&!lexists(path.join(dir,'captions.vtt')),receipt.schema);
 
-  // 4. The container, as ffprobe reads it.
-  const probe=spawnSync('ffprobe',['-v','error','-count_frames','-show_entries','stream=index,codec_name,codec_type,width,height,nb_read_frames,avg_frame_rate,r_frame_rate,sample_rate,channels:format=duration','-of','json',mp4Path],{encoding:'utf8'});
+  // 4a. The container header, as ffprobe reads it: no frame is decoded. These facts bound the cost of everything below, so they come before the replay render (a receipt at the limits beside a tiny MP4 must not cost a whole-stream render).
+  const probe=spawnSync('ffprobe',['-v','error','-show_entries','stream=index,codec_name,codec_type,width,height,avg_frame_rate,r_frame_rate,sample_rate,channels:format=duration','-of','json',mp4Path],{encoding:'utf8',maxBuffer:1<<24});
   if(!check('ffprobe reads the file',probe.status===0,probe.stderr))return{ok:false,checks,metrics};
-  const info=JSON.parse(probe.stdout),vs=info.streams.find(s=>s.codec_type==='video'),as=info.streams.find(s=>s.codec_type==='audio');
-  check('the file holds exactly one video and one audio stream and nothing else',info.streams.length===2&&info.streams.filter(s=>s.codec_type==='video').length===1&&info.streams.filter(s=>s.codec_type==='audio').length===1,info.streams.map(s=>s.codec_type+':'+s.codec_name).join(', '));
-  check('video stream is H.264 at the receipt size',vs&&vs.codec_name==='h264'&&vs.width===width&&vs.height===height,vs&&vs.codec_name+' '+vs.width+'x'+vs.height);
-  check('decodable video frames equal the receipt',vs&&Number(vs.nb_read_frames)===frames,vs&&vs.nb_read_frames);
+  let info;try{info=JSON.parse(probe.stdout);}catch(e){check('ffprobe output parses',false,e.message);return{ok:false,checks,metrics};}
+  const vs=info.streams.find(s=>s.codec_type==='video'),as=info.streams.find(s=>s.codec_type==='audio');
+  const layoutOk=[
+    check('the file holds exactly one video and one audio stream and nothing else',info.streams.length===2&&info.streams.filter(s=>s.codec_type==='video').length===1&&info.streams.filter(s=>s.codec_type==='audio').length===1,info.streams.map(s=>s.codec_type+':'+s.codec_name).join(', ')),
+    check('video stream is H.264 at the receipt size',vs&&vs.codec_name==='h264'&&vs.width===width&&vs.height===height,vs&&vs.codec_name+' '+vs.width+'x'+vs.height)];
   const[rn,rd]=String(vs&&vs.avg_frame_rate).split('/').map(Number);
-  check('video frame rate equals the receipt fps',vs&&rd>0&&Math.abs(rn/rd-fps)<1e-3&&String(vs.r_frame_rate)===String(vs.avg_frame_rate),vs&&vs.avg_frame_rate+' / '+vs.r_frame_rate+' vs '+fps);
+  layoutOk.push(check('video frame rate equals the receipt fps',vs&&rd>0&&Math.abs(rn/rd-fps)<1e-3&&String(vs.r_frame_rate)===String(vs.avg_frame_rate),vs&&vs.avg_frame_rate+' / '+vs.r_frame_rate+' vs '+fps));
+  const dur=Number(info.format.duration);metrics.containerDurationSec=dur;
+  // Header-only, so it is reported even when the layout gate below ends the run. frameCount rounds, so the video may over- or undershoot the timeline by up to half a frame: 0.5/fps s, which exceeds 0.25 s below 2 fps.
+  const durTol=Math.max(0.25,0.5/fps+DURATION_SLACK_SEC);
+  check('container duration is within '+durTol.toFixed(3)+' s of the timeline (the larger of 0.25 s and half a frame)',Math.abs(dur-run.durationMs/1000)<durTol,dur+' vs '+run.durationMs/1000);
+  if(!layoutOk.every(Boolean))return{ok:false,checks,metrics};// the replay below would render and decode a stream the file does not hold
+
+  // 2. Raw frame stream hash, re-derived.
+  const hash=crypto.createHash('sha256'),size=width*height*3,buf=new Uint8Array(size);
+  for(let i=0;i<frames;i++){R.renderFrame(run,R.frameTime(i,fps),width,height,buf);hash.update(buf);}
+  const frameHash=hash.digest('hex');
+  check('raw frame stream SHA-256 re-derives from the seed',frameHash===v.frameStreamSha256,frameHash===v.frameStreamSha256?frameHash:'receipt '+v.frameStreamSha256+' replay '+frameHash);
+
+  // 4b. What needs a decode of the file.
+  const counted=spawnSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=nb_read_frames','-of','json',mp4Path],{encoding:'utf8'});
+  let nbRead;try{nbRead=JSON.parse(counted.stdout).streams[0].nb_read_frames;}catch(e){nbRead=undefined;}
+  check('decodable video frames equal the receipt',counted.status===0&&Number(nbRead)===frames,nbRead);
   const pts=spawnSync('ffprobe',['-v','error','-select_streams','v:0','-show_entries','frame=pts_time','-of','csv=p=0',mp4Path],{encoding:'utf8',maxBuffer:1<<26});
   const times=pts.status===0?pts.stdout.split('\n').map(x=>x.replace(/,$/,'').trim()).filter(Boolean).map(Number):[];
   const driftIdx=times.findIndex((t,i)=>!(Math.abs(t-i/fps)<1e-3));
@@ -188,10 +200,6 @@ async function verifyRendition(dir,options={}){
   check('audio stream is AAC',as&&as.codec_name==='aac',as&&as.codec_name);
   // The decoder below folds to mono at the cue rate; anything it would fold away (a side channel, a band above half that rate) must be refused here, by what the stream is.
   check('audio stream is mono at the cue track\'s sample rate',as&&as.channels===1&&Number(as.sample_rate)===cue.sampleRate,as&&as.channels+' channel(s) at '+as.sample_rate+' Hz vs 1 at '+cue.sampleRate);
-  const dur=Number(info.format.duration);metrics.containerDurationSec=dur;
-  // frameCount rounds, so the video may over- or undershoot the timeline by up to half a frame: 0.5/fps s, which exceeds 0.25 s below 2 fps.
-  const durTol=Math.max(0.25,0.5/fps+DURATION_SLACK_SEC);
-  check('container duration is within '+durTol.toFixed(3)+' s of the timeline (the larger of 0.25 s and half a frame)',Math.abs(dur-run.durationMs/1000)<durTol,dur+' vs '+run.durationMs/1000);
   check('file facts in the receipt match ffprobe',receipt.file&&receipt.file.videoCodec==='h264'&&receipt.file.audioCodec==='aac'&&receipt.file.decodedVideoFrames===frames&&receipt.file.width===width&&receipt.file.height===height,JSON.stringify(receipt.file));
 
   // 5. Decode every video frame and compare to the frame re-rendered from the seed.
@@ -219,13 +227,20 @@ async function verifyRendition(dir,options={}){
   const pcm=decodeAudio(mp4Path,cue.sampleRate);metrics.decodedAudioSamples=pcm.length;
   check('decoded audio length is within 0.25 s of the cue track',Math.abs(pcm.length-cue.pcm.length)<cue.sampleRate*0.25,pcm.length+' vs '+cue.pcm.length);
   const win=cue.cues.map(c=>[Math.floor(c.ms*cue.sampleRate/1000),Math.floor((c.ms+c.lengthMs)*cue.sampleRate/1000)]);
-  const guard=Math.floor(cue.sampleRate*0.06);// AAC priming and ringing spread a tone slightly past its window
-  // Silence is judged over every decoded sample, including any tail beyond the replayed cue track.
-  const quiet=new Uint8Array(pcm.length).fill(1);
-  for(const[a,b]of win)for(let i=Math.max(0,a-guard);i<Math.min(pcm.length,b+guard);i++)quiet[i]=0;
-  let loudOut=0,peakOut=0;
-  for(let i=0;i<pcm.length;i++)if(quiet[i]){const a=Math.abs(pcm[i]);peakOut=Math.max(peakOut,a);if(a>MAX_QUIET_PEAK)loudOut++;}
-  metrics.audioPeakOutsideCues=peakOut;
+  const guard=Math.floor(cue.sampleRate*GUARD_BAND_SEC);// AAC priming and ringing spread a tone slightly past its window, but only just: the guard band is trusted up to GUARD_BAND_PEAK, not blind
+  // Silence is judged over every decoded sample, including any tail beyond the replayed cue track. zone: 0 inside a window (the tone checks below own it), 1 within the guard band of one, 2 elsewhere.
+  const zone=new Uint8Array(pcm.length).fill(2);
+  for(const[a,b]of win){
+    for(let i=Math.max(0,a-guard);i<Math.min(pcm.length,b+guard);i++)if(zone[i]===2)zone[i]=1;
+    for(let i=Math.max(0,a);i<Math.min(pcm.length,b);i++)zone[i]=0;
+  }
+  let loudOut=0,peakOut=0,loudGuard=0,peakGuard=0;
+  for(let i=0;i<pcm.length;i++){
+    const a=Math.abs(pcm[i]);
+    if(zone[i]===2){peakOut=Math.max(peakOut,a);if(a>MAX_QUIET_PEAK)loudOut++;}
+    else if(zone[i]===1){peakGuard=Math.max(peakGuard,a);if(a>GUARD_BAND_PEAK)loudGuard++;}
+  }
+  metrics.audioPeakOutsideCues=peakOut;metrics.audioPeakGuardBand=peakGuard;
   // Every cue must carry its own tone; one silent window cannot hide behind the others.
   const silentCues=[];
   win.forEach(([a,b],ci)=>{let n=0,loud=0;for(let i=a;i<Math.min(b,pcm.length);i++){n++;if(Math.abs(pcm[i])>5000)loud++;}if(!(n>0&&loud/n>0.3))silentCues.push(ci+':'+cue.cues[ci].kind+'@'+cue.cues[ci].ms+'ms '+loud+'/'+n);});
@@ -235,7 +250,7 @@ async function verifyRendition(dir,options={}){
   win.forEach(([a,b],ci)=>{const r=toneRatio(pcm,a,b,cue.cues[ci].hz,cue.sampleRate);minRatio=Math.min(minRatio,r);if(r<MIN_TONE_RATIO)offPitch.push(ci+':'+cue.cues[ci].hz+'Hz ratio '+r.toFixed(2));});
   metrics.minToneRatio=Number.isFinite(minRatio)?Number(minRatio.toFixed(3)):0;
   check('decoded audio in every cue window is the cue\'s own pitch',offPitch.length===0,offPitch.length?'off pitch in '+offPitch.join(', '):'min ratio '+metrics.minToneRatio);
-  check('decoded audio is silent outside the cue windows',loudOut===0,'peak '+peakOut+', '+loudOut+' samples above '+MAX_QUIET_PEAK);
+  check('decoded audio is silent outside the cue windows',loudOut===0&&loudGuard===0,'peak '+peakOut+', '+loudOut+' samples above '+MAX_QUIET_PEAK+'; within '+GUARD_BAND_SEC*1000+' ms of a window peak '+peakGuard+', '+loudGuard+' samples above '+GUARD_BAND_PEAK);
 
   return{ok:checks.every(c=>c.ok),checks,metrics};
 }
@@ -248,4 +263,4 @@ if(require.main===module){
     process.exit(report.ok?0:1);
   })().catch(e=>{process.stderr.write(String(e.message||e)+'\n');process.exit(2);});
 }
-module.exports={verifyRendition,parse,psnr,chroma,MIN_CHROMA_PSNR,worstBlockPsnr,toneRatio,DEFAULT_MIN_PSNR,MIN_BLOCK_PSNR,MIN_TONE_RATIO,MAX_QUIET_PEAK};
+module.exports={verifyRendition,parse,psnr,chroma,MIN_CHROMA_PSNR,worstBlockPsnr,toneRatio,DEFAULT_MIN_PSNR,MIN_BLOCK_PSNR,MIN_TONE_RATIO,MAX_QUIET_PEAK,GUARD_BAND_SEC,GUARD_BAND_PEAK};
