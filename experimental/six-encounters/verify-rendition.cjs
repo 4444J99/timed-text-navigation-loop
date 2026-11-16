@@ -21,6 +21,7 @@ const DURATION_SLACK_SEC=0.05;// container timestamps are rounded to the stream 
 const BLOCK=16,MIN_BLOCK_PSNR=20;// measured legitimate worst 16x16 luma block: 27.4 dB over seeds 7, 45, 1234; a 3x3 pixel edit scores about 14 dB
 const MIN_CHROMA_PSNR=25;// measured over seeds 0, 3, 7, 45, 1234: an honest encode scores 36.0 dB or more on the worst frame, a greyscale re-encode (hue=s=0) 8.5 to 8.9 dB
 const MIN_TONE_RATIO=0.8,MAX_QUIET_PEAK=100;// see the audio checks; an honest AAC encode measures 0.94, a second tone at 0.7 of the cue amplitude 0.63
+const GUARD_BAND_SEC=0.01,GUARD_BAND_PEAK=1000;// measured over 40 honest exports (README): the AAC ringing within 10 ms of a window peaks at 189 and beyond 10 ms at 14, so the band is 10 ms wide with a cap 5x the honest peak (was 60 ms, unchecked)
 const FFMPEG_LINE=/^ffmpeg version (?=[A-Za-z0-9._+~:-]*\d)[A-Za-z0-9._+~:-]+(?: +https?:\/\/[A-Za-z0-9.-]+(?:\/[A-Za-z0-9._~\/-]*)?)? +Copyright \(c\) [0-9]{4}(?:-[0-9]{4})? the FFmpeg developers\r?$/;// the first line of `ffmpeg -version`, as the exporter records it: a version token with a digit, an optional build URL; recorded, not verifiable
 const TOP_KEYS_V1=['schema','kind','configVersion','seed','encounters','durationMs','timings','video','cueTrack','timeline','file','claims'],TOP_KEYS_V2=[...TOP_KEYS_V1,'captions'];
 const sameKeys=(o,keys)=>o!==null&&typeof o==='object'&&JSON.stringify(Object.keys(o).sort())===JSON.stringify([...keys].sort());// measured: replayed seed 36.7 dB worst frame, a different seed 5.5 dB
@@ -219,13 +220,20 @@ async function verifyRendition(dir,options={}){
   const pcm=decodeAudio(mp4Path,cue.sampleRate);metrics.decodedAudioSamples=pcm.length;
   check('decoded audio length is within 0.25 s of the cue track',Math.abs(pcm.length-cue.pcm.length)<cue.sampleRate*0.25,pcm.length+' vs '+cue.pcm.length);
   const win=cue.cues.map(c=>[Math.floor(c.ms*cue.sampleRate/1000),Math.floor((c.ms+c.lengthMs)*cue.sampleRate/1000)]);
-  const guard=Math.floor(cue.sampleRate*0.06);// AAC priming and ringing spread a tone slightly past its window
-  // Silence is judged over every decoded sample, including any tail beyond the replayed cue track.
-  const quiet=new Uint8Array(pcm.length).fill(1);
-  for(const[a,b]of win)for(let i=Math.max(0,a-guard);i<Math.min(pcm.length,b+guard);i++)quiet[i]=0;
-  let loudOut=0,peakOut=0;
-  for(let i=0;i<pcm.length;i++)if(quiet[i]){const a=Math.abs(pcm[i]);peakOut=Math.max(peakOut,a);if(a>MAX_QUIET_PEAK)loudOut++;}
-  metrics.audioPeakOutsideCues=peakOut;
+  const guard=Math.floor(cue.sampleRate*GUARD_BAND_SEC);// AAC priming and ringing spread a tone slightly past its window, but only just: the guard band is trusted up to GUARD_BAND_PEAK, not blind
+  // Silence is judged over every decoded sample, including any tail beyond the replayed cue track. zone: 0 inside a window (the tone checks below own it), 1 within the guard band of one, 2 elsewhere.
+  const zone=new Uint8Array(pcm.length).fill(2);
+  for(const[a,b]of win){
+    for(let i=Math.max(0,a-guard);i<Math.min(pcm.length,b+guard);i++)if(zone[i]===2)zone[i]=1;
+    for(let i=Math.max(0,a);i<Math.min(pcm.length,b);i++)zone[i]=0;
+  }
+  let loudOut=0,peakOut=0,loudGuard=0,peakGuard=0;
+  for(let i=0;i<pcm.length;i++){
+    const a=Math.abs(pcm[i]);
+    if(zone[i]===2){peakOut=Math.max(peakOut,a);if(a>MAX_QUIET_PEAK)loudOut++;}
+    else if(zone[i]===1){peakGuard=Math.max(peakGuard,a);if(a>GUARD_BAND_PEAK)loudGuard++;}
+  }
+  metrics.audioPeakOutsideCues=peakOut;metrics.audioPeakGuardBand=peakGuard;
   // Every cue must carry its own tone; one silent window cannot hide behind the others.
   const silentCues=[];
   win.forEach(([a,b],ci)=>{let n=0,loud=0;for(let i=a;i<Math.min(b,pcm.length);i++){n++;if(Math.abs(pcm[i])>5000)loud++;}if(!(n>0&&loud/n>0.3))silentCues.push(ci+':'+cue.cues[ci].kind+'@'+cue.cues[ci].ms+'ms '+loud+'/'+n);});
@@ -235,7 +243,7 @@ async function verifyRendition(dir,options={}){
   win.forEach(([a,b],ci)=>{const r=toneRatio(pcm,a,b,cue.cues[ci].hz,cue.sampleRate);minRatio=Math.min(minRatio,r);if(r<MIN_TONE_RATIO)offPitch.push(ci+':'+cue.cues[ci].hz+'Hz ratio '+r.toFixed(2));});
   metrics.minToneRatio=Number.isFinite(minRatio)?Number(minRatio.toFixed(3)):0;
   check('decoded audio in every cue window is the cue\'s own pitch',offPitch.length===0,offPitch.length?'off pitch in '+offPitch.join(', '):'min ratio '+metrics.minToneRatio);
-  check('decoded audio is silent outside the cue windows',loudOut===0,'peak '+peakOut+', '+loudOut+' samples above '+MAX_QUIET_PEAK);
+  check('decoded audio is silent outside the cue windows',loudOut===0&&loudGuard===0,'peak '+peakOut+', '+loudOut+' samples above '+MAX_QUIET_PEAK+'; within '+GUARD_BAND_SEC*1000+' ms of a window peak '+peakGuard+', '+loudGuard+' samples above '+GUARD_BAND_PEAK);
 
   return{ok:checks.every(c=>c.ok),checks,metrics};
 }
@@ -248,4 +256,4 @@ if(require.main===module){
     process.exit(report.ok?0:1);
   })().catch(e=>{process.stderr.write(String(e.message||e)+'\n');process.exit(2);});
 }
-module.exports={verifyRendition,parse,psnr,chroma,MIN_CHROMA_PSNR,worstBlockPsnr,toneRatio,DEFAULT_MIN_PSNR,MIN_BLOCK_PSNR,MIN_TONE_RATIO,MAX_QUIET_PEAK};
+module.exports={verifyRendition,parse,psnr,chroma,MIN_CHROMA_PSNR,worstBlockPsnr,toneRatio,DEFAULT_MIN_PSNR,MIN_BLOCK_PSNR,MIN_TONE_RATIO,MAX_QUIET_PEAK,GUARD_BAND_SEC,GUARD_BAND_PEAK};

@@ -126,7 +126,8 @@ test('loud sound of the wrong pitch inside every cue window is rejected, not jus
   const d=remuxAudio('wrongpitch',cue=>inWindows(cue,(i,sr)=>Math.sin(2*Math.PI*3000*i/sr)));
   assert.deepEqual(failed(await verifyRendition(d)),["decoded audio in every cue window is the cue's own pitch"]);
   const n=remuxAudio('noise',cue=>inWindows(cue,(i)=>{let h=Math.imul(i+1,2654435761)>>>0;h^=h>>>15;h=Math.imul(h,2246822519)>>>0;h^=h>>>13;return (h/4294967295)*2-1;}));// white noise from an integer hash, not a gated square wave
-  assert.deepEqual(failed(await verifyRendition(n)),["decoded audio in every cue window is the cue's own pitch"]);
+  // Broadband noise rings past its window edge (measured 1.4-1.7k within 10 ms); the 60 ms blind guard band used to hide that, the 10 ms guard band cap of 1000 now reports it as well.
+  assert.deepEqual(failed(await verifyRendition(n)),["decoded audio in every cue window is the cue's own pitch",'decoded audio is silent outside the cue windows']);
 });
 
 test('a quiet tone mixed under the whole track (below the old 1500 floor) is caught outside the cue windows',{skip},async()=>{
@@ -389,4 +390,28 @@ test('the relaxed duration tolerance is still bounded: a container stretched by 
   const r0=spawnSync('ffmpeg',['-v','error','-y','-i',src,'-c','copy','-bsf:v','setts=ts=TS*'+scale+':dts=DTS*'+scale,'-t','100',out],{encoding:'utf8'});assert.equal(r0.status,0,r0.stderr);
   fs.renameSync(out,src);
   assert.ok(failed(await verifyRendition(d)).some(n=>/container duration is within/.test(n)));
+});
+
+// Issue 94: the guard band beside each cue window was excluded from the silence check, so a loud burst right after a window passed.
+function withBursts(cue,where){
+  const pcm=Int16Array.from(cue.pcm),len=Math.floor(cue.sampleRate*0.045);
+  for(const c of cue.cues){
+    const start=where==='after'?Math.floor((c.ms+c.lengthMs)*cue.sampleRate/1000):Math.floor(c.ms*cue.sampleRate/1000)-len;
+    for(let i=0;i<len;i++){const j=start+i;if(j>=0&&j<pcm.length)pcm[j]=Math.round(12000*Math.sin(2*Math.PI*1800*i/cue.sampleRate));}
+  }
+  return pcm;
+}
+const SILENT='decoded audio is silent outside the cue windows';
+
+test('a 45 ms 1.8 kHz burst at amplitude 12000 right after (or right before) every cue window is caught beside it, in the guard band',{skip},async()=>{
+  for(const where of['after','before']){
+    const d=remuxAudio('burst-'+where,cue=>withBursts(cue,where)),r=await verifyRendition(d);
+    assert.deepEqual(failed(r),[SILENT],where);
+    assert.ok(r.metrics.audioPeakGuardBand>1000,where+' '+r.metrics.audioPeakGuardBand);
+  }
+});
+
+test('an honest export keeps the audio of its guard band far below the guard-band cap',{skip},async()=>{
+  const r=await verifyRendition(good);
+  assert.ok(r.metrics.audioPeakGuardBand<=500&&r.metrics.audioPeakOutsideCues<=20,JSON.stringify(r.metrics));
 });
