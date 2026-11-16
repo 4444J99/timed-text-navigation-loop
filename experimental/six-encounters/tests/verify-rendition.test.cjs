@@ -372,3 +372,21 @@ test('chroma: identical frames are infinite and a grey frame against a coloured 
   assert.ok(psnr(chroma(rgb,w,h,a),chroma(grey,w,h,b))<MIN_CHROMA_PSNR-10);
   assert.ok(chroma(grey,w,h,b).every(v=>Math.abs(v)<1e-9),'a grey pixel has zero chroma');
 });
+
+// Issue 104: an honest export at fps 1 was rejected because the container overruns the timeline by 0.5/fps s.
+test('an honest fps=1 export (seed 0, 1 encounter, 160x90) verifies ok, and so does every low fps',{skip},async()=>{
+  for(const fps of[1,2,3]){
+    const d=path.join(root,'fps'+fps);await exportRendition({seed:0,encounters:1,fps,width:160,height:90,out:d});
+    const r=await verifyRendition(d);assert.deepEqual(failed(r),[],'fps '+fps);assert.equal(r.ok,true);
+  }
+});
+
+test('the relaxed duration tolerance is still bounded: a container stretched by ~0.6 s at fps 1 (past 0.5/fps+0.05) fails the duration check',{skip},async()=>{
+  const d=path.join(root,'fps1-stretch');await exportRendition({seed:0,encounters:1,fps:1,width:160,height:90,out:d});
+  const src=path.join(d,'rendition.mp4'),out=path.join(d,'t.mp4');
+  const pr=spawnSync('ffprobe',['-v','error','-show_entries','format=duration','-of','csv=p=0',src],{encoding:'utf8'});assert.equal(pr.status,0,pr.stderr);
+  const dur=Number(pr.stdout.trim()),scale=(dur+0.6)/dur;
+  const r0=spawnSync('ffmpeg',['-v','error','-y','-i',src,'-c','copy','-bsf:v','setts=ts=TS*'+scale+':dts=DTS*'+scale,'-t','100',out],{encoding:'utf8'});assert.equal(r0.status,0,r0.stderr);
+  fs.renameSync(out,src);
+  assert.ok(failed(await verifyRendition(d)).some(n=>/container duration is within/.test(n)));
+});
