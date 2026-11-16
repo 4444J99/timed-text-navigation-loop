@@ -436,3 +436,16 @@ test('the header probe gate keeps the diagnosis of a file with a wrong stream la
   const rr=await verifyRendition(a);assert.deepEqual(failed(rr),['the file holds exactly one video and one audio stream and nothing else']);
   assert.ok(!rr.checks.some(c=>/raw frame stream SHA-256/.test(c.name)),'a wrong stream layout ends the run before the render');
 });
+
+// Issue 99: the calibration numbers in the comments and README are the measured ones. These are the honest configurations that measured worst.
+test('the honest exports that measured worst on each statistic keep their documented margin over the floors',{skip},async()=>{
+  const {MIN_BLOCK_PSNR}=require('../verify-rendition.cjs');
+  for(const [name,o,key,floor,margin] of [
+    ['w-block',{seed:1,encounters:2,fps:10,width:320,height:180},'minBlockPsnrDb',MIN_BLOCK_PSNR,3],
+    ['w-frame',{seed:1,encounters:2,fps:10,width:160,height:90},'minPsnrDb',DEFAULT_MIN_PSNR,3],
+    ['w-chroma',{seed:1234,encounters:2,fps:10,width:160,height:90},'minChromaPsnrDb',MIN_CHROMA_PSNR,9]]){
+    const d=path.join(root,name);await exportRendition({...o,out:d});
+    const r=await verifyRendition(d);assert.deepEqual(failed(r),[],name);
+    assert.ok(r.metrics[key]>=floor+margin,name+' '+key+' '+r.metrics[key]);
+  }
+});

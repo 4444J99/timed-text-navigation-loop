@@ -16,15 +16,15 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const R=require('./rendition.js'),G=require('./generation.js'),X=require('./export-rendition.cjs');
 
 const SCHEMA_V1='hole-loop.rendition-receipt.v1',SCHEMA_V2='hole-loop.rendition-receipt.v2';// pinned, not imported: a future exporter schema must not silently redefine what this verifier accepts
-const DEFAULT_MIN_PSNR=30;
+const DEFAULT_MIN_PSNR=30;// measured over 40 honest exports (README, Calibration): worst frame 33.15 dB, so 3.1 dB of margin; a different seed scores 5.5 dB. Raising it much would leave under 1.2 dB to the honest minimum on encoders not measured
 const DURATION_SLACK_SEC=0.05;// container timestamps are rounded to the stream time base on top of the half-frame rounding of the frame count
-const BLOCK=16,MIN_BLOCK_PSNR=20;// measured legitimate worst 16x16 luma block: 27.4 dB over seeds 7, 45, 1234; a 3x3 pixel edit scores about 14 dB
-const MIN_CHROMA_PSNR=25;// measured over seeds 0, 3, 7, 45, 1234: an honest encode scores 36.0 dB or more on the worst frame, a greyscale re-encode (hue=s=0) 8.5 to 8.9 dB
+const BLOCK=16,MIN_BLOCK_PSNR=20;// measured over 40 honest exports (README, Calibration): worst 16x16 luma block 23.78 dB (seed 1, 320x180), so 3.8 dB of margin; a 4x4 edit scores below 20 dB. Edits that score 22.7 to 25.5 dB (README, Known residual) overlap the honest range and pass
+const MIN_CHROMA_PSNR=25;// measured over 40 honest exports (README, Calibration): worst frame 34.64 dB (seed 1234, 160x90), a greyscale re-encode (hue=s=0) 8.5 to 8.9 dB
 const MIN_TONE_RATIO=0.8,MAX_QUIET_PEAK=100;// see the audio checks; an honest AAC encode measures 0.94, a second tone at 0.7 of the cue amplitude 0.63
 const GUARD_BAND_SEC=0.01,GUARD_BAND_PEAK=1000;// measured over 40 honest exports (README): the AAC ringing within 10 ms of a window peaks at 189 and beyond 10 ms at 14, so the band is 10 ms wide with a cap 5x the honest peak (was 60 ms, unchecked)
 const FFMPEG_LINE=/^ffmpeg version (?=[A-Za-z0-9._+~:-]*\d)[A-Za-z0-9._+~:-]+(?: +https?:\/\/[A-Za-z0-9.-]+(?:\/[A-Za-z0-9._~\/-]*)?)? +Copyright \(c\) [0-9]{4}(?:-[0-9]{4})? the FFmpeg developers\r?$/;// the first line of `ffmpeg -version`, as the exporter records it: a version token with a digit, an optional build URL; recorded, not verifiable
 const TOP_KEYS_V1=['schema','kind','configVersion','seed','encounters','durationMs','timings','video','cueTrack','timeline','file','claims'],TOP_KEYS_V2=[...TOP_KEYS_V1,'captions'];
-const sameKeys=(o,keys)=>o!==null&&typeof o==='object'&&JSON.stringify(Object.keys(o).sort())===JSON.stringify([...keys].sort());// measured: replayed seed 36.7 dB worst frame, a different seed 5.5 dB
+const sameKeys=(o,keys)=>o!==null&&typeof o==='object'&&JSON.stringify(Object.keys(o).sort())===JSON.stringify([...keys].sort());
 
 function parse(argv){
   const o={dir:null,'min-psnr':DEFAULT_MIN_PSNR};
