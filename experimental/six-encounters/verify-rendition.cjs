@@ -17,6 +17,7 @@ const R=require('./rendition.js'),G=require('./generation.js'),X=require('./expo
 
 const SCHEMA_V1='hole-loop.rendition-receipt.v1',SCHEMA_V2='hole-loop.rendition-receipt.v2';// pinned, not imported: a future exporter schema must not silently redefine what this verifier accepts
 const DEFAULT_MIN_PSNR=30;
+const DURATION_SLACK_SEC=0.05;// container timestamps are rounded to the stream time base on top of the half-frame rounding of the frame count
 const BLOCK=16,MIN_BLOCK_PSNR=20;// measured legitimate worst 16x16 luma block: 27.4 dB over seeds 7, 45, 1234; a 3x3 pixel edit scores about 14 dB
 const MIN_CHROMA_PSNR=25;// measured over seeds 0, 3, 7, 45, 1234: an honest encode scores 36.0 dB or more on the worst frame, a greyscale re-encode (hue=s=0) 8.5 to 8.9 dB
 const MIN_TONE_RATIO=0.8,MAX_QUIET_PEAK=100;// see the audio checks; an honest AAC encode measures 0.94, a second tone at 0.7 of the cue amplitude 0.63
@@ -188,7 +189,9 @@ async function verifyRendition(dir,options={}){
   // The decoder below folds to mono at the cue rate; anything it would fold away (a side channel, a band above half that rate) must be refused here, by what the stream is.
   check('audio stream is mono at the cue track\'s sample rate',as&&as.channels===1&&Number(as.sample_rate)===cue.sampleRate,as&&as.channels+' channel(s) at '+as.sample_rate+' Hz vs 1 at '+cue.sampleRate);
   const dur=Number(info.format.duration);metrics.containerDurationSec=dur;
-  check('container duration is within 0.25 s of the timeline',Math.abs(dur-run.durationMs/1000)<0.25,dur+' vs '+run.durationMs/1000);
+  // frameCount rounds, so the video may over- or undershoot the timeline by up to half a frame: 0.5/fps s, which exceeds 0.25 s below 2 fps.
+  const durTol=Math.max(0.25,0.5/fps+DURATION_SLACK_SEC);
+  check('container duration is within '+durTol.toFixed(3)+' s of the timeline (the larger of 0.25 s and half a frame)',Math.abs(dur-run.durationMs/1000)<durTol,dur+' vs '+run.durationMs/1000);
   check('file facts in the receipt match ffprobe',receipt.file&&receipt.file.videoCodec==='h264'&&receipt.file.audioCodec==='aac'&&receipt.file.decodedVideoFrames===frames&&receipt.file.width===width&&receipt.file.height===height,JSON.stringify(receipt.file));
 
   // 5. Decode every video frame and compare to the frame re-rendered from the seed.
