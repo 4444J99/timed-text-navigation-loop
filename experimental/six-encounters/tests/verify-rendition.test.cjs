@@ -1,6 +1,6 @@
 const {test,before,after}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawnSync}=require('node:child_process');
-const {exportRendition}=require('../export-rendition.cjs'),{verifyRendition,parse,psnr,DEFAULT_MIN_PSNR}=require('../verify-rendition.cjs');
+const {exportRendition}=require('../export-rendition.cjs'),{verifyRendition,parse,psnr,chroma,DEFAULT_MIN_PSNR,MIN_CHROMA_PSNR}=require('../verify-rendition.cjs');
 
 const tool=n=>spawnSync(n,['-version']).status===0,have=tool('ffmpeg')&&tool('ffprobe'),ci=!['','0','false'].includes(String(process.env.CI||'').toLowerCase()),skip=!ci&&!have&&'ffmpeg/ffprobe not installed';// on CI a missing ffmpeg must fail the run, never skip it silently
 const OPTS={seed:45,encounters:2,fps:10,width:320,height:180};
@@ -347,4 +347,28 @@ test('receipt.json, rendition.mp4 and cue-track.wav must be regular files, not s
     fs.copyFileSync(p,real);fs.rmSync(p);fs.symlinkSync(real,p);
     assert.deepEqual(failed(await verifyRendition(d)),['present: '+f],f);
   }
+});
+
+// Issue 95: chroma was never compared, so a colour change that keeps luma passed.
+test('a fully greyscale re-encode (hue=s=0) fails the named chroma check and nothing else',{skip},async()=>{
+  const d=remux('grey',['-vf','hue=s=0','-c:v','libx264','-crf','12','-pix_fmt','yuv420p','-c:a','copy']);
+  const r=await verifyRendition(d),f=failed(r);
+  assert.ok(r.metrics.minPsnrDb>=DEFAULT_MIN_PSNR,'luma PSNR alone would pass: '+r.metrics.minPsnrDb);
+  assert.deepEqual(f,[f.find(n=>/U\/V chroma PSNR/.test(n))]);
+  assert.ok(r.metrics.minChromaPsnrDb<MIN_CHROMA_PSNR-10,'greyscale is far below the floor, not marginally: '+r.metrics.minChromaPsnrDb);
+});
+
+test('honest exports keep the chroma check well above its floor across seeds and sizes',{skip},async()=>{
+  for(const [name,o] of [['c-seed7',{seed:7,encounters:2,fps:10,width:320,height:180}],['c-small',{seed:0,encounters:1,fps:10,width:160,height:90}]]){
+    const d=path.join(root,name);await exportRendition({...o,out:d});
+    const r=await verifyRendition(d);assert.deepEqual(failed(r),[],name);
+    assert.ok(r.metrics.minChromaPsnrDb>=MIN_CHROMA_PSNR+5,name+' '+r.metrics.minChromaPsnrDb);
+  }
+});
+
+test('chroma: identical frames are infinite and a grey frame against a coloured one is far below the floor',()=>{
+  const w=4,h=2,rgb=Uint8Array.from({length:w*h*3},(_,i)=>i%3===0?200:20),grey=new Uint8Array(w*h*3).fill(90),a=new Float64Array(w*h/2),b=new Float64Array(w*h/2);
+  assert.equal(psnr(chroma(rgb,w,h,a),chroma(rgb,w,h,b)),Infinity);
+  assert.ok(psnr(chroma(rgb,w,h,a),chroma(grey,w,h,b))<MIN_CHROMA_PSNR-10);
+  assert.ok(chroma(grey,w,h,b).every(v=>Math.abs(v)<1e-9),'a grey pixel has zero chroma');
 });

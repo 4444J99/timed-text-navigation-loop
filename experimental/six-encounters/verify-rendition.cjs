@@ -18,6 +18,7 @@ const R=require('./rendition.js'),G=require('./generation.js'),X=require('./expo
 const SCHEMA_V1='hole-loop.rendition-receipt.v1',SCHEMA_V2='hole-loop.rendition-receipt.v2';// pinned, not imported: a future exporter schema must not silently redefine what this verifier accepts
 const DEFAULT_MIN_PSNR=30;
 const BLOCK=16,MIN_BLOCK_PSNR=20;// measured legitimate worst 16x16 luma block: 27.4 dB over seeds 7, 45, 1234; a 3x3 pixel edit scores about 14 dB
+const MIN_CHROMA_PSNR=25;// measured over seeds 0, 3, 7, 45, 1234: an honest encode scores 36.0 dB or more on the worst frame, a greyscale re-encode (hue=s=0) 8.5 to 8.9 dB
 const MIN_TONE_RATIO=0.8,MAX_QUIET_PEAK=100;// see the audio checks; an honest AAC encode measures 0.94, a second tone at 0.7 of the cue amplitude 0.63
 const FFMPEG_LINE=/^ffmpeg version (?=[A-Za-z0-9._+~:-]*\d)[A-Za-z0-9._+~:-]+(?: +https?:\/\/[A-Za-z0-9.-]+(?:\/[A-Za-z0-9._~\/-]*)?)? +Copyright \(c\) [0-9]{4}(?:-[0-9]{4})? the FFmpeg developers\r?$/;// the first line of `ffmpeg -version`, as the exporter records it: a version token with a digit, an optional build URL; recorded, not verifiable
 const TOP_KEYS_V1=['schema','kind','configVersion','seed','encounters','durationMs','timings','video','cueTrack','timeline','file','claims'],TOP_KEYS_V2=[...TOP_KEYS_V1,'captions'];
@@ -62,6 +63,16 @@ function decodeAudio(mp4Path,sampleRate){
 /** BT.601 luma of an rgb24 frame. Compared in luma because 4:2:0 chroma subsampling smears one-pixel coloured edges
  *  on every conforming encoder, while the glyph shapes and positions the replay must reproduce live in luma. */
 function luma(rgb,out){for(let i=0,j=0;i<rgb.length;i+=3,j++)out[j]=.299*rgb[i]+.587*rgb[i+1]+.114*rgb[i+2];return out;}
+/** BT.601 chroma (U then V, offset-free) of an rgb24 frame, averaged over 2x2 tiles the way 4:2:0 stores it, into out (length width*height/2). Width and height are even. */
+function chroma(rgb,width,height,out){
+  const cw=width>>1,ch=height>>1,plane=cw*ch;
+  for(let y=0;y<ch;y++)for(let x=0;x<cw;x++){
+    let u=0,v=0;
+    for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){const i=((2*y+dy)*width+2*x+dx)*3,r=rgb[i],g=rgb[i+1],b=rgb[i+2];u+=-.168736*r-.331264*g+.5*b;v+=.5*r-.418688*g-.081312*b;}
+    out[y*cw+x]=u/4;out[plane+y*cw+x]=v/4;
+  }
+  return out;
+}
 function psnr(a,b){
   let se=0;for(let i=0;i<a.length;i++){const d=a[i]-b[i];se+=d*d;}
   return se===0?Infinity:10*Math.log10(255*255*a.length/se);
@@ -181,11 +192,12 @@ async function verifyRendition(dir,options={}){
   check('file facts in the receipt match ffprobe',receipt.file&&receipt.file.videoCodec==='h264'&&receipt.file.audioCodec==='aac'&&receipt.file.decodedVideoFrames===frames&&receipt.file.width===width&&receipt.file.height===height,JSON.stringify(receipt.file));
 
   // 5. Decode every video frame and compare to the frame re-rendered from the seed.
-  const psnrs=[],blockWorst=[],lumaA=new Float64Array(width*height),lumaB=new Float64Array(width*height);
+  const psnrs=[],blockWorst=[],chromaPsnrs=[],lumaA=new Float64Array(width*height),lumaB=new Float64Array(width*height),chromaA=new Float64Array(width*height/2),chromaB=new Float64Array(width*height/2);
   const decoded=await decodeFrames(mp4Path,width,height,(i,frame)=>{
     if(i>=frames)return;
     R.renderFrame(run,R.frameTime(i,fps),width,height,buf);
     luma(buf,lumaA);luma(frame,lumaB);psnrs.push(psnr(lumaA,lumaB));blockWorst.push(worstBlockPsnr(lumaA,lumaB,width,height));
+    chroma(buf,width,height,chromaA);chroma(frame,width,height,chromaB);chromaPsnrs.push(psnr(chromaA,chromaB));
   });
   check('decoded frame count equals the receipt',decoded.frames===frames&&decoded.trailingBytes===0,decoded.frames+' frames, '+decoded.trailingBytes+' stray bytes');
   const finite=psnrs.filter(Number.isFinite),worst=psnrs.length?Math.min(...psnrs):0;
@@ -196,6 +208,9 @@ async function verifyRendition(dir,options={}){
 
   const worstBlock=blockWorst.length?Math.min(...blockWorst):0;metrics.minBlockPsnrDb=Number.isFinite(worstBlock)?Number(worstBlock.toFixed(2)):'lossless';
   check('every '+BLOCK+'x'+BLOCK+' luma block of every decoded frame is within '+MIN_BLOCK_PSNR+' dB PSNR of the replay (localised edits)',blockWorst.length===frames&&worstBlock>=MIN_BLOCK_PSNR,'min '+metrics.minBlockPsnrDb+' dB at frame '+blockWorst.indexOf(worstBlock));
+
+  const worstChroma=chromaPsnrs.length?Math.min(...chromaPsnrs):0;metrics.minChromaPsnrDb=Number.isFinite(worstChroma)?Number(worstChroma.toFixed(2)):'lossless';
+  check('every decoded frame is within '+MIN_CHROMA_PSNR+' dB U/V chroma PSNR of the replayed frame (a greyscale or hue-shifted re-encode keeps luma)',chromaPsnrs.length===frames&&worstChroma>=MIN_CHROMA_PSNR,'min '+metrics.minChromaPsnrDb+' dB at frame '+chromaPsnrs.indexOf(worstChroma));
 
   // 6. Decode the AAC track: tones inside the cue windows, near silence outside.
   const pcm=decodeAudio(mp4Path,cue.sampleRate);metrics.decodedAudioSamples=pcm.length;
@@ -230,4 +245,4 @@ if(require.main===module){
     process.exit(report.ok?0:1);
   })().catch(e=>{process.stderr.write(String(e.message||e)+'\n');process.exit(2);});
 }
-module.exports={verifyRendition,parse,psnr,worstBlockPsnr,toneRatio,DEFAULT_MIN_PSNR,MIN_BLOCK_PSNR,MIN_TONE_RATIO,MAX_QUIET_PEAK};
+module.exports={verifyRendition,parse,psnr,chroma,MIN_CHROMA_PSNR,worstBlockPsnr,toneRatio,DEFAULT_MIN_PSNR,MIN_BLOCK_PSNR,MIN_TONE_RATIO,MAX_QUIET_PEAK};
