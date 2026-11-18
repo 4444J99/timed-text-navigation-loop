@@ -28,6 +28,13 @@ const wav = silentWav();
 const page = 'data:text/html;base64,' + Buffer.from(`<!doctype html><meta charset="utf-8"><body>
 <audio id="parsed" autoplay loop src="${wav}"></audio><video id="parsed_video" loop src="${wav}"></video>
 <div id="later"></div><iframe srcdoc="<audio id='inner' loop src='${wav}'></audio>"></iframe></body>`).toString('base64');
+// A closed declarative shadow root holding looping audio, plus one reachable element.
+// The closed-root element itself has no handle a page script can reach, so the live test can only
+// prove Firefox launches through silentLaunch and reachable media stays pinned — never the closed
+// element's own volume. That is the definition of the gap (#89).
+const closedPage = 'data:text/html;base64,' + Buffer.from(`<!doctype html><meta charset="utf-8"><body>
+<audio id="parsed" autoplay loop src="${wav}"></audio>
+<div id="closed_host"><template shadowrootmode="closed"><audio id="in_closed" autoplay loop src="${wav}"></audio></template></div></body>`).toString('base64');
 
 function fakeEngine(name) {
   const scripts = [];
@@ -47,9 +54,23 @@ test('chromium gets --mute-audio merged with the caller arguments, once', async 
   assert.deepEqual(silentArgs('chromium'), ['--mute-audio']);
 });
 
-test('webkit and firefox have no flag and rely on the init script', async () => {
+test('webkit has no flag and relies on the init script', async () => {
   assert.deepEqual(silentArgs('webkit', ['--x']), ['--x']);
   assert.deepEqual(silentArgs('firefox'), []);
+});
+
+test('firefox launch forwards the caller prefs unchanged and injects no engine pref', async () => {
+  const engine = fakeEngine('firefox');
+  await silentLaunch(engine, {headless: true, firefoxUserPrefs: {'browser.startup.homepage': 'about:blank'}});
+  assert.deepEqual(engine.launched, {headless: true, args: [],
+    firefoxUserPrefs: {'browser.startup.homepage': 'about:blank'}});
+  // The persistent-context launcher forwards the same way.
+  await silentLaunchPersistentContext(engine, '/profile', {firefoxUserPrefs: {'browser.startup.homepage': 'about:blank'}});
+  assert.deepEqual(engine.launched, {dir: '/profile', args: [],
+    firefoxUserPrefs: {'browser.startup.homepage': 'about:blank'}});
+  // media.volume_scale must never be injected here: Playwright sends firefoxUserPrefs numbers through
+  // setIntPref, which breaks the Firefox launch for a float pref, and a string value is stored as a
+  // string and ignored by the float getter (verified 2026-11-18, Playwright 1.62.1 / Firefox 153).
 });
 
 test('every context, page and persistent context gets the init script', async () => {
@@ -148,6 +169,24 @@ for (const engineName of ['chromium', 'webkit']) {
     } finally { await browser.close(); }
   });
 }
+
+test('firefox: a closed declarative shadow root page launches silently and reachable media stays pinned', async t => {
+  const browser = await launchOrSkip(t, 'firefox');
+  if (!browser) return;
+  try {
+    const tab = await browser.newPage();
+    await tab.goto(closedPage);
+    assert.equal(await tab.evaluate(() => typeof window.__SILENT_BROWSER__), 'object');
+    const state = await tab.evaluate(() => {
+      const host = document.querySelector('#closed_host');
+      return {parsed: window.__SILENT_BROWSER__.native(document.querySelector('#parsed')),
+        hostShadow: host.shadowRoot, templateLeft: document.querySelector('#closed_host template')};
+    });
+    assert.deepEqual(state.parsed, {muted: true, volume: 0}, 'reachable media stays pinned');
+    assert.equal(state.hostShadow, null, 'the root is closed: no handle from page script');
+    assert.equal(state.templateLeft, null, 'the declarative template was consumed, not left unparsed');
+  } finally { await browser.close(); }
+});
 
 async function persistentOrSkip(t, name) {
   const playwright = dependency('playwright');
