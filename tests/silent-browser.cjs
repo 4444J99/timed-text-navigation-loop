@@ -1,7 +1,10 @@
 /* Launch every Playwright browser through here so no run can make a sound. Chromium gets --mute-audio merged into
  * the caller's arguments, and every context (newContext, and newPage, which makes its own) gets silent-init.js:
  * media elements pinned muted at volume 0 and a gain-0 sink in front of every realtime AudioContext destination.
- * The init script is engine-agnostic, so it is the mute for WebKit and Firefox, which have no flag. */
+ * The init script is engine-agnostic, so it is the mute for WebKit and Firefox, which have no flag the launcher
+ * can set: Firefox has a media.volume_scale pref, but Playwright cannot deliver a float pref — its launcher sends
+ * every firefoxUserPrefs number through setIntPref, which breaks the launch, and a string value is stored as a
+ * string and ignored by the float getter (verified 2026-11-18, Playwright 1.62.1 / Firefox 153). */
 'use strict';
 
 const fs = require('node:fs');
@@ -9,6 +12,8 @@ const path = require('node:path');
 
 const INIT_SCRIPT_PATH = path.join(__dirname, 'silent-init.js');
 const MUTE_ARGS = ['--mute-audio'];
+// No FIREFOX_PREFS on purpose: a numeric media.volume_scale breaks every Firefox launch (see the header),
+// and a string one is silently ignored. Do not re-add the pref here.
 const initScript = () => fs.readFileSync(INIT_SCRIPT_PATH, 'utf8');
 
 const engineName = engine => (typeof engine.name === 'function' ? engine.name() : engine.name);

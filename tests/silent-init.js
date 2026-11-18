@@ -12,6 +12,7 @@
  *
  * Limit: media parsed inside a closed declarative shadow root (<template shadowrootmode="closed">) has no handle a page
  * script can reach, so it cannot be pinned here. Chromium covers it with --mute-audio; WebKit and Firefox do not.
+ * (Firefox has a media.volume_scale pref, but Playwright cannot deliver a float pref — see silent-browser.cjs.)
  */
 (() => {
   'use strict';
